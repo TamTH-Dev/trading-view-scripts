@@ -1,0 +1,49 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+//@version=5
+indicator(title='Advanced Ichimoku', shorttitle='Advanced Ichimoku', overlay=true)
+
+var color blue_color = color.new(#4577ED, 0)
+var color purple_color = color.new(#7859BC, 0)
+var color yellow_color = color.new(#FCEF72, 0)
+var color orange_color = color.new(#F2AB47, 0)
+var color cyan_color = color.new(#60C3D7, 0)
+var color green_color = color.new(#52A895, 0)
+var color red_color = color.new(#DA4F7A, 0)
+var color green_color_opaque = color.new(#52A895, 90)
+var color red_color_opaque = color.new(#DA4F7A, 90)
+
+var string tenkan_sen_txt = 'Tenkan-sen'
+var string kijun_sen_txt = 'Kijun-sen'
+var string knife_short_txt = 'Knife short'
+var string knife_long_txt = 'Knife long'
+var string chikou_span_txt = 'Chikou-span'
+var string senkou_span_a_txt = 'Senkou-span A'
+var string senkou_span_b_txt = 'Senkou-span B'
+var string kumo_cloud_txt = 'Kumo cloud'
+
+int tenkan_sen_input = input.int(9, minval=1, title=tenkan_sen_txt)
+int kijun_sen_input = input.int(17, minval=1, title=kijun_sen_txt)
+int knife_short_input = input.int(65, minval=1, title=knife_short_txt)
+int knife_long_input = input.int(129, minval=1, title=knife_long_txt)
+int senkou_span_b_input = input.int(26, minval=1, title=senkou_span_b_txt)
+
+method get_avg(int shift) => math.avg(ta.lowest(shift), ta.highest(shift))
+
+float tenkan_sen = get_avg(tenkan_sen_input)
+float kijun_sen = get_avg(kijun_sen_input)
+float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
+float senkou_span_b = get_avg(senkou_span_b_input)
+float knife_short = get_avg(knife_short_input)
+float knife_long = get_avg(knife_long_input)
+
+plot(tenkan_sen, color=blue_color, title=tenkan_sen_txt, linewidth=1)
+plot(kijun_sen, color=purple_color, title=kijun_sen_txt, linewidth=1)
+plot(knife_short, color=yellow_color, title=knife_short_txt, linewidth=2)
+plot(knife_long, color=orange_color, title=knife_long_txt, linewidth=2)
+plot(close, offset=-25, color=cyan_color, title=chikou_span_txt, linewidth=1)
+
+senkou_plot_a = plot(senkou_span_a, offset=25, color=green_color, linewidth=1, title=senkou_span_a_txt)
+senkou_plot_b = plot(senkou_span_b, offset=25, color=red_color, linewidth=1, title=senkou_span_b_txt)
+fill(senkou_plot_a, senkou_plot_b, color=senkou_span_a > senkou_span_b ? green_color_opaque : red_color_opaque, title=kumo_cloud_txt)
