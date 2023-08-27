@@ -15,8 +15,8 @@ var color red_color_opaque = color.new(#DA4F7A, 90)
 
 var upper_band = hline(30, title="Upper Band", color=color.new(#000000, 100))
 var lower_band = hline(-30, title="Lower Band", color=color.new(#000000, 100))
-fill(upper_band, lower_band, title="Background", color=color.new(#FFFFFF, 96))
-hline(0, title="Middle Level", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 80))
+fill(upper_band, lower_band, title="Background", color=color.new(#FFFFFF, 98))
+hline(0, title="Middle Level", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 90))
 
 
 // Williams %R

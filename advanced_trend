@@ -1,0 +1,31 @@
+// © tamth_
+// @version=5
+indicator("Advanced Trend", shorttitle="Advanced Trend", format=format.price, precision=2, timeframe="", timeframe_gaps=true)
+
+
+var color blue_color = color.new(#4577ED, 0)
+var color purple_color = color.new(#7859BC, 0)
+var color yellow_color = color.new(#FCEF72, 0)
+var color orange_color = color.new(#F2AB47, 0)
+var color cyan_color = color.new(#60C3D7, 0)
+var color green_color = color.new(#52A895, 0)
+var color red_color = color.new(#DA4F7A, 0)
+var color green_color_opaque = color.new(#52A895, 90)
+var color red_color_opaque = color.new(#DA4F7A, 90)
+
+
+// Adx
+adx_input = input.int(14, title="ADX Smoothing", minval=1, maxval=50)
+di_input = input.int(14, minval=1, title="DI Periods")
+up = ta.change(high)
+down = -ta.change(low)
+dm_plus = na(up) ? na : (up > down and up > 0 ? up : 0)
+dm_minus = na(down) ? na : (down > up and down > 0 ? down : 0)
+di_ewma = ta.rma(ta.tr, di_input)
+di_plus = fixnan(100 * ta.rma(dm_plus, di_input) / di_ewma)
+di_minus = fixnan(100 * ta.rma(dm_minus, di_input) / di_ewma)
+di_sum = di_plus + di_minus
+adx = 100 * ta.rma(math.abs(di_plus - di_minus) / (di_sum == 0 ? 1 : di_sum), adx_input)
+plot(adx, color=red_color, title="ADX")
+plot(di_plus, color=blue_color, title="+DI")
+plot(di_minus, color=purple_color, title="-DI")
