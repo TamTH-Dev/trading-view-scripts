@@ -1,11 +1,8 @@
-// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © tamth_
-
-//@version=5
+// @version=5
 indicator(title='Advanced Ichimoku', shorttitle='Advanced Ichimoku', overlay=true)
 
 
-// Ichimoku
 var color blue_color = color.new(#4577ED, 0)
 var color purple_color = color.new(#7859BC, 0)
 var color yellow_color = color.new(#FCEF72, 0)
@@ -16,41 +13,9 @@ var color red_color = color.new(#DA4F7A, 0)
 var color green_color_opaque = color.new(#52A895, 90)
 var color red_color_opaque = color.new(#DA4F7A, 90)
 
-var string tenkan_sen_txt = 'Tenkan-sen'
-var string kijun_sen_txt = 'Kijun-sen'
-var string short_knife_txt = 'Short knife'
-var string long_knife_txt = 'Long knife'
-var string chikou_span_txt = 'Chikou-span'
-var string senkou_span_a_txt = 'Senkou-span A'
-var string senkou_span_b_txt = 'Senkou-span B'
-var string kumo_cloud_txt = 'Kumo cloud'
 
-int tenkan_sen_input = input.int(9, minval=1, title=tenkan_sen_txt)
-int kijun_sen_input = input.int(17, minval=1, title=kijun_sen_txt)
-int short_knife_input = input.int(65, minval=1, title=short_knife_txt)
-int long_knife_input = input.int(129, minval=1, title=long_knife_txt)
-int senkou_span_b_input = input.int(26, minval=1, title=senkou_span_b_txt)
-
-
+// Ichimoku
 method get_avg(int periods) => math.avg(ta.lowest(periods), ta.highest(periods))
-
-float tenkan_sen = get_avg(tenkan_sen_input)
-float kijun_sen = get_avg(kijun_sen_input)
-float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
-float senkou_span_b = get_avg(senkou_span_b_input)
-float short_knife = get_avg(short_knife_input)
-float long_knife = get_avg(long_knife_input)
-
-plot(close, offset=-25, color=cyan_color, title=chikou_span_txt, linewidth=1)
-senkou_plot_a = plot(senkou_span_a, offset=25, color=green_color, linewidth=1, title=senkou_span_a_txt)
-senkou_plot_b = plot(senkou_span_b, offset=25, color=red_color, linewidth=1, title=senkou_span_b_txt)
-fill(senkou_plot_a, senkou_plot_b, color=senkou_span_a > senkou_span_b ? green_color_opaque : red_color_opaque, title=kumo_cloud_txt)
-plot(long_knife, color=orange_color, title=long_knife_txt, linewidth=2)
-plot(short_knife, color=yellow_color, title=short_knife_txt, linewidth=2)
-plot(kijun_sen, color=purple_color, title=kijun_sen_txt, linewidth=1)
-plot(tenkan_sen, color=blue_color, title=tenkan_sen_txt, linewidth=1)
-
-
 method get_future_point(int periods, int idx) => math.avg(ta.highest(periods - idx), ta.lowest(periods - idx))
 method get_future_point_1(int periods) => get_future_point(periods, 1)
 method get_future_point_2(int periods) => get_future_point(periods, 2)
@@ -78,6 +43,34 @@ method get_future_point_23(int periods) => get_future_point(periods, 23)
 method get_future_point_24(int periods) => get_future_point(periods, 24)
 method get_future_point_25(int periods) => get_future_point(periods, 25)
 method get_future_point_26(int periods) => get_future_point(periods, 26)
+
+var string tenkan_sen_txt = 'Tenkan-sen'
+var string kijun_sen_txt = 'Kijun-sen'
+var string short_knife_txt = 'Short knife'
+var string long_knife_txt = 'Long knife'
+var string chikou_span_txt = 'Chikou-span'
+var string senkou_span_a_txt = 'Senkou-span A'
+var string senkou_span_b_txt = 'Senkou-span B'
+var string kumo_cloud_txt = 'Kumo cloud'
+int tenkan_sen_input = input.int(9, minval=1, title=tenkan_sen_txt)
+int kijun_sen_input = input.int(17, minval=1, title=kijun_sen_txt)
+int short_knife_input = input.int(65, minval=1, title=short_knife_txt)
+int long_knife_input = input.int(129, minval=1, title=long_knife_txt)
+int senkou_span_b_input = input.int(26, minval=1, title=senkou_span_b_txt)
+float tenkan_sen = get_avg(tenkan_sen_input)
+float kijun_sen = get_avg(kijun_sen_input)
+float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
+float senkou_span_b = get_avg(senkou_span_b_input)
+float short_knife = get_avg(short_knife_input)
+float long_knife = get_avg(long_knife_input)
+plot(close, offset=-25, color=cyan_color, title=chikou_span_txt, linewidth=1)
+var senkou_plot_a = plot(senkou_span_a, offset=25, color=green_color, linewidth=1, title=senkou_span_a_txt)
+var senkou_plot_b = plot(senkou_span_b, offset=25, color=red_color, linewidth=1, title=senkou_span_b_txt)
+fill(senkou_plot_a, senkou_plot_b, color=senkou_span_a > senkou_span_b ? green_color_opaque : red_color_opaque, title=kumo_cloud_txt)
+plot(long_knife, color=orange_color, title=long_knife_txt, linewidth=2)
+plot(short_knife, color=yellow_color, title=short_knife_txt, linewidth=2)
+plot(kijun_sen, color=purple_color, title=kijun_sen_txt, linewidth=1)
+plot(tenkan_sen, color=blue_color, title=tenkan_sen_txt, linewidth=1)
 
 long_knife_future_point_1 = get_future_point_1(long_knife_input)
 long_knife_future_point_2 = get_future_point_2(long_knife_input)

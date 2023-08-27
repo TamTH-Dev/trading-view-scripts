@@ -1,0 +1,30 @@
+// © tamth_
+// @version=5
+indicator("Advanced Signal", shorttitle="Advanced Signal", format=format.price, precision=2, timeframe="", timeframe_gaps=true)
+
+
+var color blue_color = color.new(#4577ED, 0)
+var color purple_color = color.new(#7859BC, 0)
+var color yellow_color = color.new(#FCEF72, 0)
+var color orange_color = color.new(#F2AB47, 0)
+var color cyan_color = color.new(#60C3D7, 0)
+var color green_color = color.new(#52A895, 0)
+var color red_color = color.new(#DA4F7A, 0)
+var color green_color_opaque = color.new(#52A895, 90)
+var color red_color_opaque = color.new(#DA4F7A, 90)
+
+var obPlot = hline(30, title="Upper Band", color=color.new(#000000, 100))
+var osPlot = hline(-30, title="Lower Band", color=color.new(#000000, 100))
+fill(obPlot, osPlot, title="Background", color=color.rgb(126, 87, 194, 90))
+
+
+// Williams %R
+method get_williams_r(int periods) =>
+	max = ta.highest(periods)
+	min = ta.lowest(periods)
+	100 * (close - max) / (max - min) + 50
+
+var string williams_r_txt = 'Williams %R'
+int williams_r_input = input.int(title=williams_r_txt, defval=14)
+float williams_r = get_williams_r(williams_r_input)
+plot(williams_r, title=williams_r_txt, color=purple_color)
