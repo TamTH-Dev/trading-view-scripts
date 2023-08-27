@@ -13,9 +13,10 @@ var color red_color = color.new(#DA4F7A, 0)
 var color green_color_opaque = color.new(#52A895, 90)
 var color red_color_opaque = color.new(#DA4F7A, 90)
 
-var obPlot = hline(30, title="Upper Band", color=color.new(#000000, 100))
-var osPlot = hline(-30, title="Lower Band", color=color.new(#000000, 100))
-fill(obPlot, osPlot, title="Background", color=color.rgb(126, 87, 194, 90))
+var upper_band = hline(30, title="Upper Band", color=color.new(#000000, 100))
+var lower_band = hline(-30, title="Lower Band", color=color.new(#000000, 100))
+fill(upper_band, lower_band, title="Background", color=color.new(#FFFFFF, 96))
+hline(0, title="Middle Level", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 80))
 
 
 // Williams %R
@@ -28,3 +29,25 @@ var string williams_r_txt = 'Williams %R'
 int williams_r_input = input.int(title=williams_r_txt, defval=14)
 float williams_r = get_williams_r(williams_r_input)
 plot(williams_r, title=williams_r_txt, color=purple_color)
+
+
+
+
+
+// Ultimate Oscillator
+method get_uo_avg(float bp, float diff, int periods) => math.sum(bp, periods) / math.sum(diff, periods)
+method get_ultimate_oscillator(float fast_avg, float middle_avg, float slow_avg) => 100 * (4*fast_avg + 2*middle_avg + slow_avg)/7 - 50
+
+var string ultimate_oscillator_txt = 'Ultimate Oscillator'
+int fast_periods_input = input.int(7, minval=1, title = 'UO Fast Periods')
+int middle_periods_input = input.int(14, minval=1, title = 'UO Middle Periods')
+int slow_periods_input = input.int(28, minval=1, title = 'UO Slow Periods')
+float high_val = math.max(high, close[1])
+float low_val = math.min(low, close[1])
+float bp = close - low_val
+float diff = high_val - low_val
+float fast_avg = get_uo_avg(bp, diff, fast_periods_input)
+float middle_avg = get_uo_avg(bp, diff, middle_periods_input)
+float slow_avg = get_uo_avg(bp, diff, slow_periods_input)
+float ultimate_oscillator = get_ultimate_oscillator(fast_avg, middle_avg, slow_avg)
+plot(ultimate_oscillator, color=red_color, title=ultimate_oscillator_txt)
