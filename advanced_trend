@@ -10,10 +10,6 @@ var color orange_color = color.new(#F2AB47, 0)
 var color cyan_color = color.new(#60C3D7, 0)
 var color green_color = color.new(#52A895, 0)
 var color red_color = color.new(#DA4F7A, 0)
-var color green_color_opaque = color.new(#52A895, 95)
-var color red_color_opaque = color.new(#DA4F7A, 95)
-var color yellow_color_opaque = color.new(#FCEF72, 95)
-var color orange_color_opaque = color.new(#F2AB47, 40)
 
 
 // Aroon Oscillator
@@ -21,7 +17,7 @@ int aroon_oscillator_timeframes = input.int(14, title="Aroon Oscillator Timefram
 float aroon_oscillator_upper = 30 * (ta.highestbars(high, aroon_oscillator_timeframes + 1) + aroon_oscillator_timeframes) / aroon_oscillator_timeframes
 float aroon_oscillator_lower = 30 * (ta.lowestbars(low, aroon_oscillator_timeframes + 1) + aroon_oscillator_timeframes) / aroon_oscillator_timeframes
 float aroon_oscillator = aroon_oscillator_upper - aroon_oscillator_lower
-plot(aroon_oscillator, title="Aroon Oscillator", color=purple_color)
+plot(aroon_oscillator, title="Aroon Oscillator", color=purple_color, linewidth = 1)
 
 
 
@@ -49,17 +45,17 @@ method get_adx(simple int di_timeframes, int adx_timeframes) =>
 float adx = adx_ini - 30
 float di_plus = di_plus_ini - 30
 float di_minus = di_minus_ini - 30
-plot(di_minus, color = red_color, linewidth = 1, title = "-DI")
-plot(di_plus, color = green_color, linewidth = 1, title = "+DI")
-plot(adx, color = blue_color, linewidth = 2, title = "ADX")
+plot(di_minus, color = color.new(#DA4F7A, 40), linewidth = 1, title = "-DI")
+plot(di_plus, color = color.new(#52A895, 40), linewidth = 1, title = "+DI")
+plot(adx, color = blue_color, linewidth = 1, title = "ADX")
 
-var adx_w_line = hline(-30, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX = 0 Line")
+var adx_w_line = hline(-30, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Initialization")
 var adx_wm_line = hline(-10, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Weak To Medium Threshold")
 var adx_ms_line = hline(10, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Medium To Strong Threshold")
 var adx_osob_line = hline(30, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Exhaustion Threshold")
-fill(adx_w_line, adx_wm_line, title="ADX Weak Section", color=red_color_opaque)
-fill(adx_wm_line, adx_ms_line, title="ADX Medium Section", color=yellow_color_opaque)
-fill(adx_ms_line, adx_osob_line, title="ADX Strong Section", color=green_color_opaque)
+fill(adx_w_line, adx_wm_line, title="ADX Weak Section", color=color.new(#DA4F7A, 96))
+fill(adx_wm_line, adx_ms_line, title="ADX Medium Section", color=color.new(#FCEF72, 96))
+fill(adx_ms_line, adx_osob_line, title="ADX Strong Section", color=color.new(#52A895, 96))
 
 
 
@@ -79,4 +75,4 @@ float vfi_vc = math.min(volume, vfi_max_vol)
 float vfi_mf = vfi_price_avg - vfi_price_avg[1]
 float vfi_vcp = vfi_mf > vfi_cutoff ?  vfi_vc : vfi_mf < -vfi_cutoff ? -vfi_vc : 0
 float vfi = math.sum(vfi_vcp , vfi_timeframes) / vfi_vave
-plot(vfi, title="vfi", color = vfi < 0 ? orange_color_opaque : orange_color, linewidth = 2)
+plot(vfi, title="VFI", color = vfi < 0 ? color.new(#F2AB47, 30) : orange_color, linewidth = 1)
