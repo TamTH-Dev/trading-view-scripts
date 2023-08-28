@@ -16,14 +16,14 @@ var color red_color_opaque = color.new(#DA4F7A, 90)
 var upper_band = hline(30, title="Upper Band", color=color.new(#000000, 100))
 var lower_band = hline(-30, title="Lower Band", color=color.new(#000000, 100))
 fill(upper_band, lower_band, title="Background", color=color.new(#FFFFFF, 98))
-hline(0, title="Middle Level", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 90))
+hline(0, title="Middle Line", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 90))
 
 
 // Williams %R
-method get_williams_r(int periods) =>
-	max = ta.highest(periods)
-	min = ta.lowest(periods)
-	100 * (close - max) / (max - min) + 50
+method get_williams_r(int timeframes) =>
+	highest_price = ta.highest(timeframes)
+	lowest_price = ta.lowest(timeframes)
+	100 * (close - highest_price) / (highest_price - lowest_price) + 50
 
 var string williams_r_txt = 'Williams %R'
 int williams_r_input = input.int(title=williams_r_txt, defval=14)
@@ -35,19 +35,20 @@ plot(williams_r, title=williams_r_txt, color=purple_color)
 
 
 // Ultimate Oscillator
-method get_uo_avg(float bp, float diff, int periods) => math.sum(bp, periods) / math.sum(diff, periods)
-method get_ultimate_oscillator(float fast_avg, float middle_avg, float slow_avg) => 100 * (4*fast_avg + 2*middle_avg + slow_avg)/7 - 50
+method get_uo_timeframes_avg(float buying_pressure, float true_range, int timeframes) => math.sum(buying_pressure, timeframes) / math.sum(true_range, timeframes)
+method get_uo(float short_timeframes_avg, float middle_timeframes_avg, float long_timeframes_avg) => 100 * (short_timeframes_avg * 4 + middle_timeframes_avg * 2 + long_timeframes_avg) / 7 - 50
 
-var string ultimate_oscillator_txt = 'Ultimate Oscillator'
-int fast_periods_input = input.int(7, minval=1, title = 'UO Fast Periods')
-int middle_periods_input = input.int(14, minval=1, title = 'UO Middle Periods')
-int slow_periods_input = input.int(28, minval=1, title = 'UO Slow Periods')
-float high_val = math.max(high, close[1])
-float low_val = math.min(low, close[1])
-float bp = close - low_val
-float diff = high_val - low_val
-float fast_avg = get_uo_avg(bp, diff, fast_periods_input)
-float middle_avg = get_uo_avg(bp, diff, middle_periods_input)
-float slow_avg = get_uo_avg(bp, diff, slow_periods_input)
-float ultimate_oscillator = get_ultimate_oscillator(fast_avg, middle_avg, slow_avg)
-plot(ultimate_oscillator, color=red_color, title=ultimate_oscillator_txt)
+var string uo_txt = 'Ultimate Oscillator'
+int uo_short_timeframes_input = input.int(7, minval=1, title = 'Ultimate Oscillator Short Timeframes')
+int uo_middle_timeframes_input = input.int(14, minval=1, title = 'Ultimate Oscillator Middle Timeframes')
+int uo_long_timeframes_input = input.int(28, minval=1, title = 'Ultimate Oscillator Long Timeframes')
+float uo_prior_close = close[1]
+float uo_max_price = math.max(high, uo_prior_close)
+float uo_min_price = math.min(low, uo_prior_close)
+float uo_buying_pressure = close - uo_min_price
+float uo_true_range = uo_max_price - uo_min_price
+float uo_short_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_short_timeframes_input)
+float uo_middle_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_middle_timeframes_input)
+float uo_long_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_long_timeframes_input)
+float uo = get_uo(uo_short_timeframes_avg, uo_middle_timeframes_avg, uo_long_timeframes_avg)
+plot(uo, color=red_color, title=uo_txt)
