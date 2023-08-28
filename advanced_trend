@@ -10,22 +10,73 @@ var color orange_color = color.new(#F2AB47, 0)
 var color cyan_color = color.new(#60C3D7, 0)
 var color green_color = color.new(#52A895, 0)
 var color red_color = color.new(#DA4F7A, 0)
-var color green_color_opaque = color.new(#52A895, 90)
-var color red_color_opaque = color.new(#DA4F7A, 90)
+var color green_color_opaque = color.new(#52A895, 95)
+var color red_color_opaque = color.new(#DA4F7A, 95)
+var color yellow_color_opaque = color.new(#FCEF72, 95)
+var color orange_color_opaque = color.new(#F2AB47, 40)
+
+
+// Aroon Oscillator
+int aroon_oscillator_timeframes = input.int(14, title="Aroon Oscillator Timeframes", minval=1)
+float aroon_oscillator_upper = 30 * (ta.highestbars(high, aroon_oscillator_timeframes + 1) + aroon_oscillator_timeframes) / aroon_oscillator_timeframes
+float aroon_oscillator_lower = 30 * (ta.lowestbars(low, aroon_oscillator_timeframes + 1) + aroon_oscillator_timeframes) / aroon_oscillator_timeframes
+float aroon_oscillator = aroon_oscillator_upper - aroon_oscillator_lower
+plot(aroon_oscillator, title="Aroon Oscillator", color=purple_color)
+
+
+
 
 
 // Adx
-int adx_timeframes = input.int(14, title="ADX Timeframes", minval=1, maxval=50)
-int di_timeframes = input.int(14, minval=1, title="DI Timeframes")
-float dm_high_change = ta.change(high)
-float dm_down_change = -ta.change(low)
-float dm_plus = na(dm_high_change) ? na : (dm_high_change > dm_down_change and dm_high_change > 0 ? dm_high_change : 0)
-float dm_minus = na(dm_down_change) ? na : (dm_down_change > dm_high_change and dm_down_change > 0 ? dm_down_change : 0)
-float adx_avg_true_range = ta.rma(ta.tr, di_timeframes)
-float di_plus = fixnan(100 * ta.rma(dm_plus, di_timeframes) / adx_avg_true_range)
-float di_minus = fixnan(100 * ta.rma(dm_minus, di_timeframes) / adx_avg_true_range)
-float di_sum = di_plus + di_minus
-float adx = 100 * ta.rma(math.abs(di_plus - di_minus) / (di_sum == 0 ? 1 : di_sum), adx_timeframes)
-plot(adx - 50, color=red_color, title="ADX")
-plot(di_plus - 50, color=blue_color, title="+DI")
-plot(di_minus - 50, color=purple_color, title="-DI")
+int adx_timeframes = input.int(14, title="ADX Timeframes")
+int di_timeframes = input.int(14, title="DI Timeframes")
+
+method get_di_vals(int timeframes) =>
+	float high_price_change = ta.change(high)
+	float low_price_change = -ta.change(low)
+	float di_true_range = ta.rma(ta.tr, timeframes)
+	float di_plus = fixnan(100 * ta.rma(high_price_change > low_price_change and high_price_change > 0 ? high_price_change : 0, timeframes) / di_true_range)
+	float di_minus = fixnan(100 * ta.rma(low_price_change > high_price_change and low_price_change > 0 ? low_price_change : 0, timeframes) / di_true_range)
+	[di_plus, di_minus]
+	
+method get_adx(simple int di_timeframes, int adx_timeframes) => 
+	[di_plus, di_minus] = get_di_vals(di_timeframes)
+	float di_sum = di_plus + di_minus
+	float adx = 100 * ta.rma(math.abs(di_plus - di_minus) / (di_sum == 0 ? 1 : di_sum), adx_timeframes)
+	[adx, di_plus, di_minus]
+
+[adx_ini, di_plus_ini, di_minus_ini] = get_adx(di_timeframes, adx_timeframes)
+float adx = adx_ini - 30
+float di_plus = di_plus_ini - 30
+float di_minus = di_minus_ini - 30
+plot(di_minus, color = red_color, linewidth = 1, title = "-DI")
+plot(di_plus, color = green_color, linewidth = 1, title = "+DI")
+plot(adx, color = blue_color, linewidth = 2, title = "ADX")
+
+var adx_w_line = hline(-30, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX = 0 Line")
+var adx_wm_line = hline(-10, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Weak To Medium Threshold")
+var adx_ms_line = hline(10, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Medium To Strong Threshold")
+var adx_osob_line = hline(30, linestyle=hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Exhaustion Threshold")
+fill(adx_w_line, adx_wm_line, title="ADX Weak Section", color=red_color_opaque)
+fill(adx_wm_line, adx_ms_line, title="ADX Medium Section", color=yellow_color_opaque)
+fill(adx_ms_line, adx_osob_line, title="ADX Strong Section", color=green_color_opaque)
+
+
+
+
+
+// VFI
+int vfi_timeframes = input.int(14, title="VFI Timeframes", minval=1, maxval=350)
+float vfi_coef = 0.2
+float vfi_vol_cutoff = 2.5
+float vfi_price_avg = hlc3
+float vfi_log_diff = math.log(vfi_price_avg) - math.log(vfi_price_avg[1])
+float vfi_inter = ta.stdev(vfi_log_diff, 30 )
+float vfi_cutoff = vfi_coef * vfi_inter * close
+float vfi_vave = ta.sma(volume, vfi_timeframes)[1]
+float vfi_max_vol = vfi_vave * vfi_vol_cutoff
+float vfi_vc = math.min(volume, vfi_max_vol)
+float vfi_mf = vfi_price_avg - vfi_price_avg[1]
+float vfi_vcp = vfi_mf > vfi_cutoff ?  vfi_vc : vfi_mf < -vfi_cutoff ? -vfi_vc : 0
+float vfi = math.sum(vfi_vcp , vfi_timeframes) / vfi_vave
+plot(vfi, title="vfi", color = vfi < 0 ? orange_color_opaque : orange_color, linewidth = 2)
