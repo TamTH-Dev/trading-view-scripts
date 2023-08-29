@@ -11,10 +11,7 @@ var color cyan_color = color.new(#60C3D7, 0)
 var color green_color = color.new(#52A895, 0)
 var color red_color = color.new(#DA4F7A, 0)
 
-var upper_band = hline(30, title = "Upper Band", color = color.new(#000000, 100))
-var lower_band = hline(-30, title = "Lower Band", color = color.new(#000000, 100))
-fill(upper_band, lower_band, title = "Background", color = color.new(#FFFFFF, 98))
-hline(0, title = "Middle Line", linestyle = hline.style_dotted, color = color.new(#FFFFFF, 90))
+hline(0, title = "Middle Line", linestyle = hline.style_dotted, color = color.new(#FFFFFF, 95))
 
 
 // Williams %R
@@ -27,6 +24,9 @@ var string williams_r_txt = 'Williams %R'
 int williams_r_input = input.int(title = williams_r_txt, defval = 14)
 float williams_r = get_williams_r(williams_r_input)
 plot(williams_r + 50, title = williams_r_txt, color = blue_color)
+var williams_r_upper_band = hline(30, title = "Williams %R Upper Band", color = color.new(#000000, 100))
+var williams_r_lower_band = hline(-30, title = "Williams %R Lower Band", color = color.new(#000000, 100))
+fill(williams_r_upper_band, williams_r_lower_band, title = "Williams %R Band Background", color = color.new(#4577ED, 90))
 
 
 
@@ -50,7 +50,9 @@ float uo_middle_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_tr
 float uo_long_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_long_timeframes_input)
 float uo = get_uo(uo_short_timeframes_avg, uo_middle_timeframes_avg, uo_long_timeframes_avg)
 plot(uo - 50, color = purple_color, title = uo_txt)
-
+var uo_upper_band = hline(20, title = "Ultimate Oscillator Upper Band", color = color.new(#000000, 100))
+var uo_lower_band = hline(-20, title = "Ultimate Oscillator Lower Band", color = color.new(#000000, 100))
+fill(uo_upper_band, uo_lower_band, title = "Ultimate Oscillator Band Background", color = color.new(#7859BC, 90))
 
 
 
