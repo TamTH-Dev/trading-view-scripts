@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("Advanced Signal", shorttitle="Advanced Signal", format=format.price, precision=2, timeframe="", timeframe_gaps=true)
+indicator("Advanced Signal", shorttitle = "Advanced Signal", format = format.price, precision = 2, timeframe = "", timeframe_gaps = true)
 
 
 var color blue_color = color.new(#4577ED, 0)
@@ -13,10 +13,10 @@ var color red_color = color.new(#DA4F7A, 0)
 var color green_color_opaque = color.new(#52A895, 90)
 var color red_color_opaque = color.new(#DA4F7A, 90)
 
-var upper_band = hline(30, title="Upper Band", color=color.new(#000000, 100))
-var lower_band = hline(-30, title="Lower Band", color=color.new(#000000, 100))
-fill(upper_band, lower_band, title="Background", color=color.new(#FFFFFF, 98))
-hline(0, title="Middle Line", linestyle=hline.style_dotted, color=color.new(#FFFFFF, 90))
+var upper_band = hline(30, title = "Upper Band", color = color.new(#000000, 100))
+var lower_band = hline(-30, title = "Lower Band", color = color.new(#000000, 100))
+fill(upper_band, lower_band, title = "Background", color = color.new(#FFFFFF, 98))
+hline(0, title = "Middle Line", linestyle = hline.style_dotted, color = color.new(#FFFFFF, 90))
 
 
 // Williams %R
@@ -26,9 +26,9 @@ method get_williams_r(int timeframes) =>
 	100 * (close - highest_price) / (highest_price - lowest_price)
 
 var string williams_r_txt = 'Williams %R'
-int williams_r_input = input.int(title=williams_r_txt, defval=14)
+int williams_r_input = input.int(title = williams_r_txt, defval = 14)
 float williams_r = get_williams_r(williams_r_input)
-plot(williams_r + 50, title=williams_r_txt, color=blue_color)
+plot(williams_r + 50, title = williams_r_txt, color = blue_color)
 
 
 
@@ -39,9 +39,9 @@ method get_uo_timeframes_avg(float buying_pressure, float true_range, int timefr
 method get_uo(float short_timeframes_avg, float middle_timeframes_avg, float long_timeframes_avg) => 100 * (short_timeframes_avg * 4 + middle_timeframes_avg * 2 + long_timeframes_avg) / 7
 
 var string uo_txt = 'Ultimate Oscillator'
-int uo_short_timeframes_input = input.int(7, minval=1, title = 'Ultimate Oscillator Short Timeframes')
-int uo_middle_timeframes_input = input.int(14, minval=1, title = 'Ultimate Oscillator Middle Timeframes')
-int uo_long_timeframes_input = input.int(28, minval=1, title = 'Ultimate Oscillator Long Timeframes')
+int uo_short_timeframes_input = input.int(7, minval = 1, title = 'Ultimate Oscillator Short Timeframes')
+int uo_middle_timeframes_input = input.int(14, minval = 1, title = 'Ultimate Oscillator Middle Timeframes')
+int uo_long_timeframes_input = input.int(28, minval = 1, title = 'Ultimate Oscillator Long Timeframes')
 float uo_prior_close = close[1]
 float uo_max_price = math.max(high, uo_prior_close)
 float uo_min_price = math.min(low, uo_prior_close)
@@ -51,7 +51,7 @@ float uo_short_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_tru
 float uo_middle_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_middle_timeframes_input)
 float uo_long_timeframes_avg = get_uo_timeframes_avg(uo_buying_pressure, uo_true_range, uo_long_timeframes_input)
 float uo = get_uo(uo_short_timeframes_avg, uo_middle_timeframes_avg, uo_long_timeframes_avg)
-plot(uo - 50, color=purple_color, title=uo_txt)
+plot(uo - 50, color = purple_color, title = uo_txt)
 
 
 
@@ -60,12 +60,12 @@ plot(uo - 50, color=purple_color, title=uo_txt)
 // Stochastic RSI
 var string stoch_k_txt = 'Stochastic K'
 var string stoch_d_txt = 'Stochastic D'
-smooth_k = input.int(3, stoch_k_txt, minval=1)
-smooth_d = input.int(3, stoch_d_txt, minval=1)
-rsi_timeframes = input.int(14, "Stochastic RSI Timeframes", minval=1)
-stoch_timeframes = input.int(14, "Stochastic Timeframes", minval=1)
+smooth_k = input.int(3, stoch_k_txt, minval = 1)
+smooth_d = input.int(3, stoch_d_txt, minval = 1)
+rsi_timeframes = input.int(14, "Stochastic RSI Timeframes", minval = 1)
+stoch_timeframes = input.int(14, "Stochastic Timeframes", minval = 1)
 stoch_rsi = ta.rsi(close, rsi_timeframes)
 stoch_k = ta.sma(ta.stoch(stoch_rsi, stoch_rsi, stoch_rsi, stoch_timeframes), smooth_k)
 stoch_d = ta.sma(stoch_k, smooth_d)
-plot(stoch_k - 50, stoch_k_txt, color=green_color)
-plot(stoch_d - 50, stoch_d_txt, color=red_color)
+plot(stoch_k - 50, stoch_k_txt, color = green_color)
+plot(stoch_d - 50, stoch_d_txt, color = red_color)
