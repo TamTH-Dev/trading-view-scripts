@@ -10,8 +10,6 @@ var color orange_color = color.new(#F2AB47, 0)
 var color cyan_color = color.new(#60C3D7, 0)
 var color green_color = color.new(#52A895, 0)
 var color red_color = color.new(#DA4F7A, 0)
-var color green_color_opaque = color.new(#52A895, 90)
-var color red_color_opaque = color.new(#DA4F7A, 90)
 
 var upper_band = hline(30, title = "Upper Band", color = color.new(#000000, 100))
 var lower_band = hline(-30, title = "Lower Band", color = color.new(#000000, 100))
