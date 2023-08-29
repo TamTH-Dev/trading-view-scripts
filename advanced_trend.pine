@@ -45,8 +45,8 @@ method get_adx(simple int di_timeframes, int adx_timeframes) =>
 float adx = adx_ini - 30
 float di_plus = di_plus_ini - 30
 float di_minus = di_minus_ini - 30
-plot(di_minus, color = color.new(#DA4F7A, 40), linewidth = 1, title = "-DI")
-plot(di_plus, color = color.new(#52A895, 40), linewidth = 1, title = "+DI")
+plot(di_minus, color = color.new(#DA4F7A, 20), linewidth = 1, title = "-DI")
+plot(di_plus, color = color.new(#52A895, 20), linewidth = 1, title = "+DI")
 plot(adx, color = blue_color, linewidth = 1, title = "ADX")
 
 var adx_w_line = hline(-30, linestyle = hline.style_dotted, color = color.new(color.black, 100), linewidth = 0, title = "ADX Initialization")
