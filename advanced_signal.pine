@@ -20,7 +20,7 @@ method get_williams_r(int timeframes) =>
 	lowest_price = ta.lowest(timeframes)
 	100 * (close - highest_price) / (highest_price - lowest_price)
 
-var string williams_r_txt = 'Williams %R'
+var string williams_r_txt = "Williams %R"
 int williams_r_input = input.int(title = williams_r_txt, defval = 14)
 float williams_r = get_williams_r(williams_r_input)
 plot(williams_r + 50, title = williams_r_txt, color = blue_color)
@@ -36,10 +36,10 @@ fill(williams_r_upper_band, williams_r_lower_band, title = "Williams %R Band Bac
 method get_uo_timeframes_avg(float buying_pressure, float true_range, int timeframes) => math.sum(buying_pressure, timeframes) / math.sum(true_range, timeframes)
 method get_uo(float short_timeframes_avg, float middle_timeframes_avg, float long_timeframes_avg) => 100 * (short_timeframes_avg * 4 + middle_timeframes_avg * 2 + long_timeframes_avg) / 7
 
-var string uo_txt = 'Ultimate Oscillator'
-int uo_short_timeframes_input = input.int(7, minval = 1, title = 'Ultimate Oscillator Short Timeframes')
-int uo_middle_timeframes_input = input.int(14, minval = 1, title = 'Ultimate Oscillator Middle Timeframes')
-int uo_long_timeframes_input = input.int(28, minval = 1, title = 'Ultimate Oscillator Long Timeframes')
+var string uo_txt = "Ultimate Oscillator"
+int uo_short_timeframes_input = input.int(7, minval = 1, title = "Ultimate Oscillator Short Timeframes")
+int uo_middle_timeframes_input = input.int(14, minval = 1, title = "Ultimate Oscillator Middle Timeframes")
+int uo_long_timeframes_input = input.int(28, minval = 1, title = "Ultimate Oscillator Long Timeframes")
 float uo_prior_close = close[1]
 float uo_max_price = math.max(high, uo_prior_close)
 float uo_min_price = math.min(low, uo_prior_close)
@@ -58,8 +58,8 @@ fill(uo_upper_band, uo_lower_band, title = "Ultimate Oscillator Band Background"
 
 
 // Stochastic RSI
-var string stoch_k_txt = 'Stochastic K'
-var string stoch_d_txt = 'Stochastic D'
+var string stoch_k_txt = "Stochastic K"
+var string stoch_d_txt = "Stochastic D"
 smooth_k = input.int(3, stoch_k_txt, minval = 1)
 smooth_d = input.int(3, stoch_d_txt, minval = 1)
 rsi_timeframes = input.int(14, "Stochastic RSI Timeframes", minval = 1)
