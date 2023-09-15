@@ -1,51 +1,34 @@
 // © tamth_
 // @version=5
-indicator('RSI Momentum Trend', shorttitle = 'RSI Momentum Trend', overlay = true)
+indicator("RSI Momentum Trend", shorttitle = "RSI Momentum Trend", overlay = true)
 
-// ** ---> Inputs ------------- {
-var bool positive       = false
-var bool negative       = false
-string RSI_group        = "RSI Settings"
-string mom_group        = "Momentum Vales"
-string visual           = "Visuals" 
-int Len2                = input(14,"RSI 1️⃣",inline = "rsi",group = RSI_group)
-int pmom                = input(65," Positive above",inline = "rsi1",group =RSI_group )
-int nmom                = input(32,"Negative below",inline = "rsi1",group =RSI_group )
-bool showlabels         = input(true,"Show Momentum ❓",inline = "001",group =visual )
-color p                 = input(color.rgb(76, 175, 79, 62),"Positive",inline = "001",group =visual )
-color n                 = input(color.rgb(255, 82, 82, 66),"Negative",inline = "001",group =visual )
-bool filleshow          = input(true,"Show highlighter ❓",inline = "002",group =visual )
-color bull              = input(color.rgb(76, 175, 79, 62),"Bull",inline = "002",group =visual )
-color bear              = input(color.rgb(255, 82, 82, 66),"Bear",inline = "002",group =visual )
-rsi                     = ta.rsi(close, Len2)
-//------------------- }
 
-// ** ---> Momentums ------------- {
+// RSI Momentum Trend
+var bool is_positive = false
+var bool is_negative = false
+int rsi_timeframes = input.int(title = "RSI Timeframes", defval = 8)
+color positive_color = input.color(title = "Positive highlight", defval = color.new(#00ff00, 80)) 
+color negative_color = input.color(title = "Negative highlight", defval = color.new(#ff0000, 80)) 
+rsi = ta.rsi(close, rsi_timeframes)
 
-p_mom               = rsi[1] < pmom and rsi > pmom and rsi > nmom and ta.change(ta.ema(close,5)) > 0
-n_mom               = rsi < nmom and ta.change(ta.ema(close,5)) < 0
-if p_mom
-    positive:= true
-    negative:= false
+int positive_mom_length = 65
+int negative_mom_length = 32 
+positive_mom = rsi[1] < positive_mom_length and rsi > positive_mom_length and rsi > negative_mom_length and ta.change(ta.ema(close, 5)) > 0
+negative_mom = rsi < negative_mom_length and ta.change(ta.ema(close, 5)) < 0
 
-if n_mom
-    positive:= false
-    negative:= true     
+if positive_mom
+    is_positive:= true
+    is_negative:= false
 
-// ** ---> Entry Conditions ------------- {
+if negative_mom
+    is_positive:= false
+    is_negative:= true     
 
-a = plot(filleshow ? ta.ema(high,5) : na,display = display.none,editable = false)
-b = plot(filleshow ? ta.ema(low,10) : na,style = plot.style_stepline,color = color.red,display = display.none,editable = false)
+a = plot(ta.ema(high, 5), display = display.none, editable = false)
+b = plot(ta.ema(low, 10), style = plot.style_stepline, display = display.none, editable = false)
+fill(a, b, color = is_positive ? positive_color : negative_color, editable = false)
 
-// fill(a,b,color = color.from_gradient(rsi14,35,pmom,color.rgb(255, 82, 82, 66),color.rgb(76, 175, 79, 64)) )
-fill(a,b,color = positive ? bull :bear ,editable = false)
-
-//plotting 
-pcondition = positive and not positive[1]
-ncondition2 = negative and not negative[1]
-plotshape(showlabels ? pcondition: na , title="Positive Signal",style=shape.labelup, color=p, location= location.belowbar , size=size.tiny,text= "Positive",textcolor = color.white)
-plotshape(showlabels ? ncondition2: na , title="Negative Signal",style=shape.labeldown, color=n, location= location.abovebar , size=size.tiny,text = "Negative",textcolor = color.white)
-// Alerts //
-alertcondition(pcondition,"Positive Trend")
-alertcondition(ncondition2,"Negative Trend")
-//
+positive_signal = is_positive and not is_positive[1]
+negative_signal = is_negative and not is_negative[1]
+plotshape(positive_signal, title = "Buy Signal", style = shape.labelup, color = color.new(#00ff00, 50), location = location.belowbar, size = size.tiny, text = "B", textcolor = color.white)
+plotshape(negative_signal, title = "Sell Signal", style = shape.labeldown, color = color.new(#ff0000, 50), location = location.abovebar, size = size.tiny, text = "S", textcolor = color.white)
