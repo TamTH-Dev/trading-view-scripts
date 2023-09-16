@@ -3,8 +3,9 @@
 indicator(title = "Super SSL", shorttitle = "Super SSL")
 
 
-ssl_timeframes = input.int(title= "SSL Timeframes", defval = 12)
-ssl_ma_type = input.string(title = "SSL MA Type", defval = "SMA", options = ["SMA", "EMA"])
+int ssl_timeframes = input.int(title= "SSL Timeframes", defval = 14)
+int super_trend_timeframes = input.int(title= "Super Trend Timeframes", defval = 14)
+string ssl_ma_type = input.string(title = "SSL MA Type", defval = "SMA", options = ["SMA", "EMA"])
 
 
 method ma(simple int timeframes, series float src, string type) =>
@@ -22,8 +23,7 @@ method ma(simple int timeframes, series float src, string type) =>
 
 
 get_super_trend_state() =>
-    int super_trend_mult = 2
-    int super_trend_timeframes = 15
+    float super_trend_mult = 2.0
     float up_level = hl2 - (super_trend_mult * ta.atr(super_trend_timeframes))
     float dn_level = hl2 + (super_trend_mult * ta.atr(super_trend_timeframes))
 
@@ -104,5 +104,5 @@ bool long = long_signal[1]
 bool short = short_signal[1]
 long := long and (long_state or super_trend_state == 1)
 short := short and (short_state or super_trend_state == -1)
-plotshape(long ? upper_line : na, title = "Crossover", location = location.absolute, style = shape.diamond, size = size.tiny, color = color.green)
-plotshape(short ? upper_line : na, title = "Crossunder", location = location.absolute, style = shape.diamond, size = size.tiny, color = color.red)
+plotshape(long ? upper_line : na, title = "Crossover", location = location.absolute, style = shape.circle, size = size.tiny, color = color.green)
+plotshape(short ? upper_line : na, title = "Crossunder", location = location.absolute, style = shape.circle, size = size.tiny, color = color.red)
