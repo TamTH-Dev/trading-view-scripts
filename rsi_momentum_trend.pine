@@ -6,7 +6,7 @@ indicator("RSI Momentum Trend", shorttitle = "RSI Momentum Trend", overlay = tru
 // RSI Momentum Trend
 var bool is_positive = false
 var bool is_negative = false
-int rsi_timeframes = input.int(title = "RSI Timeframes", defval = 8)
+int rsi_timeframes = input.int(title = "RSI Timeframes", defval = 4)
 color positive_color = input.color(title = "Positive highlight", defval = color.new(#00ff00, 80)) 
 color negative_color = input.color(title = "Negative highlight", defval = color.new(#ff0000, 80)) 
 rsi = ta.rsi(close, rsi_timeframes)
