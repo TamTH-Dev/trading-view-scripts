@@ -7,8 +7,6 @@ indicator("RSI Momentum Trend", shorttitle = "RSI Momentum Trend", overlay = tru
 var bool is_positive = false
 var bool is_negative = false
 int rsi_timeframes = input.int(title = "RSI Timeframes", defval = 4)
-color positive_color = input.color(title = "Positive highlight", defval = color.new(#00ff00, 80)) 
-color negative_color = input.color(title = "Negative highlight", defval = color.new(#ff0000, 80)) 
 rsi = ta.rsi(close, rsi_timeframes)
 
 int positive_mom_length = 65
@@ -24,11 +22,11 @@ if negative_mom
     is_positive:= false
     is_negative:= true     
 
-a = plot(ta.ema(high, 5), display = display.none, editable = false)
-b = plot(ta.ema(low, 10), style = plot.style_stepline, display = display.none, editable = false)
-fill(a, b, color = is_positive ? positive_color : negative_color, editable = false)
+a = plot(ta.ema(high, 5), display = display.pane, editable = false)
+b = plot(ta.ema(low, 10), style = plot.style_stepline, display = display.pane, editable = false)
+fill(a, b, title = "Trend Color", color = is_positive ? color.new(#00ff00, 90) : color.new(#ff0000, 90))
 
 positive_signal = is_positive and not is_positive[1]
 negative_signal = is_negative and not is_negative[1]
-plotshape(positive_signal, title = "Buy Signal", style = shape.labelup, color = color.new(#00ff00, 50), location = location.belowbar, size = size.tiny, text = "B", textcolor = color.white)
-plotshape(negative_signal, title = "Sell Signal", style = shape.labeldown, color = color.new(#ff0000, 50), location = location.abovebar, size = size.tiny, text = "S", textcolor = color.white)
+plotshape(positive_signal, title = "Buy Signal", style = shape.labelup, color = color.new(#00ff00, 50), location = location.belowbar, size = size.tiny, text = "B", textcolor = color.white, display = display.pane)
+plotshape(negative_signal, title = "Sell Signal", style = shape.labeldown, color = color.new(#ff0000, 50), location = location.abovebar, size = size.tiny, text = "S", textcolor = color.white, display = display.pane)
