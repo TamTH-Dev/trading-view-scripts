@@ -1,0 +1,108 @@
+// © tamth_
+// @version=5
+indicator(title = "Super SSL", shorttitle = "Super SSL")
+
+
+ssl_timeframes = input.int(title= "SSL Timeframes", defval = 12)
+ssl_ma_type = input.string(title = "SSL MA Type", defval = "SMA", options = ["SMA", "EMA"])
+
+
+method ma(simple int timeframes, series float src, string type) =>
+    float ma = 0.0
+    float sma = ta.sma(src, timeframes)
+    float ema = ta.ema(src, timeframes)
+
+    if (type == "SMA")
+        ma := sma
+    
+    if (type == "EMA")
+        ma := ema
+    
+    ma
+
+
+get_super_trend_state() =>
+    int super_trend_mult = 2
+    int super_trend_timeframes = 15
+    float up_level = hl2 - (super_trend_mult * ta.atr(super_trend_timeframes))
+    float dn_level = hl2 + (super_trend_mult * ta.atr(super_trend_timeframes))
+
+    float up_trend = 0.0
+    float down_trend = 0.0
+    int trend = 0
+    up_trend := close[1] > up_trend[1] ? math.max(up_level, up_trend[1]) : up_level
+    down_trend := close[1] < down_trend[1] ? math.min(dn_level, down_trend[1]) : dn_level
+    trend := close > down_trend[1] ? 1: close < up_trend[1] ? -1 : nz(trend[1], 1)
+
+    float super_trend_line = 0.0
+    
+    if (trend == 1)
+        super_trend_line := up_trend 
+    else 
+        super_trend_line := down_trend
+            
+    bool long_state = close - super_trend_line > 0        
+    
+    int result = 0
+
+    if long_state
+        result := 1
+    else
+        result := -1
+
+    result
+
+
+method get_ssl_channel(simple int timeframes, series float src, string type) =>
+    float upper_ma = ma(timeframes, high, type)
+    float lower_ma = ma(timeframes, low, type)
+    float hlv = na
+    
+    if (src > upper_ma)
+        hlv := 1
+    else
+        if (src < lower_ma)
+            hlv := -1
+        else
+            hlv := hlv[1]
+
+    float ssl_channel_up = na
+    float ssl_channel_down = na
+
+    if (hlv < 0)
+        ssl_channel_down := upper_ma
+        ssl_channel_up := lower_ma
+    else
+        ssl_channel_down := lower_ma
+        ssl_channel_up := upper_ma
+
+    [ssl_channel_up, ssl_channel_down]
+
+
+[ssl_channel_up, ssl_channel_down] = get_ssl_channel(ssl_timeframes, close, ssl_ma_type)
+upper_line = ssl_channel_up
+lower_line = ssl_channel_down
+plot(upper_line, title = "SSL Channel Up", color = color.green)
+plot(lower_line, title = "SSL Channel Down", color = color.red)
+
+int super_trend_state = get_super_trend_state()
+color bg_color = na
+
+if super_trend_state == 1
+    bg_color := color.new(#00FF00, 80)
+if super_trend_state == -1
+    bg_color := color.new(#FF0000, 80)
+
+bgcolor(bg_color)
+
+
+bool long_signal = ta.crossover(upper_line, lower_line)
+bool short_signal = ta.crossunder(upper_line, lower_line)
+bool long_state = super_trend_state[1] == 1 ? true : false
+bool short_state = super_trend_state[1] == -1 ? true : false
+bool long = long_signal[1]
+bool short = short_signal[1]
+long := long and (long_state or super_trend_state == 1)
+short := short and (short_state or super_trend_state == -1)
+plotshape(long ? upper_line : na, title = "Crossover", location = location.absolute, style = shape.diamond, size = size.tiny, color = color.green)
+plotshape(short ? upper_line : na, title = "Crossunder", location = location.absolute, style = shape.diamond, size = size.tiny, color = color.red)
