@@ -89,9 +89,9 @@ int super_trend_state = get_super_trend_state()
 color bg_color = na
 
 if super_trend_state == 1
-    bg_color := color.new(#00FF00, 80)
+    bg_color := color.new(#00FF00, 90)
 if super_trend_state == -1
-    bg_color := color.new(#FF0000, 80)
+    bg_color := color.new(#FF0000, 90)
 
 bgcolor(bg_color)
 
