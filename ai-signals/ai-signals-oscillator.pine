@@ -1,0 +1,47 @@
+// © tamth_
+// @version=5
+indicator("AI Signals Oscillator", overlay=false, precision=0)
+
+// Get user input
+len   = input.int(9, "Length", 1)
+style = input.string("Columns", "Style", ["Columns", "Histogram", "Matrix"])
+// Get Components
+top = ta.highest(high, len)
+bot = ta.lowest(low, len)
+osc = ta.mom(ta.sma(ta.ema(close, len), len), len)
+osc2 = osc * 0.825
+osc3 = osc * 0.650
+osc4 = osc * 0.490
+osc5 = osc * 0.345
+osc6 = osc * 0.215
+osc7 = osc * 0.100
+osc8 = osc * 0.010
+oscRis = osc > osc[1]
+oscFal = osc < osc[1]
+oscA0  = osc > 0
+oscB0  = osc < 0
+oscTop = oscFal and oscRis[1]
+oscBot = oscRis and oscFal[1]
+bullR = oscB0 and oscBot and osc > ta.valuewhen(oscB0 and oscBot, osc, 1) and bot < ta.valuewhen(oscB0 and oscBot, bot, 1)
+bearR = oscA0 and oscTop and osc < ta.valuewhen(oscA0 and oscTop, osc, 1) and top > ta.valuewhen(oscA0 and oscTop, top, 1)
+bullH = oscB0 and oscBot and osc < ta.valuewhen(oscB0 and oscBot, osc, 1) and bot > ta.valuewhen(oscB0 and oscBot, bot, 1)
+bearH = oscA0 and oscTop and osc > ta.valuewhen(oscA0 and oscTop, osc, 1) and top < ta.valuewhen(oscA0 and oscTop, top, 1)
+// Colors
+green = #00DD00, green50 = color.new(green, 50), green20 = color.new(green, 80)
+red   = #DD0000, red50   = color.new(red, 50),   red20   = color.new(red, 80)
+colorOsc = oscA0 ? (oscRis ? green50 : green20) : (oscFal ? red50 : red20)
+// Plots
+plot(osc,  "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc2, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc3, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc4, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc5, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc6, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc7, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(osc8, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
+plot(oscB0 and oscBot ? osc : na, "", bullR or bullH ? red20 : na, 2, editable=false)
+plot(oscA0 and oscTop ? osc : na, "", bearR or bearH ? green20 : na, 2, editable=false)
+plotshape(bullR ? osc : na, "Regular Bullish", shape.labelup, location.absolute, green50, 0, "RB", color.white, false, size.tiny)
+plotshape(bearR ? osc : na, "Regular Bearish", shape.labeldown, location.absolute, red50, 0, "RB", color.white, false, size.tiny)
+plotshape(bullH ? osc : na, "Hidden Bullish", shape.labelup, location.absolute, green20, 0, "HB", color.white, false, size.tiny)
+plotshape(bearH ? osc : na, "Hidden Bearish", shape.labeldown, location.absolute, red20, 0, "HB", color.white, false, size.tiny)

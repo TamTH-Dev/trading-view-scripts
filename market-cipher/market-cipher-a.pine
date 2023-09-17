@@ -1,0 +1,72 @@
+// © tamth_
+// @version=5
+indicator("MarketCipher A", overlay=true)
+
+//-------------- MarketCipher A | https://marketciphertrading.com ------------//
+// Get user input
+version       = input.string("2.1.2", "Version")
+pivotPeriod   = input.int(1, "H/L Pivot Days Back", 1)
+showPivotHigh = input(false, "Show Pivot High")
+showPivotLow  = input(false, "Show Pivot Low")
+showRibbon1   = input(true, "Show Ribbon 1")
+showRibbon2   = input(true, "Show Ribbon 2")
+showRibbon3   = input(true, "Show Ribbon 3")
+showRibbon4   = input(true, "Show Ribbon 4")
+showRibbon5   = input(true, "Show Ribbon 5")
+showRibbon6   = input(true, "Show Ribbon 6")
+showRibbon7   = input(true, "Show Ribbon 7")
+showRibbon8   = input(true, "Show Ribbon 8")
+showRibbon9   = input(false, "Show Ribbon 9")
+ribbon9Len    = input(21, "Ribbon9")
+// Functions
+blueWaves_vwap(src, chlLen, avgLen) =>
+    esa = ta.ema(src, chlLen)
+    d = ta.ema(math.abs(src - esa), chlLen)
+    ci = (src - esa) / (0.015 * d)
+    bw1 = ta.ema(ci, avgLen)
+    bw2 = ta.sma(bw1, 3)
+    vwap = bw1 - bw2
+    [bw1, bw2, vwap]
+// Get components
+pivotHigh = request.security(syminfo.tickerid, "D", ta.highest(high, pivotPeriod), barmerge.gaps_off, barmerge.lookahead_on)
+pivotLow  = request.security(syminfo.tickerid, "D", ta.lowest(low, pivotPeriod),   barmerge.gaps_off, barmerge.lookahead_on)
+ema1 = ta.ema(close, 5)
+ema2 = ta.ema(close, 11)
+ema3 = ta.ema(close, 15)
+ema4 = ta.ema(close, 18)
+ema5 = ta.ema(close, 21)
+ema6 = ta.ema(close, 25)
+ema7 = ta.ema(close, 29)
+ema8 = ta.ema(close, 33)
+sma9 = ta.sma(close, ribbon9Len)
+[bw1, bw2, vwap] = blueWaves_vwap(hlc3, 9, 12)
+stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
+// Signals
+yellowDiamond = math.max(open, close) > ema1 and ema1 > ema2 and ema1 > ema8 and vwap > 0
+blueTriangle  = ta.crossover(ema1, ema6) and vwap > 0 and (bw1 > - 15 or bw2 > -25) and stcRsiMod < 80 and not ta.crossover(ema2, ema8)
+greenDot      = ta.crossover(ema2, ema8) and yellowDiamond
+redX          = ta.crossunder(ema1, ema2)
+redDiamond    = ta.crossunder(bw1, bw2)
+yellowX       = redDiamond and bw1 < -40 and stcRsiMod < 20
+bloodDiamond  = redX and redDiamond
+// Plots
+plot(showPivotHigh ? pivotHigh : na, "Pivot High", color.new(#4DA6FF, 20))
+plot(showPivotLow ? pivotLow : na, "Pivot Low", color.new(#4DA6FF, 20))
+p1 = plot(showRibbon1 ? ema1 : na, "Ribbon 1", ema1 < ema8 ? #505662 : #0166CC, 2)
+p2 = plot(showRibbon2 ? ema2 : na, "Ribbon 2", ema2 < ema8 ? #505662 : #198CFF, 2)
+p3 = plot(showRibbon3 ? ema3 : na, "Ribbon 3", ema3 < ema8 ? #505662 : #4DA6FF, 2)
+p4 = plot(showRibbon4 ? ema4 : na, "Ribbon 4", ema4 < ema8 ? #505662 : #80BFFF, 2)
+p5 = plot(showRibbon5 ? ema5 : na, "Ribbon 5", ema5 < ema8 ? #505662 : #99CCFF, 2)
+p6 = plot(showRibbon6 ? ema6 : na, "Ribbon 6", ema6 < ema8 ? #505662 : #B4D9FF, 2)
+p7 = plot(showRibbon7 ? ema7 : na, "Ribbon 7", ema7 < ema8 ? #505662 : #CCE6FF, 2)
+p8 = plot(showRibbon8 ? ema8 : na, "Ribbon 8", ema8 > ema7 ? #505662 : #E6F2FF, 2)
+p9 = plot(showRibbon9 ? sma9 : na, "Ribbon 9", #FFFB03, 2)
+plotshape(yellowDiamond, "Yellow Diamond", shape.diamond, location.abovebar, color.new(#FFFB03, 70), size=size.tiny)
+plotshape(blueTriangle, "Blue Triangle", shape.triangleup, location.abovebar, #4259F4, size=size.small)
+plotshape(greenDot, "Green Dot", shape.circle, location.abovebar, #03FC04, size=size.tiny)
+plotshape(redX, "Red X", shape.xcross, location.abovebar, #FF0100, size=size.tiny)
+plotshape(yellowX, "Yellow X", shape.xcross, location.abovebar, #FFFB03, size=size.small)
+plotshape(redDiamond, "Red Diamond", shape.diamond, location.abovebar, color.new(#FF0100, 45), size=size.tiny)
+plotshape(bloodDiamond, "Blood Diamond", shape.diamond, location.abovebar, #FF0100, size=size.small)
+fill(p2, p8, color.new(#B4D9FF, 90))
+fill(p1, p2, color.new(#80B3FF, 85))

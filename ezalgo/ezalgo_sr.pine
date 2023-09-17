@@ -1,38 +1,7 @@
-// 8888888888 8888888b.  8888888888 8888888888             d8888 888      .d8888b.   .d88888b.              As you
-// 888        888   Y88b 888        888                   d88888 888     d88P  Y88b d88P" "Y88b             Can see
-// 888        888    888 888        888                  d88P888 888     888    888 888     888             Are all
-// 8888888    888   d88P 8888888    8888888             d88P 888 888     888        888     888 .d8888b     Basic free
-// 888        8888888P"  888        888                d88P  888 888     888  88888 888     888 88K         tradingview
-// 888        888 T88b   888        888               d88P   888 888     888    888 888     888 "Y8888b.    indicators
-// 888        888  T88b  888        888              d8888888888 888     Y88b  d88P Y88b. .d88P      X88    repackaged
-// 888        888   T88b 8888888888 8888888888      d88P     888 88888888 "Y8888P88  "Y88888P"   88888P'    into one
-//
-// FAQ
-//
-// Why?
-// I want you to see what you are willing to pay hundereds of dollars a month
+// © tamth_
+// @version=5
+indicator("EzAlgo SR", overlay=true)
 
-// Has the code been leaked/hacked?
-// No, this code has been created only using common sense and public information from the internet
-
-// What's the accuracy I can expect from this version of the indicator?
-// I'd say it's about 95% the same as the one you would pay
-
-// The indicator needs to be updated?
-// Write me a private message on TradingView (Nick42_for_win)
-
-// Can I suggest an indicator to get a FREE ALGOs version?
-// Write me a private message on TradingView (Nick42_for_win)
-
-// Do you get any monetary return from this project?
-// Nope, 0$
-
-// Enjoy ;)
-
-//@version=5
-indicator("FREE ALGOs [EzAlgo SR]", overlay=true)
-
-//------------------- EzAlgo SR | https://www.ezalgo.co ----------------------//
 // Get user input
 enableSR   = input(true, "SR On/Off", group="SR")
 colorSup   = input(#00DBFF, "Support Color", group="SR")

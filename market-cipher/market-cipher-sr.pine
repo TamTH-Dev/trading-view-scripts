@@ -1,0 +1,33 @@
+// © tamth_
+// @version=5
+indicator("MarketCipher SR", overlay=true)
+
+//------------- MarketCipher SR | https://marketciphertrading.com ------------//
+// Get user input
+version     = input.string("2.2.0", "Version")
+pivotPeriod = input.int(1, "H/L Pivot Days Back", 1)
+resolution  = input.timeframe("15", "Resolution")
+volumeMaLen = input(6, "VolumeMA")
+showVwap    = input(true, "VWAP")
+// Functions
+securityNoRep(sym, res, src) => request.security(sym, res, src, barmerge.gaps_off, barmerge.lookahead_on)
+fractal(dir, src) =>
+    fractal = 0.0
+    fractal := dir ? src[3] : fractal[1]
+// Get components
+pivotHigh = securityNoRep(syminfo.tickerid, "D", ta.highest(high, pivotPeriod))
+pivotLow  = securityNoRep(syminfo.tickerid, "D", ta.lowest(low, pivotPeriod))
+centerOfRange = math.avg(pivotHigh, pivotLow)
+volumeMA = ta.sma(volume, volumeMaLen)
+up = high[3] > high[4] and high[4] > high[5] and high[2] < high[3] and high[1] < high[2] and volume[3] > volumeMA[3], fractalUp = fractal(up, high)
+dn = low[3]  < low[4]  and low[4]  < low[5]  and low[2]  > low[3]  and low[1]  > low[2]  and volume[3] > volumeMA[3], fractalDn = fractal(dn, low)
+resistance = securityNoRep(syminfo.tickerid, resolution, fractalUp)
+support    = securityNoRep(syminfo.tickerid, resolution, fractalDn)
+vwap = ta.vwap
+// Plots
+plot(pivotHigh, "Pivot High", color.new(#4DA6FF, 20))
+plot(pivotLow, "Pivot Low", color.new(#4DA6FF, 20))
+plot(centerOfRange, "Center of Range", color.new(#4DA6FF, 20), 2, plot.style_circles)
+plot(resistance, "Cipher Resistance", #EB42F4, 2, plot.style_circles, offset=-1)
+plot(support, "Cipher Support", #FFFB03, 2, plot.style_circles, offset=-1)
+plot(showVwap ? vwap : na, "VWAP", #FFFFFF, 2)

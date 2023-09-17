@@ -1,38 +1,7 @@
-// 8888888888 8888888b.  8888888888 8888888888             d8888 888      .d8888b.   .d88888b.              As you
-// 888        888   Y88b 888        888                   d88888 888     d88P  Y88b d88P" "Y88b             Can see
-// 888        888    888 888        888                  d88P888 888     888    888 888     888             Are all
-// 8888888    888   d88P 8888888    8888888             d88P 888 888     888        888     888 .d8888b     Basic free
-// 888        8888888P"  888        888                d88P  888 888     888  88888 888     888 88K         tradingview
-// 888        888 T88b   888        888               d88P   888 888     888    888 888     888 "Y8888b.    indicators
-// 888        888  T88b  888        888              d8888888888 888     Y88b  d88P Y88b. .d88P      X88    repackaged
-// 888        888   T88b 8888888888 8888888888      d88P     888 88888888 "Y8888P88  "Y88888P"   88888P'    into one
-//
-// FAQ
-//
-// Why?
-// I want you to see what you are willing to pay hundereds of dollars a month
+// © tamth_
+// @version=5
+indicator("EzAlgo V.5", overlay=true, max_labels_count=500)
 
-// Has the code been leaked/hacked?
-// No, this code has been created only using common sense and public information from the internet
-
-// What's the accuracy I can expect from this version of the indicator?
-// I'd say it's about 95% the same as the one you would pay
-
-// The indicator needs to be updated?
-// Write me a private message on TradingView (Nick42_for_win)
-
-// Can I suggest an indicator to get a FREE ALGOs version?
-// Write me a private message on TradingView (Nick42_for_win)
-
-// Do you get any monetary return from this project?
-// Nope, 0$
-
-// Enjoy ;)
-
-//@version=5
-indicator("FREE ALGOs [EzAlgo V.5]", overlay=true, max_labels_count=500)
-
-//------------------ EzAlgo V.5 | https://www.ezalgo.co ----------------------//
 // Get user settings
 showBuySell       = input(true, "Show Buy & Sell", group="BUY & SELL SIGNALS")
 sensitivity       = input.float(3, "Sensitivity (1-6)", 1, 6, group="BUY & SELL SIGNALS")
@@ -278,31 +247,3 @@ plot(showRevBands ? lowerKC3 : na, "Rev.Zone Lower 3", cyan30)
 plot(showRevBands ? lowerKC2 : na, "Rev.Zone Lower 2", cyan30)
 plot(showRevBands ? lowerKC1 : na, "Rev.Zone Lower 1", cyan30)
 fill(plot(showRibbon ? ribbon1 : na, "", na, editable=false), plot(showRibbon ? ribbon2 : na, "", na, editable=false), ribbon1 > ribbon2 ? cyan30 : pink30, "Ribbon Fill Color")
-// Alerts
-alert01 = ta.crossover(ribbon1, ribbon2)
-alert02 = bull
-alert03 = wtDivBull
-alert04 = wtDivBear
-alert05 = bull or bear
-alert06 = ta.crossover(wt1, wt2) and wt2 <= -53
-alert07 = ta.crossunder(wt1, wt2) and wt2 >= 53
-alert08 = ta.crossunder(ribbon1, ribbon2)
-alert09 = rsiOb or rsiOs
-alert10 = bear
-alert11 = ta.cross(ribbon1, ribbon2)
-alerts(sym) =>
-    if alert02 or alert03 or alert04 or alert06 or alert07 or alert10
-        alert_text = alert02 ? "Buy Signal EzAlgo" : alert03 ? "Strong Buy Signal EzAlgo" : alert04 ? "Strong Sell Signal EzAlgo" : alert06 ? "Mild Buy Signal EzAlgo" : alert07 ? "Mild Sell Signal EzAlgo" : "Sell Signal EzAlgo"
-        alert(alert_text,  alert.freq_once_per_bar_close)
-alerts(syminfo.tickerid)
-alertcondition(alert01, "Blue Trend Ribbon Alert", "Blue Trend Ribbon, TimeFrame={{interval}}")
-alertcondition(alert02, "Buy Signal", "Buy Signal EzAlgo")
-alertcondition(alert03, "Divergence Buy Alert", "Strong Buy Signal EzAlgo, TimeFrame={{interval}}")
-alertcondition(alert04, "Divergence Sell Alert", "Strong Sell Signal EzAlgo, TimeFrame={{interval}}")
-alertcondition(alert05, "Either Buy or Sell Signal", "EzAlgo Signal")
-alertcondition(alert06, "Mild Buy Alert", "Mild Buy Signal EzAlgo, TimeFrame={{interval}}")
-alertcondition(alert07, "Mild Sell Alert", "Mild Sell Signal EzAlgo, TimeFrame={{interval}}")
-alertcondition(alert08, "Red Trend Ribbon Alert", "Red Trend Ribbon, TimeFrame={{interval}}")
-alertcondition(alert09, "Reversal Signal", "Reversal Signal")
-alertcondition(alert10, "Sell Signal", "Sell Signal EzAlgo")
-alertcondition(alert11, "Trend Ribbon Color Change Alert", "Trend Ribbon Color Change, TimeFrame={{interval}}")

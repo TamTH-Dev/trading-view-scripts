@@ -1,0 +1,51 @@
+// © tamth_
+// @version=5
+indicator("MarketCipher B", overlay=false)
+
+//-------------- MarketCipher B | https://marketciphertrading.com ------------//
+// Get user input
+version       = input.string("2.2.6", "Version")
+useCurrentRes = input(true, "Use Current Chart Resolution?")
+customRes     = input.timeframe("60", "Use Current Chart Resolution?")
+obLevel1      = input(60, "Over Bought Level 1")
+trigger1      = input(53, "Trigger 1")
+osLevel1      = input(-60, "Over Sold Level 1")
+trigger2      = input(-53, "Trigger 2")
+// Functions
+blueWaves_vwap(src, chlLen, avgLen) =>
+    esa = ta.ema(src, chlLen)
+    d = ta.ema(math.abs(src - esa), chlLen)
+    ci = (src - esa) / (0.015 * d)
+    bw1 = ta.ema(ci, avgLen)
+    bw2 = ta.sma(bw1, 3)
+    vwap = bw1 - bw2
+    [bw1, bw2, vwap]
+moneyFlow(period, mult, y) => ta.sma(((close - open) / (high - low)) * mult, period) - y
+// Get components
+cond(_offset) =>
+    [bw1, bw2, vwap] = blueWaves_vwap(hlc3, 9, 12)
+    moneyFlow = moneyFlow(60, 200, 2.25)
+    rsiMod    = ta.sma(ta.stoch(close, high, low, 40), 2)
+    stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
+    [bw1[_offset], bw2[_offset], vwap[_offset], moneyFlow[_offset], rsiMod[_offset], stcRsiMod[_offset]]
+tf = useCurrentRes ? timeframe.period : customRes
+[bw1, bw2, vwap, moneyFlow, rsiMod, stcRsiMod] = request.security(syminfo.tickerid, tf, cond(not useCurrentRes and barstate.isrealtime ? 1 : 0))
+// Plots
+plot(bw1, "Lt Blue Wave", #90CAF9, 1, plot.style_area)
+plot(bw2, "Blue Wave", color.new(#0C47A1, 10), 1, plot.style_area)
+plot(vwap, "VWAP", color.new(color.yellow, 25), 1, plot.style_area)
+plot(moneyFlow, "Mny Flow", moneyFlow > 0 ? color.new(#3FFB03, 40) : color.new(#FE1000, 40), 2, plot.style_area)
+plotshape(ta.crossover(bw1, bw2) and bw1 < osLevel1, "Buy", shape.circle, location.bottom, #3FFB03, size=size.tiny)
+plot(ta.crossover(bw1, bw2) ? bw2 : na, "Blue Wave Crossing UP", color.new(#01E676, 20), 3, plot.style_circles)
+plot(ta.crossunder(bw1, bw2) ? bw2 : na, "Blue Wave Crossing Down", color.new(color.red, 20), 3, plot.style_circles)
+plot(0, "Zero", color.white)
+plot(100, "100%", color.new(color.white, 50), 1, plot.style_circles)
+plot(obLevel1, "OB 1 Solid", color.new(color.white, 25), 2)
+plot(osLevel1, "OS 1 Solid", color.new(color.white, 25), 2)
+plot(trigger1, "Trigger 1", color.new(color.white, 50), 1, plot.style_circles)
+plot(trigger2, "Trigger 2", color.new(color.white, 50), 1, plot.style_circles)
+plot(rsiMod, "RSI", #E52BE6)
+plot(stcRsiMod, "Sto RSI", rsiMod > stcRsiMod ? #3FFB03 : #FE1000, 2)
+p0 = plot(-93, "Plot", color.new(color.white, 100))
+p1 = plot(-103, "Plot", color.new(color.white, 100))
+fill(p0, p1, moneyFlow > 0 ? color.new(#3FFB03, 70) : color.new(#FE1000, 70))
