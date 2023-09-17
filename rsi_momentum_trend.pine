@@ -22,11 +22,11 @@ if negative_mom
     is_positive:= false
     is_negative:= true     
 
-a = plot(ta.ema(high, 5), display = display.pane, editable = false)
-b = plot(ta.ema(low, 10), style = plot.style_stepline, display = display.pane, editable = false)
-fill(a, b, title = "Trend Color", color = is_positive ? color.new(#00ff00, 90) : color.new(#ff0000, 90))
+a = plot(ta.ema(high, 5), display = display.none, editable = false)
+b = plot(ta.ema(low, 10), style = plot.style_stepline, display = display.none, editable = false)
+fill(a, b, title = "Trend Color", color = is_positive ? color.new(#00ff00, 80) : color.new(#ff0000, 80))
 
 positive_signal = is_positive and not is_positive[1]
 negative_signal = is_negative and not is_negative[1]
-plotshape(positive_signal, title = "Buy Signal", style = shape.labelup, color = color.new(#00ff00, 50), location = location.belowbar, size = size.tiny, text = "B", textcolor = color.white, display = display.pane)
-plotshape(negative_signal, title = "Sell Signal", style = shape.labeldown, color = color.new(#ff0000, 50), location = location.abovebar, size = size.tiny, text = "S", textcolor = color.white, display = display.pane)
+plotshape(positive_signal, title = "Buy Signal", style = shape.diamond, color = color.new(#00ff00, 50), location = location.belowbar, size = size.tiny, display = display.pane)
+plotshape(negative_signal, title = "Sell Signal", style = shape.diamond, color = color.new(#ff0000, 50), location = location.abovebar, size = size.tiny, display = display.pane)
