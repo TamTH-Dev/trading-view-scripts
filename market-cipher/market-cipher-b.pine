@@ -1,51 +1,47 @@
 // © tamth_
 // @version=5
-indicator("MarketCipher B", overlay=false)
+indicator("Market Cipher B", overlay = false)
 
-//-------------- MarketCipher B | https://marketciphertrading.com ------------//
-// Get user input
-version       = input.string("2.2.6", "Version")
-useCurrentRes = input(true, "Use Current Chart Resolution?")
-customRes     = input.timeframe("60", "Use Current Chart Resolution?")
-obLevel1      = input(60, "Over Bought Level 1")
-trigger1      = input(53, "Trigger 1")
-osLevel1      = input(-60, "Over Sold Level 1")
-trigger2      = input(-53, "Trigger 2")
-// Functions
-blueWaves_vwap(src, chlLen, avgLen) =>
-    esa = ta.ema(src, chlLen)
-    d = ta.ema(math.abs(src - esa), chlLen)
-    ci = (src - esa) / (0.015 * d)
-    bw1 = ta.ema(ci, avgLen)
-    bw2 = ta.sma(bw1, 3)
-    vwap = bw1 - bw2
-    [bw1, bw2, vwap]
-moneyFlow(period, mult, y) => ta.sma(((close - open) / (high - low)) * mult, period) - y
-// Get components
-cond(_offset) =>
-    [bw1, bw2, vwap] = blueWaves_vwap(hlc3, 9, 12)
-    moneyFlow = moneyFlow(60, 200, 2.25)
-    rsiMod    = ta.sma(ta.stoch(close, high, low, 40), 2)
-    stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
-    [bw1[_offset], bw2[_offset], vwap[_offset], moneyFlow[_offset], rsiMod[_offset], stcRsiMod[_offset]]
-tf = useCurrentRes ? timeframe.period : customRes
-[bw1, bw2, vwap, moneyFlow, rsiMod, stcRsiMod] = request.security(syminfo.tickerid, tf, cond(not useCurrentRes and barstate.isrealtime ? 1 : 0))
-// Plots
-plot(bw1, "Lt Blue Wave", #90CAF9, 1, plot.style_area)
-plot(bw2, "Blue Wave", color.new(#0C47A1, 10), 1, plot.style_area)
-plot(vwap, "VWAP", color.new(color.yellow, 25), 1, plot.style_area)
-plot(moneyFlow, "Mny Flow", moneyFlow > 0 ? color.new(#3FFB03, 40) : color.new(#FE1000, 40), 2, plot.style_area)
-plotshape(ta.crossover(bw1, bw2) and bw1 < osLevel1, "Buy", shape.circle, location.bottom, #3FFB03, size=size.tiny)
-plot(ta.crossover(bw1, bw2) ? bw2 : na, "Blue Wave Crossing UP", color.new(#01E676, 20), 3, plot.style_circles)
-plot(ta.crossunder(bw1, bw2) ? bw2 : na, "Blue Wave Crossing Down", color.new(color.red, 20), 3, plot.style_circles)
-plot(0, "Zero", color.white)
-plot(100, "100%", color.new(color.white, 50), 1, plot.style_circles)
-plot(obLevel1, "OB 1 Solid", color.new(color.white, 25), 2)
-plot(osLevel1, "OS 1 Solid", color.new(color.white, 25), 2)
-plot(trigger1, "Trigger 1", color.new(color.white, 50), 1, plot.style_circles)
-plot(trigger2, "Trigger 2", color.new(color.white, 50), 1, plot.style_circles)
-plot(rsiMod, "RSI", #E52BE6)
-plot(stcRsiMod, "Sto RSI", rsiMod > stcRsiMod ? #3FFB03 : #FE1000, 2)
-p0 = plot(-93, "Plot", color.new(color.white, 100))
-p1 = plot(-103, "Plot", color.new(color.white, 100))
-fill(p0, p1, moneyFlow > 0 ? color.new(#3FFB03, 70) : color.new(#FE1000, 70))
+
+int overbought = input.int(60, title = "Overbought")
+int oversold = input.int(-60, title = "Oversold")
+
+
+method get_waves_and_vwap(series float src, int chl_len, int avg_len) =>
+    float esa = ta.ema(src, chl_len)
+    float d = ta.ema(math.abs(src - esa), chl_len)
+    float ci = (src - esa) / (0.015 * d)
+    float leading_wave = ta.ema(ci, avg_len)
+    float lagging_wave = ta.sma(leading_wave, 3)
+    float vwap = leading_wave - lagging_wave
+    [leading_wave, lagging_wave, vwap]
+
+method get_money_flow(int period, int mult, float y) => ta.sma(((close - open) / (high - low)) * mult, period) - y
+
+get_expression() =>
+    int offset = 0
+    [leading_wave, lagging_wave, vwap] = get_waves_and_vwap(hlc3, 9, 12)
+    // float moneyflow = get_money_flow(60, 200, 2.25)
+    float moneyflow = get_money_flow(50, 100, 0)
+    float rsi = ta.sma(ta.stoch(close, high, low, 40), 2)
+    float stoch_rsi = ta.sma(ta.stoch(close, high, low, 81), 2)
+    [leading_wave[offset], lagging_wave[offset], vwap[offset], moneyflow[offset], rsi[offset], stoch_rsi[offset]]
+
+[leading_wave, lagging_wave, vwap, moneyflow, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_expression())
+
+
+plot(overbought, title = "Overbought", color = color.new(color.white, 80), display = display.pane)
+plot(oversold, title = "Oversold", color = color.new(color.white, 80), display = display.pane)
+plot(leading_wave, title = "Leading Wave", color = #90c6f2, linewidth = 1, style = plot.style_area)
+plot(lagging_wave, title = "Lagging Wave", color = color.new(#1a54a7, 10), linewidth = 1, style = plot.style_area)
+plot(vwap, title = "VWAP", color = color.new(color.yellow, 30), linewidth = 1, style = plot.style_area)
+plot(moneyflow, title = "Money Flow", color = moneyflow > 0 ? color.new(#39b071, 40) : color.new(#d94c5d, 40), linewidth = 2, style = plot.style_area)
+plot(ta.crossover(leading_wave, lagging_wave) ? lagging_wave : na, title = "Buy Signal", color = color.new(#39b071, 20), linewidth = 3, style = plot.style_circles, display = display.pane)
+plot(ta.crossunder(leading_wave, lagging_wave) ? lagging_wave : na, title = "Sell Signal", color = color.new(#d94c5d, 20), linewidth = 3, style = plot.style_circles, display = display.pane)
+plot(0, title = "Zero", color = color.white, display = display.pane)
+plot(rsi, title = "Rsi", color = #e52be6)
+plot(stoch_rsi, title = "Stoch Rsi", color = rsi > stoch_rsi ? #39b071 : #d94c5d, linewidth = 2)
+var p0 = plot(-100, title = "Money Flow Annotation", color = color.new(color.white, 100), editable = false, display = display.pane)
+var p1 = plot(-105, title = "Money Flow Annotation", color = color.new(color.white, 100), editable = false, display = display.pane)
+fill(p0, p1, title = "Money Flow Annotation", color = moneyflow > 0 ? color.new(#39b071, 20) : color.new(#d94c5d, 20))
+plotshape(ta.crossover(leading_wave, lagging_wave) and leading_wave < oversold, title = "Strong Buy Signal", style = shape.xcross, location = location.bottom, color = #39b071, size = size.tiny, display = display.pane)
