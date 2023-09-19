@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("Advanced Signal", shorttitle = "Advanced Signal", format = format.price, precision = 2, timeframe = "", timeframe_gaps = true)
+indicator("Signals Combination", shorttitle = "Signals Combination", format = format.price, precision = 2, timeframe = "", timeframe_gaps = true)
 
 
 var color blue_color = color.new(#4577ED, 0)

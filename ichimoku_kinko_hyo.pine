@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator(title = "Advanced Ichimoku", shorttitle = "Advanced Ichimoku", overlay = true)
+indicator(title = "Ichimoku Kinko Hyo", shorttitle = "Ichimoku Kinko Hyo", overlay = true)
 
 
 var color white_color = color.white

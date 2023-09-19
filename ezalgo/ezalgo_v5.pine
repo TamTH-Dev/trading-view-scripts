@@ -2,7 +2,7 @@
 // @version=5
 indicator("EzAlgo V.5", overlay=true, max_labels_count=500)
 
-// Get user settings
+
 showBuySell       = input(true, "Show Buy & Sell", group="BUY & SELL SIGNALS")
 sensitivity       = input.float(3, "Sensitivity (1-6)", 1, 6, group="BUY & SELL SIGNALS")
 percentStop       = input.float(1, "Stop Loss % (0 to Disable)", 0, group="BUY & SELL SIGNALS")
@@ -35,16 +35,21 @@ tableBgColor      = input(#2A2A2A, "Table Background Color", group="TREND DASHBO
 sizeDashboard     = input.string("Normal", "Table Size", ["Large", "Normal", "Small", "Tiny"], group="TREND DASHBOARD")
 showRevBands      = input.bool(true, "Show Reversal Bands", group="REVERSAL BANDS")
 lenRevBands       = input.int(30, "Length", group="REVERSAL BANDS")
-// Functions
+
+
 smoothrng(x, t, m) =>
     wper = t * 2 - 1
     avrng = ta.ema(math.abs(x - x[1]), t)
     smoothrng = ta.ema(avrng, wper) * m
+
 rngfilt(x, r) =>
     rngfilt = x
     rngfilt := x > nz(rngfilt[1]) ? x - r < nz(rngfilt[1]) ? nz(rngfilt[1]) : x - r : x + r > nz(rngfilt[1]) ? nz(rngfilt[1]) : x + r
+
 percWidth(len, perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
+
 securityNoRep(sym, res, src) => request.security(sym, res, src, barmerge.gaps_off, barmerge.lookahead_on)
+
 swingPoints(prd) =>
     pivHi = ta.pivothigh(prd, prd)
     pivLo = ta.pivotlow (prd, prd)
@@ -55,6 +60,7 @@ swingPoints(prd) =>
     hl = pivLo and pivLo > last_pivLo ? pivLo : na
     ll = pivLo and pivLo < last_pivLo ? pivLo : na
     [hh, lh, hl, ll]
+
 f_chartTfInMinutes() =>
     float _resInMinutes = timeframe.multiplier * (
       timeframe.isseconds ? 1                   :
@@ -62,10 +68,12 @@ f_chartTfInMinutes() =>
       timeframe.isdaily   ? 60. * 24            :
       timeframe.isweekly  ? 60. * 24 * 7        :
       timeframe.ismonthly ? 60. * 24 * 30.4375  : na)
+
 f_kc(src, len, sensitivity) =>
     basis = ta.sma(src, len)
     span  = ta.atr(len)
     [basis + span * sensitivity, basis - span * sensitivity]
+
 wavetrend(src, chlLen, avgLen) =>
     esa = ta.ema(src, chlLen)
     d = ta.ema(math.abs(src - esa), chlLen)
@@ -73,9 +81,13 @@ wavetrend(src, chlLen, avgLen) =>
     wt1 = ta.ema(ci, avgLen)
     wt2 = ta.sma(wt1, 3)
     [wt1, wt2]
+
 f_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+
 f_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+
 f_fractalize (src) => f_top_fractal(src) ? 1 : f_bot_fractal(src) ? -1 : 0
+
 f_findDivs(src, topLimit, botLimit) =>
     fractalTop = f_fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na
     fractalBot = f_fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na
@@ -86,7 +98,8 @@ f_findDivs(src, topLimit, botLimit) =>
     bearSignal = fractalTop and high[2] > highPrice and src[2] < highPrev
     bullSignal = fractalBot and low[2] < lowPrice and src[2] > lowPrev
     [bearSignal, bullSignal]
-// Get components
+
+
 source    = close
 smrng1    = smoothrng(source, 27, 1.5)
 smrng2    = smoothrng(source, 55, sensitivity)

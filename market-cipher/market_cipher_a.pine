@@ -2,9 +2,7 @@
 // @version=5
 indicator("MarketCipher A", overlay=true)
 
-//-------------- MarketCipher A | https://marketciphertrading.com ------------//
-// Get user input
-version       = input.string("2.1.2", "Version")
+
 pivotPeriod   = input.int(1, "H/L Pivot Days Back", 1)
 showPivotHigh = input(false, "Show Pivot High")
 showPivotLow  = input(false, "Show Pivot Low")
@@ -18,7 +16,8 @@ showRibbon7   = input(true, "Show Ribbon 7")
 showRibbon8   = input(true, "Show Ribbon 8")
 showRibbon9   = input(false, "Show Ribbon 9")
 ribbon9Len    = input(21, "Ribbon9")
-// Functions
+
+
 blueWaves_vwap(src, chlLen, avgLen) =>
     esa = ta.ema(src, chlLen)
     d = ta.ema(math.abs(src - esa), chlLen)
@@ -27,7 +26,8 @@ blueWaves_vwap(src, chlLen, avgLen) =>
     bw2 = ta.sma(bw1, 3)
     vwap = bw1 - bw2
     [bw1, bw2, vwap]
-// Get components
+
+    
 pivotHigh = request.security(syminfo.tickerid, "D", ta.highest(high, pivotPeriod), barmerge.gaps_off, barmerge.lookahead_on)
 pivotLow  = request.security(syminfo.tickerid, "D", ta.lowest(low, pivotPeriod),   barmerge.gaps_off, barmerge.lookahead_on)
 ema1 = ta.ema(close, 5)
@@ -41,7 +41,8 @@ ema8 = ta.ema(close, 33)
 sma9 = ta.sma(close, ribbon9Len)
 [bw1, bw2, vwap] = blueWaves_vwap(hlc3, 9, 12)
 stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
-// Signals
+
+
 yellowDiamond = math.max(open, close) > ema1 and ema1 > ema2 and ema1 > ema8 and vwap > 0
 blueTriangle  = ta.crossover(ema1, ema6) and vwap > 0 and (bw1 > - 15 or bw2 > -25) and stcRsiMod < 80 and not ta.crossover(ema2, ema8)
 greenDot      = ta.crossover(ema2, ema8) and yellowDiamond
@@ -49,7 +50,8 @@ redX          = ta.crossunder(ema1, ema2)
 redDiamond    = ta.crossunder(bw1, bw2)
 yellowX       = redDiamond and bw1 < -40 and stcRsiMod < 20
 bloodDiamond  = redX and redDiamond
-// Plots
+
+
 plot(showPivotHigh ? pivotHigh : na, "Pivot High", color.new(#4DA6FF, 20))
 plot(showPivotLow ? pivotLow : na, "Pivot Low", color.new(#4DA6FF, 20))
 p1 = plot(showRibbon1 ? ema1 : na, "Ribbon 1", ema1 < ema8 ? #505662 : #0166CC, 2)

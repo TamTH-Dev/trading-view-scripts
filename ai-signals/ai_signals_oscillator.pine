@@ -2,10 +2,11 @@
 // @version=5
 indicator("AI Signals Oscillator", overlay=false, precision=0)
 
-// Get user input
+
 len   = input.int(9, "Length", 1)
 style = input.string("Columns", "Style", ["Columns", "Histogram", "Matrix"])
-// Get Components
+
+
 top = ta.highest(high, len)
 bot = ta.lowest(low, len)
 osc = ta.mom(ta.sma(ta.ema(close, len), len), len)
@@ -26,11 +27,13 @@ bullR = oscB0 and oscBot and osc > ta.valuewhen(oscB0 and oscBot, osc, 1) and bo
 bearR = oscA0 and oscTop and osc < ta.valuewhen(oscA0 and oscTop, osc, 1) and top > ta.valuewhen(oscA0 and oscTop, top, 1)
 bullH = oscB0 and oscBot and osc < ta.valuewhen(oscB0 and oscBot, osc, 1) and bot > ta.valuewhen(oscB0 and oscBot, bot, 1)
 bearH = oscA0 and oscTop and osc > ta.valuewhen(oscA0 and oscTop, osc, 1) and top < ta.valuewhen(oscA0 and oscTop, top, 1)
-// Colors
+
+
 green = #00DD00, green50 = color.new(green, 50), green20 = color.new(green, 80)
 red   = #DD0000, red50   = color.new(red, 50),   red20   = color.new(red, 80)
 colorOsc = oscA0 ? (oscRis ? green50 : green20) : (oscFal ? red50 : red20)
-// Plots
+
+
 plot(osc,  "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
 plot(osc2, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)
 plot(osc3, "", colorOsc, 1, style == "Columns" ? plot.style_columns : style == "Histogram" ? plot.style_histogram : plot.style_cross, editable=false)

@@ -1,15 +1,16 @@
 // © tamth_
 // @version=5
-indicator("AI Signals", overlay=true, precision=0, explicit_plot_zorder=true, max_labels_count=500)
+indicator("AI Signals Gold", overlay=true, precision=0, explicit_plot_zorder=true, max_labels_count=500)
 
-// Get user input
-sensitivity = input.float(2.5, "  Sensitivity (0.5 - 2.5)", 0.5, 2.5, step=0.1)
+
+sensitivity = input.float(4, "  Sensitivity (0.5 - 4)", 0.5, 4, step=0.1)
 emaCloud    = input.bool(false, "EMA Cloud")
 suppRes     = input.bool(false, "Support & Resistance")
 breaks      = input.bool(false, "Breaks")
 usePsar     = input.bool(false, "PSAR")
 emaEnergy   = input.bool(true, "EMA Energy")
-// Functions
+
+
 supertrend(_src, factor, atrLen) =>
 	atr = ta.atr(atrLen)
 	upperBand = _src + factor * atr
@@ -29,7 +30,8 @@ supertrend(_src, factor, atrLen) =>
 		direction := close < lowerBand ? 1 : -1
 	superTrend := direction == -1 ? lowerBand : upperBand
 	[superTrend, direction]
-// Get Components
+	
+	
 ocAvg       = math.avg(open, close)
 ema1        = ta.ema(high, 9)
 ema2        = ta.ema(high, 12)
@@ -57,12 +59,14 @@ barsL       = 10
 barsR       = 10
 pivotHigh = fixnan(ta.pivothigh(barsL, barsR)[1])
 pivotLow = fixnan(ta.pivotlow(barsL, barsR)[1])
-// Colors
+
+
 green       = #2BBC4D, green2   = #00DD00
 red         = #C51D0B, red2     = #DD0000
 emaCloudColor = emaCloud ? (close > supertrend ? #71CD6D : #D75131) : na
 emaEnergyColor(ma) => emaEnergy ? (close >= ma ? green : red) : na
-// Plots
+
+
 p1 = plot(ema1, "", na, editable=false)
 p2 = plot(ema2, "", emaCloudColor, editable=false)
 p3 = plot(ema3, "", emaCloudColor, editable=false)

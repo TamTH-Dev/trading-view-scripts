@@ -2,7 +2,7 @@
 // @version=5
 indicator("AI Signals Platinum", overlay=true, precision=0, explicit_plot_zorder=true, max_labels_count=500)
 
-// Get user input
+
 sensitivity = input.string("Low", "Sensitivity", ["Low", "Medium", "High"])
 suppRes     = input.bool(false, "Support & Resistance")
 breaks      = input.bool(false, "Breaks")
@@ -10,7 +10,8 @@ usePsar     = input.bool(false, "PSAR")
 emaEnergy   = input.bool(true, "EMA Energy")
 channelBal  = input.bool(true, "Channel Balance")
 autoTL      = input.bool(false, "Auto Trend Lines")
-// Functions
+
+
 supertrend(_src, factor, atrLen) =>
 	atr = ta.atr(atrLen)
 	upperBand = _src + factor * atr
@@ -30,6 +31,7 @@ supertrend(_src, factor, atrLen) =>
 		direction := close < lowerBand ? 1 : -1
 	superTrend := direction == -1 ? lowerBand : upperBand
 	[superTrend, direction]
+
 lr_slope(_src, _len) =>
     x = 0.0, y = 0.0, x2 = 0.0, xy = 0.0
     for i = 0 to _len - 1
@@ -43,6 +45,7 @@ lr_slope(_src, _len) =>
     _avg = y / _len
     _int = _avg - _slp * x / _len + _slp
     [_slp, _avg, _int]
+
 lr_dev(_src, _len, _slp, _avg, _int) =>
     upDev = 0.0, dnDev = 0.0
     val = _int
@@ -56,7 +59,8 @@ lr_dev(_src, _len, _slp, _avg, _int) =>
         price := _src[j]
         val += _slp
     [upDev, dnDev]
-// Get Components
+    
+    
 ocAvg       = math.avg(open, close)
 sma1        = ta.sma(close, 5)
 sma2        = ta.sma(close, 6)
@@ -87,11 +91,13 @@ pivotLow = fixnan(ta.pivotlow(barsL, barsR)[1])
 source = close, period = 150
 [s, a, i] = lr_slope(source, period)
 [upDev, dnDev] = lr_dev(source, period, s, a, i)
-// Colors
+
+
 green       = #2BBC4D, green2   = #00DD00
 red         = #C51D0B, red2     = #DD0000
 emaEnergyColor(ma) => emaEnergy ? (close >= ma ? green : red) : na
-// Plots
+
+
 k1 = plot(ta.ema(upperKC1, 50), "", na, editable=false)
 k2 = plot(ta.ema(upperKC2, 50), "", na, editable=false)
 k3 = plot(ta.ema(upperKC3, 50), "", na, editable=false)

@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("Advanced Trend", shorttitle = "Advanced Trend", format = format.price, precision = 2, timeframe = "", timeframe_gaps = true)
+indicator("Trends Combination", shorttitle = "Trends Combination", format = format.price, precision = 2, timeframe = "", timeframe_gaps = true)
 
 
 var color blue_color = color.new(#4577ED, 0)
