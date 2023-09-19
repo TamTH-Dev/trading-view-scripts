@@ -13,9 +13,8 @@ int wt_ch_period = input.int(9, title = "Channel Period", group = wt_group)
 int wt_avg_period = input.int(12, title = "Average Period", group = wt_group)
 string mfi_group = "MFI"
 bool mfi_showed = input.bool(true, title = "Show", group = mfi_group)
-int mfi_period = input.int(60, title = "Period", group = mfi_group)
-int mfi_mult = input.int(150, title = "Area Multiplier", group = mfi_group)
-float mfi_pos_y = input.float(2.5, title = "Area Position Y", group = mfi_group)
+int mfi_period = input.int(20, title = "Period", group = mfi_group)
+int mfi_mult = input.int(80, title = "Area Multiplier", group = mfi_group)
 string rsi_group = "RSI"
 bool rsi_showed = input.bool(true, title = "Show", group = rsi_group)
 int rsi_period = input.int(40, title = "Period", group = rsi_group)
@@ -35,10 +34,19 @@ get_wt_and_vwap() =>
     float vwap = leading_wt - lagging_wt
     [leading_wt, lagging_wt, vwap]
 
+get_mfi() => 
+    bool has_vol = not na(volume) and volume != 0
+    
+    if has_vol
+        float avg_vol = close == high and close == low or high == low ? 0 : ((2 * close - low - high) / (high - low)) * volume
+        math.sum(avg_vol, mfi_period) * mfi_mult / math.sum(volume, mfi_period)
+    else
+        ta.sma(((close - open) / (high - low)) * mfi_mult, mfi_period)
+        
 get_indicators() =>
     int offset = 0
     [leading_wt, lagging_wt, vwap] = get_wt_and_vwap()
-    float mfi = ta.sma(((close - open) / (high - low)) * mfi_mult, mfi_period) - mfi_pos_y
+    float mfi = get_mfi()
     float rsi = ta.sma(ta.stoch(close, high, low, rsi_period), 2)
     float stoch_rsi = ta.sma(ta.stoch(close, high, low, stoch_rsi_period), 2)
     [leading_wt[offset], lagging_wt[offset], vwap[offset], mfi[offset], rsi[offset], stoch_rsi[offset]]
@@ -57,15 +65,15 @@ color aqua_color = #21BAF3
 color purple_color = #673AB7
 
 
-var space_0_line = plot(-105, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
-var space_1_line = plot(-130, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+var space_0_line = plot(-100, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+var space_1_line = plot(-120, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
 fill(space_0_line, space_1_line, title = "Space", color = color.new(white_color, 100), editable = false)
 
 plot(threshold_showed ? overbought_threshold : na, title = "Overbought Threshold", color = color.new(white_color, 80), display = display.pane)
 plot(threshold_showed ? oversold_threshold : na, title = "Oversold Threshold", color = color.new(white_color, 80), display = display.pane)
 
-var mfi_bar_top_line = plot(mfi_showed ? -100 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
-var mfi_bar_bottom_line = plot(mfi_showed ? -105 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
+var mfi_bar_top_line = plot(mfi_showed ? -95 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
+var mfi_bar_bottom_line = plot(mfi_showed ? -100 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
 fill(mfi_bar_top_line, mfi_bar_bottom_line, title = "MFI Bar", color = mfi > 0 ? color.new(green_color, 25) : color.new(red_color, 25))
 
 plot(wt_showed ? leading_wt : na, title = "Leading Wave Trend", color = blue_light_color, linewidth = 1, style = plot.style_area)
