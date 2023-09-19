@@ -2,108 +2,119 @@
 // @version=5
 indicator("EzAlgo SR", overlay = true)
 
-// Get user input
-bool enableSR = input.bool(true, "SR On/Off", group = "SR")
-color colorSup = input.color(#00DBFF, "Support Color", group = "SR")
-color colorRes = input.color(#E91E63, "Resistance Color", group = "SR")
-int strengthSR = input.int(2, "S/R Strength", 1, group = "SR")
-bool useZones = input.bool(true, "Zones On/Off", group = "SR")
-bool useHLZones = input.bool(true, "High Low Zones On/Off", group = "SR")
-int zoneWidth = input.int(1, "Zone Width %", 0, tooltip="it's calculated using % of the distance between highest/lowest in last 300 bars", group = "SR")
-bool expandSR = input.bool(true, "Expand SR")
 
-// Functions
-percWidth(len, perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
+color support_color = input.color(#00DBFF, title = "Support Color", group = "SR")
+color resistance_color = input.color(#E91E63, title = "Resistance Color", group = "SR")
+int sr_strength = input.int(2, title = "S/R Strength", minval = 1, group = "SR")
+bool use_zones = input.bool(true, title = "Zones On/Off", group = "SR")
+bool use_hl_zones = input.bool(true, title = "High Low Zones On/Off", group = "SR")
+int zone_width = input.int(1, title = "Zone Width %", minval = 0, tooltip = "it's calculated using % of the distance between highest/lowest in last 300 bars", group = "SR")
+bool expand_sr = input.bool(true, title = "Expand SR")
 
-// Get components
-int rb            = 10
-int prd           = 284
-int ChannelW      = 10
-ph            = ta.pivothigh(rb, rb)
-pl            = ta.pivotlow (rb, rb)
-sr_levels     = array.new_float(21, na)
-prdhighest    = ta.highest(prd)
-prdlowest     = ta.lowest(prd)
-cwidth        = percWidth(prd, ChannelW)
-zonePerc      = percWidth(300, zoneWidth)
-aas           = array.new_bool(41, true)
-u1            = 0.0, u1 := nz(u1[1])
-d1            = 0.0, d1 := nz(d1[1])
-highestph     = 0.0, highestph := highestph[1]
-lowestpl      = 0.0, lowestpl := lowestpl[1]
-var sr_levs   = array.new_float(21, na)
-var sr_lines  = array.new_line(21, na)
-var sr_linesH = array.new_line(21, na)
-var sr_linesL = array.new_line(21, na)
-var sr_linesF = array.new_linefill(21, na)
+
+method percWidth(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
+
+
+int rb = 10
+int prd = 284
+int channel_w = 10
+ph = ta.pivothigh(rb, rb)
+pl = ta.pivotlow (rb, rb)
+sr_levels = array.new_float(21, na)
+highest_prd = ta.highest(prd)
+lowest_prd = ta.lowest(prd)
+c_width = percWidth(prd, channel_w)
+zone_perc = percWidth(300, zone_width)
+aas = array.new_bool(41, true)
+u1 = 0.0, u1 := nz(u1[1])
+d1 = 0.0, d1 := nz(d1[1])
+highest_ph = 0.0, highest_ph := highest_ph[1]
+lowest_pl = 0.0, lowest_pl := lowest_pl[1]
+var sr_levs = array.new_float(21, na)
+var sr_lines = array.new_line(21, na)
+var sr_lines_h = array.new_line(21, na)
+var sr_lines_l = array.new_line(21, na)
+var sr_lines_f = array.new_linefill(21, na)
 
 if ph or pl
     for x = 0 to array.size(sr_levels) - 1
         array.set(sr_levels, x, na)
-    highestph := prdlowest
-    lowestpl := prdhighest
-    countpp = 0
+    highest_ph := lowest_prd
+    lowest_pl := highest_prd
+    pp_count = 0
+
     for x = 0 to prd
         if na(close[x])
             break
+
         if not na(ph[x]) or not na(pl[x])
-            highestph := math.max(highestph, nz(ph[x], prdlowest), nz(pl[x], prdlowest))
-            lowestpl := math.min(lowestpl, nz(ph[x], prdhighest), nz(pl[x], prdhighest))
-            countpp += 1
-            if countpp > 40
+            highest_ph := math.max(highest_ph, nz(ph[x], lowest_prd), nz(pl[x], lowest_prd))
+            lowest_pl := math.min(lowest_pl, nz(ph[x], highest_prd), nz(pl[x], highest_prd))
+            pp_count += 1
+
+            if pp_count > 40
                 break
-            if array.get(aas, countpp)
-                upl = (ph[x] ? high[x + rb] : low[x + rb]) + cwidth
-                dnl = (ph[x] ? high[x + rb] : low[x + rb]) - cwidth
-                u1 := countpp == 1 ? upl : u1
-                d1 := countpp == 1 ? dnl : d1
+
+            if array.get(aas, pp_count)
+                upl = (ph[x] ? high[x + rb] : low[x + rb]) + c_width
+                dnl = (ph[x] ? high[x + rb] : low[x + rb]) - c_width
+                u1 := pp_count == 1 ? upl : u1
+                d1 := pp_count == 1 ? dnl : d1
                 tmp = array.new_bool(41, true)
                 cnt = 0
                 tpoint = 0
+
                 for xx = 0 to prd
                     if na(close[xx])
                         break
+
                     if not na(ph[xx]) or not na(pl[xx])
                         chg = false
                         cnt += 1
+
                         if cnt > 40
                             break
+
                         if array.get(aas, cnt)
                             if not na(ph[xx])
                                 if high[xx + rb] <= upl and high[xx + rb] >= dnl
                                     tpoint += 1
                                     chg := true
+
                             if not na(pl[xx])
                                 if low[xx + rb] <= upl and low[xx + rb] >= dnl
                                     tpoint += 1
                                     chg := true
+
                         if chg and cnt < 41
                             array.set(tmp, cnt, false)
-                if tpoint >= strengthSR
+
+                if tpoint >= sr_strength
                     for g = 0 to 40 by 1
                         if not array.get(tmp, g)
                             array.set(aas, g, false)
-                    if ph[x] and countpp < 21
-                        array.set(sr_levels, countpp, high[x + rb])
-                    if pl[x] and countpp < 21
-                        array.set(sr_levels, countpp, low[x + rb])
 
-// Plot
-var line highest_fill1 = na, line.delete(highest_fill1)
-var line highest_fill2 = na, line.delete(highest_fill2)
-var line lowest_fill1  = na, line.delete(lowest_fill1)
-var line lowest_fill2  = na, line.delete(lowest_fill2)
-hi_col = close >= highestph ? colorSup : colorRes
-lo_col = close >= lowestpl  ? colorSup : colorRes
+                    if ph[x] and pp_count < 21
+                        array.set(sr_levels, pp_count, high[x + rb])
 
-if enableSR
-    if useHLZones
-        highest_fill1 := line.new(bar_index - 311, highestph + zonePerc, bar_index, highestph + zonePerc, xloc.bar_index, expandSR ? extend.both : extend.right, na)
-        highest_fill2 := line.new(bar_index - 311, highestph - zonePerc, bar_index, highestph - zonePerc, xloc.bar_index, expandSR ? extend.both : extend.right, na)
-        lowest_fill1  := line.new(bar_index - 311, lowestpl + zonePerc , bar_index, lowestpl + zonePerc , xloc.bar_index, expandSR ? extend.both : extend.right, na)
-        lowest_fill2  := line.new(bar_index - 311, lowestpl - zonePerc , bar_index, lowestpl - zonePerc , xloc.bar_index, expandSR ? extend.both : extend.right, na)
-        linefill.new(highest_fill1, highest_fill2, color.new(hi_col, 80))
-        linefill.new(lowest_fill1 , lowest_fill2 , color.new(lo_col, 80))
+                    if pl[x] and pp_count < 21
+                        array.set(sr_levels, pp_count, low[x + rb])
+
+
+var line highest_fill_1 = na, line.delete(highest_fill_1)
+var line highest_fill_2 = na, line.delete(highest_fill_2)
+var line lowest_fill_1  = na, line.delete(lowest_fill_1)
+var line lowest_fill_2  = na, line.delete(lowest_fill_2)
+high_color = close >= highest_ph ? support_color : resistance_color
+low_color = close >= lowest_pl  ? support_color : resistance_color
+
+if use_hl_zones
+    highest_fill_1 := line.new(bar_index - 311, highest_ph + zone_perc, bar_index, highest_ph + zone_perc, xloc.bar_index, expand_sr ? extend.both : extend.right, na)
+    highest_fill_2 := line.new(bar_index - 311, highest_ph - zone_perc, bar_index, highest_ph - zone_perc, xloc.bar_index, expand_sr ? extend.both : extend.right, na)
+    lowest_fill_1  := line.new(bar_index - 311, lowest_pl + zone_perc , bar_index, lowest_pl + zone_perc , xloc.bar_index, expand_sr ? extend.both : extend.right, na)
+    lowest_fill_2  := line.new(bar_index - 311, lowest_pl - zone_perc , bar_index, lowest_pl - zone_perc , xloc.bar_index, expand_sr ? extend.both : extend.right, na)
+    linefill.new(highest_fill_1, highest_fill_2, color.new(high_color, 80))
+    linefill.new(lowest_fill_1 , lowest_fill_2 , color.new(low_color, 80))
 
 if ph or pl
     for x = 0 to array.size(sr_lines) - 1
@@ -111,14 +122,14 @@ if ph or pl
 
 for x = 0 to array.size(sr_lines) - 1
     line.delete(array.get(sr_lines, x))
-    line.delete(array.get(sr_linesH, x))
-    line.delete(array.get(sr_linesL, x))
-    linefill.delete(array.get(sr_linesF, x))
+    line.delete(array.get(sr_lines_h, x))
+    line.delete(array.get(sr_lines_l, x))
+    linefill.delete(array.get(sr_lines_f, x))
 
-    if array.get(sr_levs, x) and enableSR
-        line_col = close >= array.get(sr_levs, x) ? colorSup : colorRes
+    if array.get(sr_levs, x)
+        line_col = close >= array.get(sr_levs, x) ? support_color : resistance_color
 
-        if useZones
-            array.set(sr_linesH, x, line.new(bar_index - 355, array.get(sr_levs, x) + zonePerc, bar_index, array.get(sr_levs, x) + zonePerc, xloc.bar_index, expandSR ? extend.both : extend.right, na))
-            array.set(sr_linesL, x, line.new(bar_index - 355, array.get(sr_levs, x) - zonePerc, bar_index, array.get(sr_levs, x) - zonePerc, xloc.bar_index, expandSR ? extend.both : extend.right, na))
-            array.set(sr_linesF, x, linefill.new(array.get(sr_linesH, x), array.get(sr_linesL, x), color.new(line_col, 80)))
+        if use_zones
+            array.set(sr_lines_h, x, line.new(bar_index - 355, array.get(sr_levs, x) + zone_perc, bar_index, array.get(sr_levs, x) + zone_perc, xloc.bar_index, expand_sr ? extend.both : extend.right, na))
+            array.set(sr_lines_l, x, line.new(bar_index - 355, array.get(sr_levs, x) - zone_perc, bar_index, array.get(sr_levs, x) - zone_perc, xloc.bar_index, expand_sr ? extend.both : extend.right, na))
+            array.set(sr_lines_f, x, linefill.new(array.get(sr_lines_h, x), array.get(sr_lines_l, x), color.new(line_col, 80)))
