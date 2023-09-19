@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("MarketCipher SR", overlay=true)
+indicator("Market Cipher SR", overlay=true)
 
 version     = input.string("2.2.0", "Version")
 pivotPeriod = input.int(1, "H/L Pivot Days Back", 1)

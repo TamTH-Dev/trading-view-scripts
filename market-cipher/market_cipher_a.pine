@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("MarketCipher A", overlay=true)
+indicator("Market Cipher A", overlay = true)
 
 
 pivotPeriod   = input.int(1, "H/L Pivot Days Back", 1)
