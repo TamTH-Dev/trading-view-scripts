@@ -3,45 +3,87 @@
 indicator("Market Cipher B", overlay = false)
 
 
-int overbought = input.int(60, title = "Overbought")
-int oversold = input.int(-60, title = "Oversold")
+string threshold_group = "Threshold"
+bool threshold_showed = input.bool(true, title = "Show", group = threshold_group)
+int overbought_threshold = input.int(60, title = "Overbought", group = threshold_group)
+int oversold_threshold = input.int(-60, title = "Oversold", group = threshold_group)
+string wt_group = "Waves Trend"
+bool wt_showed = input.bool(true, title = "Show", group = wt_group)
+int wt_ch_period = input.int(9, title = "Channel Period", group = wt_group)
+int wt_avg_period = input.int(12, title = "Average Period", group = wt_group)
+string mfi_group = "MFI"
+bool mfi_showed = input.bool(true, title = "Show", group = mfi_group)
+int mfi_period = input.int(60, title = "Period", group = mfi_group)
+int mfi_mult = input.int(150, title = "Area Multiplier", group = mfi_group)
+float mfi_pos_y = input.float(2.5, title = "Area Position Y", group = mfi_group)
+string rsi_group = "RSI"
+bool rsi_showed = input.bool(true, title = "Show", group = rsi_group)
+int rsi_period = input.int(40, title = "Period", group = rsi_group)
+string stoch_rsi_group = "Stochastic RSI"
+bool stoch_rsi_showed = input.bool(true, title = "Show", group = stoch_rsi_group)
+int stoch_rsi_period = input.int(81, title = "Period", group = stoch_rsi_group)
+bool vwap_showed = input.bool(true, title = "Show VWAP")
 
 
-method get_waves_and_vwap(series float src, int chl_len, int avg_len) =>
-    float esa = ta.ema(src, chl_len)
-    float d = ta.ema(math.abs(src - esa), chl_len)
+get_wt_and_vwap() =>
+    series float src = hlc3
+    float esa = ta.ema(src, wt_ch_period)
+    float d = ta.ema(math.abs(src - esa), wt_ch_period)
     float ci = (src - esa) / (0.015 * d)
-    float leading_wave = ta.ema(ci, avg_len)
-    float lagging_wave = ta.sma(leading_wave, 3)
-    float vwap = leading_wave - lagging_wave
-    [leading_wave, lagging_wave, vwap]
+    float leading_wt = ta.ema(ci, wt_avg_period)
+    float lagging_wt = ta.sma(leading_wt, 3)
+    float vwap = leading_wt - lagging_wt
+    [leading_wt, lagging_wt, vwap]
 
-method get_money_flow(int period, int mult, float y) => ta.sma(((close - open) / (high - low)) * mult, period) - y
-
-get_expression() =>
+get_indicators() =>
     int offset = 0
-    [leading_wave, lagging_wave, vwap] = get_waves_and_vwap(hlc3, 9, 12)
-    // float moneyflow = get_money_flow(60, 200, 2.25)
-    float moneyflow = get_money_flow(50, 100, 0)
-    float rsi = ta.sma(ta.stoch(close, high, low, 40), 2)
-    float stoch_rsi = ta.sma(ta.stoch(close, high, low, 81), 2)
-    [leading_wave[offset], lagging_wave[offset], vwap[offset], moneyflow[offset], rsi[offset], stoch_rsi[offset]]
+    [leading_wt, lagging_wt, vwap] = get_wt_and_vwap()
+    float mfi = ta.sma(((close - open) / (high - low)) * mfi_mult, mfi_period) - mfi_pos_y
+    float rsi = ta.sma(ta.stoch(close, high, low, rsi_period), 2)
+    float stoch_rsi = ta.sma(ta.stoch(close, high, low, stoch_rsi_period), 2)
+    [leading_wt[offset], lagging_wt[offset], vwap[offset], mfi[offset], rsi[offset], stoch_rsi[offset]]
 
-[leading_wave, lagging_wave, vwap, moneyflow, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_expression())
+[leading_wt, lagging_wt, vwap, mfi, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_indicators())
 
 
-plot(overbought, title = "Overbought", color = color.new(color.white, 80), display = display.pane)
-plot(oversold, title = "Oversold", color = color.new(color.white, 80), display = display.pane)
-plot(leading_wave, title = "Leading Wave", color = #90c6f2, linewidth = 1, style = plot.style_area)
-plot(lagging_wave, title = "Lagging Wave", color = color.new(#1a54a7, 10), linewidth = 1, style = plot.style_area)
-plot(vwap, title = "VWAP", color = color.new(color.yellow, 30), linewidth = 1, style = plot.style_area)
-plot(moneyflow, title = "Money Flow", color = moneyflow > 0 ? color.new(#39b071, 40) : color.new(#d94c5d, 40), linewidth = 2, style = plot.style_area)
-plot(ta.crossover(leading_wave, lagging_wave) ? lagging_wave : na, title = "Buy Signal", color = color.new(#39b071, 20), linewidth = 3, style = plot.style_circles, display = display.pane)
-plot(ta.crossunder(leading_wave, lagging_wave) ? lagging_wave : na, title = "Sell Signal", color = color.new(#d94c5d, 20), linewidth = 3, style = plot.style_circles, display = display.pane)
-plot(0, title = "Zero", color = color.white, display = display.pane)
-plot(rsi, title = "Rsi", color = #e52be6)
-plot(stoch_rsi, title = "Stoch Rsi", color = rsi > stoch_rsi ? #39b071 : #d94c5d, linewidth = 2)
-var p0 = plot(-100, title = "Money Flow Annotation", color = color.new(color.white, 100), editable = false, display = display.pane)
-var p1 = plot(-105, title = "Money Flow Annotation", color = color.new(color.white, 100), editable = false, display = display.pane)
-fill(p0, p1, title = "Money Flow Annotation", color = moneyflow > 0 ? color.new(#39b071, 20) : color.new(#d94c5d, 20))
-plotshape(ta.crossover(leading_wave, lagging_wave) and leading_wave < oversold, title = "Strong Buy Signal", style = shape.xcross, location = location.bottom, color = #39b071, size = size.tiny, display = display.pane)
+color white_color = color.white
+color blue_dark_color = #082EBF
+color blue_light_color = #3DCBFF
+color yellow_color = #F2E40A
+color green_color = #16F9BA
+color red_color = #F23A64
+color pink_color = #DB3AF2
+color aqua_color = #21BAF3
+color purple_color = #673AB7
+
+
+var space_0_line = plot(-105, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+var space_1_line = plot(-130, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+fill(space_0_line, space_1_line, title = "Space", color = color.new(white_color, 100), editable = false)
+
+plot(threshold_showed ? overbought_threshold : na, title = "Overbought Threshold", color = color.new(white_color, 80), display = display.pane)
+plot(threshold_showed ? oversold_threshold : na, title = "Oversold Threshold", color = color.new(white_color, 80), display = display.pane)
+
+var mfi_bar_top_line = plot(mfi_showed ? -100 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
+var mfi_bar_bottom_line = plot(mfi_showed ? -105 : na, title = "MFI Bar", color = color.new(white_color, 100), editable = false, display = display.pane)
+fill(mfi_bar_top_line, mfi_bar_bottom_line, title = "MFI Bar", color = mfi > 0 ? color.new(green_color, 25) : color.new(red_color, 25))
+
+plot(wt_showed ? leading_wt : na, title = "Leading Wave Trend", color = blue_light_color, linewidth = 1, style = plot.style_area)
+plot(wt_showed ? lagging_wt : na, title = "Lagging Wave Trend", color = color.new(blue_dark_color, 20), linewidth = 1, style = plot.style_area)
+
+plot(vwap_showed ? vwap : na, title = "VWAP", color = color.new(yellow_color, 55), linewidth = 1, style = plot.style_area)
+
+plot(mfi_showed ? mfi : na, title = "MFI", color = mfi > 0 ? color.new(green_color, 60) : color.new(red_color, 60), linewidth = 2, style = plot.style_area)
+
+plot(0, title = "Zero Line", color = white_color, display = display.pane)
+
+plot(rsi_showed ? rsi : na, title = "RSI", color = pink_color)
+
+plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = rsi > stoch_rsi ? aqua_color : purple_color, linewidth = 2)
+
+plot(ta.crossover(leading_wt, lagging_wt) ? lagging_wt : na, title = "Buy Signal", color = color.new(green_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
+plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Signal", color = color.new(red_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
+
+bool wt_crossover = ta.crossover(leading_wt, lagging_wt)
+plotchar(wt_crossover and leading_wt < oversold_threshold, title = "Strong Buy Signal", char = "⛳", color = green_color, location = location.bottom, size = size.tiny, display = display.pane)
+plotchar(wt_crossover and leading_wt > overbought_threshold, title = "Strong Sell Signal", char = "⛳", color = red_color, location = location.bottom, size = size.tiny, display = display.pane)
