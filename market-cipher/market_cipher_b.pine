@@ -40,10 +40,9 @@ get_mfo() =>
     float val = price_changed ? (2 * close - low - high) / (high - low) : 0
     
     if has_vol
-        float demo = val * volume
-        math.sum(demo, mfo_period) * mfo_mult / math.sum(volume, mfo_period)
+        ta.sma(math.sum(val * volume, mfo_period) * mfo_mult / math.sum(volume, mfo_period), mfo_period)
     else
-        ta.sma(val * mfo_mult, mfo_period)
+        ta.sma(ta.sma(val * mfo_mult, mfo_period), mfo_period)
         
 get_indicators() =>
     int offset = 0
