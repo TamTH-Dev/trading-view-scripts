@@ -3,6 +3,19 @@
 indicator("Market Cipher B", overlay = false)
 
 
+// Colors
+color white_color = color.white
+color blue_dark_color = #082EBF
+color blue_light_color = #3DCBFF
+color yellow_color = #F2E40A
+color green_color = #16F9BA
+color red_color = #F23A64
+color pink_color = #DB3AF2
+color aqua_color = #21BAF3
+color purple_color = #673AB7
+
+
+// Inputs
 string threshold_group = "Threshold"
 bool threshold_showed = input.bool(true, title = "Show", group = threshold_group)
 int overbought_threshold = input.int(60, title = "Overbought", group = threshold_group)
@@ -13,8 +26,8 @@ int wt_ch_period = input.int(9, title = "Channel Period", group = wt_group)
 int wt_avg_period = input.int(12, title = "Average Period", group = wt_group)
 string mfo_group = "MFO"
 bool mfo_showed = input.bool(true, title = "Show", group = mfo_group)
-int mfo_period = input.int(20, title = "Period", group = mfo_group)
-int mfo_mult = input.int(60, title = "Area Multiplier", group = mfo_group)
+int mfo_period = input.int(60, title = "Period", group = mfo_group)
+int mfo_mult = input.int(100, title = "Area Multiplier", group = mfo_group)
 string rsi_group = "RSI"
 bool rsi_showed = input.bool(true, title = "Show", group = rsi_group)
 int rsi_period = input.int(40, title = "Period", group = rsi_group)
@@ -24,6 +37,7 @@ int stoch_rsi_period = input.int(81, title = "Period", group = stoch_rsi_group)
 bool vwap_showed = input.bool(true, title = "Show VWAP")
 
 
+// Methods
 get_wt_and_vwap() =>
     series float src = hlc3
     float esa = ta.ema(src, wt_ch_period)
@@ -37,12 +51,13 @@ get_wt_and_vwap() =>
 get_mfo() => 
     bool has_vol = not na(volume) and volume != 0
     bool price_changed = close != high or close != low or high != low
-    float val = price_changed ? (2 * close - low - high) / (high - low) : 0
+    float mfm = price_changed ? (2 * close - low - high) / (high - low) : 0
     
     if has_vol
-        ta.sma(math.sum(val * volume, mfo_period) * mfo_mult / math.sum(volume, mfo_period), mfo_period)
+        float mfv = mfm * volume
+        math.sum(mfv, mfo_period) * mfo_mult / math.sum(volume, mfo_period)
     else
-        ta.sma(ta.sma(val * mfo_mult, mfo_period), mfo_period)
+        ta.sma(mfm * mfo_mult, mfo_period)
         
 get_indicators() =>
     int offset = 0
@@ -55,17 +70,7 @@ get_indicators() =>
 [leading_wt, lagging_wt, vwap, mfo, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_indicators())
 
 
-color white_color = color.white
-color blue_dark_color = #082EBF
-color blue_light_color = #3DCBFF
-color yellow_color = #F2E40A
-color green_color = #16F9BA
-color red_color = #F23A64
-color pink_color = #DB3AF2
-color aqua_color = #21BAF3
-color purple_color = #673AB7
-
-
+// Plots
 var space_0_line = plot(-100, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
 var space_1_line = plot(-120, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
 fill(space_0_line, space_1_line, title = "Space", color = color.new(white_color, 100), editable = false)
