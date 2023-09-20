@@ -1,0 +1,250 @@
+// © tamth_
+// @version=5
+indicator("EzAlgo", overlay = true)
+
+
+// Colors
+color white_color = color.white
+color blue_dark_color = #082EBF
+color blue_light_color = #3DCBFF
+color yellow_color = #F2E40A
+color green_color = #16F9BA
+color red_color = #F23A64
+color pink_color = #DB3AF2
+color aqua_color = #21BAF3
+color purple_color = #673AB7
+
+
+//** S/R **//
+
+// Inputs
+string sr_group = "S/R"
+color sr_support_color = input.color(green_color, title = "Support Color", group = sr_group)
+color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_group)
+int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_group)
+int sr_zone_width = input.int(1, title = "Zone Width %", minval = 0, tooltip = "It's calculated using % of the distance between highest/lowest in last 300 bars", group = sr_group)
+
+
+// Methods
+method percWidth(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
+
+
+// Plots
+int sr_rb = 10
+int sr_prd = 284
+float sr_ph = ta.pivothigh(sr_rb, sr_rb)
+float sr_pl = ta.pivotlow (sr_rb, sr_rb)
+var sr_levels = array.new_float(21, na)
+float sr_highest_prd = ta.highest(sr_prd)
+float sr_lowest_prd = ta.lowest(sr_prd)
+float sr_channel_perc = percWidth(sr_prd, 10)
+float sr_zone_perc = percWidth(300, sr_zone_width)
+bool[] sr_aas = array.new_bool(41, true)
+float sr_highest_ph = 0.0, sr_highest_ph := sr_highest_ph[1]
+float sr_lowest_pl = 0.0, sr_lowest_pl := sr_lowest_pl[1]
+var sr_levels_tmp = array.new_float(21, na)
+var sr_lines = array.new_line(21, na)
+var sr_lines_h = array.new_line(21, na)
+var sr_lines_l = array.new_line(21, na)
+var sr_lines_f = array.new_linefill(21, na)
+
+if sr_ph or sr_pl
+    for i = 0 to array.size(sr_levels) - 1
+        array.set(sr_levels, i, na)
+
+    sr_highest_ph := sr_lowest_prd
+    sr_lowest_pl := sr_highest_prd
+    int pp_count = 0
+
+    for i = 0 to sr_prd
+        if na(close[i])
+            break
+
+        if not na(sr_ph[i]) or not na(sr_pl[i])
+            sr_highest_ph := math.max(sr_highest_ph, nz(sr_ph[i], sr_lowest_prd), nz(sr_pl[i], sr_lowest_prd))
+            sr_lowest_pl := math.min(sr_lowest_pl, nz(sr_ph[i], sr_highest_prd), nz(sr_pl[i], sr_highest_prd))
+            pp_count += 1
+
+            if pp_count > 40
+                break
+
+            if array.get(sr_aas, pp_count)
+                upl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) + sr_channel_perc
+                dnl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) - sr_channel_perc
+                tmp = array.new_bool(41, true)
+                count = 0
+                points = 0
+
+                for j = 0 to sr_prd
+                    if na(close[j])
+                        break
+
+                    if not na(sr_ph[j]) or not na(sr_pl[j])
+                        chg = false
+                        count += 1
+
+                        if count > 40
+                            break
+
+                        if array.get(sr_aas, count)
+                            if not na(sr_ph[j])
+                                if high[j + sr_rb] <= upl and high[j + sr_rb] >= dnl
+                                    points += 1
+                                    chg := true
+
+                            if not na(sr_pl[j])
+                                if low[j + sr_rb] <= upl and low[j + sr_rb] >= dnl
+                                    points += 1
+                                    chg := true
+
+                        if chg and count < 41
+                            array.set(tmp, count, false)
+
+                if points >= sr_strength
+                    for g = 0 to 40 by 1
+                        if not array.get(tmp, g)
+                            array.set(sr_aas, g, false)
+
+                    if sr_ph[i] and pp_count < 21
+                        array.set(sr_levels, pp_count, high[i + sr_rb])
+
+                    if sr_pl[i] and pp_count < 21
+                        array.set(sr_levels, pp_count, low[i + sr_rb])
+
+
+var line highest_fill_1 = na, line.delete(highest_fill_1)
+var line highest_fill_2 = na, line.delete(highest_fill_2)
+var line lowest_fill_1 = na, line.delete(lowest_fill_1)
+var line lowest_fill_2 = na, line.delete(lowest_fill_2)
+color high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
+color low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
+highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_perc, bar_index, sr_highest_ph + sr_zone_perc, xloc.bar_index, extend.both, na)
+highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_perc, bar_index, sr_highest_ph - sr_zone_perc, xloc.bar_index, extend.both, na)
+lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_perc, bar_index, sr_lowest_pl + sr_zone_perc, xloc.bar_index, extend.both, na)
+lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_perc, bar_index, sr_lowest_pl - sr_zone_perc, xloc.bar_index, extend.both, na)
+linefill.new(highest_fill_1, highest_fill_2, color.new(high_color, 80))
+linefill.new(lowest_fill_1, lowest_fill_2 , color.new(low_color, 80))
+
+if sr_ph or sr_pl
+    for i = 0 to array.size(sr_lines) - 1
+        array.set(sr_levels_tmp, i, array.get(sr_levels, i))
+
+for i = 0 to array.size(sr_lines) - 1
+    line.delete(array.get(sr_lines, i))
+    line.delete(array.get(sr_lines_h, i))
+    line.delete(array.get(sr_lines_l, i))
+    linefill.delete(array.get(sr_lines_f, i))
+
+    if array.get(sr_levels_tmp, i)
+        line_col = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
+        array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) + sr_zone_perc, xloc.bar_index, extend.both, na))
+        array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) - sr_zone_perc, xloc.bar_index, extend.both, na))
+        array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_col, 80)))
+
+
+
+
+
+//** Signals **//
+
+// Inputs
+string buy_sell_group = "Buy & Sell Signals"
+bool buy_sell_signals_showed = input.bool(true, title = "Show", group = buy_sell_group)
+float sensitivity = input.float(1.5, title = "Sensitivity", minval = 1, maxval = 6, group = buy_sell_group)
+int signal_offset = input.int(2, title = "Offset", minval = 0, group = buy_sell_group)
+string trend_ribbon_group = "Trend Ribbon"
+bool ribbon_showed = input.bool(true, title = "Show", group = trend_ribbon_group)
+int smooth_1 = input.int(5, title = "Smoothing 1", minval = 1, group = trend_ribbon_group)
+int smooth_2 = input.int(8, title = "Smoothing 2", minval = 1, group = trend_ribbon_group)
+string reversal_bands_group = "Reversal Bands"
+bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_group)
+int rev_bands_prd = input.int(30, "Periods", group = reversal_bands_group)
+
+
+// Methods
+method smooth_rng(float src, int prd, float mult) =>
+    int wper = prd * 2 - 1
+    float rng_avg = ta.ema(math.abs(src - src[1]), prd)
+    float sm_rng = ta.ema(rng_avg, wper) * mult
+
+method filter_rng(float src, float rng) =>
+    float rngfilt = src
+    rngfilt := src > nz(rngfilt[1]) ? src - rng < nz(rngfilt[1]) ? nz(rngfilt[1]) : src - rng : src + rng > nz(rngfilt[1]) ? nz(rngfilt[1]) : src + rng
+
+method get_wt(float src, int ch_prd, int avg_prd) =>
+    float esa = ta.ema(src, ch_prd)
+    float d = ta.ema(math.abs(src - esa), ch_prd)
+    float ci = (src - esa) / (0.015 * d)
+    float leading_wt = ta.ema(ci, avg_prd)
+    float lagging_wt = ta.sma(leading_wt, 3)
+    [leading_wt, lagging_wt]
+
+
+is_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+
+is_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+
+method fractalize(float src) => is_top_fractal(src) ? 1 : is_bot_fractal(src) ? -1 : 0
+
+method has_divs(float src, int top_limit, int bot_limit) =>
+    var top_fractal = fractalize(src) > 0 and src[2] >= top_limit ? src[2] : na
+    var bot_fractal = fractalize(src) < 0 and src[2] <= bot_limit ? src[2] : na
+    float recent_high = ta.valuewhen(top_fractal, src[2], 0)[2]
+    float high_price = ta.valuewhen(top_fractal, high[2], 0)[2]
+    float recent_low = ta.valuewhen(bot_fractal, src[2], 0)[2]
+    float low_price = ta.valuewhen(bot_fractal, low[2], 0)[2]
+    bool has_bullish_div = bot_fractal and low[2] < low_price and src[2] > recent_low
+    bool has_bearish_div = top_fractal and high[2] > high_price and src[2] < recent_high
+    [has_bullish_div, has_bearish_div]
+
+method get_rev_bands(float src, int prd, float sensitivity) =>
+    basis = ta.sma(src, prd)
+    span = ta.atr(prd)
+    [basis + span * sensitivity, basis - span * sensitivity]
+
+
+float src = close
+float sm_rng_1 = smooth_rng(src, 27, 1.5)
+float sm_rng_2 = smooth_rng(src, 55, sensitivity)
+float sm_rng = (sm_rng_1 + sm_rng_2) / 2
+float filtered_rng = filter_rng(src, sm_rng)
+float up = 0.0, up := filtered_rng > filtered_rng[1] ? nz(up[1]) + 1 : filtered_rng < filtered_rng[1] ? 0 : nz(up[1])
+float dn = 0.0, dn := filtered_rng < filtered_rng[1] ? nz(dn[1]) + 1 : filtered_rng > filtered_rng[1] ? 0 : nz(dn[1])
+bool bullish_cond = bool(na), bullish_cond := src > filtered_rng and src > src[1] and up > 0 or src > filtered_rng and src < src[1] and up > 0
+bool bearish_cond = bool(na), bearish_cond := src < filtered_rng and src < src[1] and dn > 0 or src < filtered_rng and src > src[1] and dn > 0
+int lastCond = 0, lastCond := bullish_cond ? 1 : bearish_cond ? -1 : lastCond[1]
+bool is_bullish = bullish_cond and lastCond[1] == -1
+bool is_bearish = bearish_cond and lastCond[1] == 1
+[leading_wt, lagging_wt] = get_wt(hlc3, 9, 12)
+[has_bullish_div_1, has_bearish_div_1] = has_divs(lagging_wt, 15, -40)
+[has_bullish_div_2, has_bearish_div_2] = has_divs(lagging_wt, 45, -65)
+is_bullish_div = has_bullish_div_1 or has_bullish_div_2
+is_bearish_div = has_bearish_div_1 or has_bearish_div_2
+[upper_rev_band_1, lower_rev_band_1] = get_rev_bands(close, rev_bands_prd, 4)
+[upper_rev_band_2, lower_rev_band_2] = get_rev_bands(close, rev_bands_prd, 5)
+[upper_rev_band_3, lower_rev_band_3] = get_rev_bands(close, rev_bands_prd, 6)
+
+
+// Plots
+barcolor(up > dn ? aqua_color : purple_color)
+
+float offset_perc = percWidth(300, signal_offset)
+plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Sell Label", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.tiny, display = display.pane)
+plotshape(ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+plotshape(is_bullish_div, title = "Divergence Buy", style = shape.triangleup, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(is_bearish_div, title = "Divergence Sell", style = shape.triangledown, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+
+color green_color_30 = color.new(green_color, 70)
+color red_color_30 = color.new(red_color, 70)
+plot(rev_bands_showed ? upper_rev_band_1 : na, title = "Reversal Band Upper 1", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_band_2 : na, title = "Reversal Band Upper 2", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_band_3 : na, title = "Reversal Band Upper 3", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_band_3 : na, title = "Reversal Band Lower 3", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_band_2 : na, title = "Reversal Band Lower 2", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_band_1 : na, title = "Reversal Band Lower 1", color = green_color_30, display = display.pane)
+
+float ribbon_1 = ta.sma(close, smooth_1)
+float ribbon_2 = ta.sma(close, smooth_2)
+fill(plot(ribbon_showed ? ribbon_1 : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? ribbon_2 : na, "", na, editable = false, display = display.pane), color = ribbon_1 > ribbon_2 ? color.new(aqua_color, 70) : color.new(purple_color, 70), title = "Ribbon Fill Color")
