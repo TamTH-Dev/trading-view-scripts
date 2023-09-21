@@ -16,34 +16,34 @@ color purple_color = #673AB7
 
 
 // Inputs
-string threshold_group = "Threshold"
-bool threshold_showed = input.bool(true, title = "Show", group = threshold_group)
-int overbought_threshold = input.int(60, title = "Overbought", group = threshold_group)
-int oversold_threshold = input.int(-60, title = "Oversold", group = threshold_group)
-string wt_group = "Waves Trend"
-bool wt_showed = input.bool(true, title = "Show", group = wt_group)
-int wt_ch_period = input.int(9, title = "Channel Period", group = wt_group)
-int wt_avg_period = input.int(12, title = "Average Period", group = wt_group)
-string mfo_group = "MFO"
-bool mfo_showed = input.bool(true, title = "Show", group = mfo_group)
-int mfo_period = input.int(60, title = "Period", group = mfo_group)
-int mfo_mult = input.int(100, title = "Area Multiplier", group = mfo_group)
-string rsi_group = "RSI"
-bool rsi_showed = input.bool(true, title = "Show", group = rsi_group)
-int rsi_period = input.int(40, title = "Period", group = rsi_group)
-string stoch_rsi_group = "Stochastic RSI"
-bool stoch_rsi_showed = input.bool(true, title = "Show", group = stoch_rsi_group)
-int stoch_rsi_period = input.int(81, title = "Period", group = stoch_rsi_group)
+string threshold_grp = "Threshold"
+bool threshold_showed = input.bool(true, title = "Show", group = threshold_grp)
+int overbought_threshold = input.int(60, title = "Overbought", group = threshold_grp)
+int oversold_threshold = input.int(-60, title = "Oversold", group = threshold_grp)
+string wt_grp = "Waves Trend"
+bool wt_showed = input.bool(true, title = "Show", group = wt_grp)
+int wt_chl_prd = input.int(9, title = "Channel Period", group = wt_grp)
+int wt_avg_prd = input.int(12, title = "Average Period", group = wt_grp)
+string mfo_grp = "MFO"
+bool mfo_showed = input.bool(true, title = "Show", group = mfo_grp)
+int mfo_prd = input.int(60, title = "Period", group = mfo_grp)
+int mfo_mult = input.int(100, title = "Area Multiplier", group = mfo_grp)
+string rsi_grp = "RSI"
+bool rsi_showed = input.bool(true, title = "Show", group = rsi_grp)
+int rsi_prd = input.int(40, title = "Period", group = rsi_grp)
+string stoch_rsi_grp = "Stochastic RSI"
+bool stoch_rsi_showed = input.bool(true, title = "Show", group = stoch_rsi_grp)
+int stoch_rsi_prd = input.int(81, title = "Period", group = stoch_rsi_grp)
 bool vwap_showed = input.bool(true, title = "Show VWAP")
 
 
 // Methods
 get_wt_and_vwap() =>
     series float src = hlc3
-    float esa = ta.ema(src, wt_ch_period)
-    float d = ta.ema(math.abs(src - esa), wt_ch_period)
+    float esa = ta.ema(src, wt_chl_prd)
+    float d = ta.ema(math.abs(src - esa), wt_chl_prd)
     float ci = (src - esa) / (0.015 * d)
-    float leading_wt = ta.ema(ci, wt_avg_period)
+    float leading_wt = ta.ema(ci, wt_avg_prd)
     float lagging_wt = ta.sma(leading_wt, 3)
     float vwap = leading_wt - lagging_wt
     [leading_wt, lagging_wt, vwap]
@@ -55,16 +55,16 @@ get_mfo() =>
     
     if has_vol
         float mfv = mfm * volume
-        math.sum(mfv, mfo_period) * mfo_mult / math.sum(volume, mfo_period)
+        math.sum(mfv, mfo_prd) * mfo_mult / math.sum(volume, mfo_prd)
     else
-        ta.sma(mfm * mfo_mult, mfo_period)
+        ta.sma(mfm * mfo_mult, mfo_prd)
         
 get_indicators() =>
     int offset = 0
     [leading_wt, lagging_wt, vwap] = get_wt_and_vwap()
     float mfo = get_mfo()
-    float rsi = ta.sma(ta.stoch(close, high, low, rsi_period), 2)
-    float stoch_rsi = ta.sma(ta.stoch(close, high, low, stoch_rsi_period), 2)
+    float rsi = ta.sma(ta.stoch(close, high, low, rsi_prd), 2)
+    float stoch_rsi = ta.sma(ta.stoch(close, high, low, stoch_rsi_prd), 2)
     [leading_wt[offset], lagging_wt[offset], vwap[offset], mfo[offset], rsi[offset], stoch_rsi[offset]]
 
 [leading_wt, lagging_wt, vwap, mfo, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_indicators())
