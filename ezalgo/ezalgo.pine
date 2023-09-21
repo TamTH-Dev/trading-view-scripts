@@ -158,8 +158,8 @@ float sensitivity = input.float(1.7, title = "Sensitivity", minval = 1, maxval =
 int signal_offset = input.int(2, title = "Offset", minval = 0, group = buy_sell_grp)
 string trend_ribbon_grp = "Trend Ribbon"
 bool ribbon_showed = input.bool(true, title = "Show", group = trend_ribbon_grp)
-int leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
-int lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval = 1, group = trend_ribbon_grp)
+int ribbon_leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
+int ribbon_lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval = 1, group = trend_ribbon_grp)
 string reversal_bands_grp = "Reversal Bands"
 bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
@@ -212,8 +212,8 @@ barcolor(up > dn ? aqua_color : purple_color)
 float offset_perc = get_width_by_percent(300, signal_offset)
 plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Sell Label", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.tiny, display = display.pane)
-plotshape(ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
-plotshape(ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+plotshape(ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 
 plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_30, display = display.pane)
 plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_30, display = display.pane)
@@ -222,6 +222,6 @@ plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band
 plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_30, display = display.pane)
 plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_30, display = display.pane)
 
-float leading_ribbon = ta.sma(close, leading_smoothing)
-float lagging_ribbon = ta.sma(close, lagging_smoothing)
+float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
+float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
 fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? aqua_color_70 : purple_color_70, title = "Ribbon Fill Color")

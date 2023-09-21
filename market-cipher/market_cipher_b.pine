@@ -27,7 +27,8 @@ int wt_avg_prd = input.int(12, title = "Average Period", group = wt_grp)
 string mfo_grp = "MFO"
 bool mfo_showed = input.bool(true, title = "Show", group = mfo_grp)
 int mfo_prd = input.int(60, title = "Period", group = mfo_grp)
-int mfo_mult = input.int(100, title = "Area Multiplier", group = mfo_grp)
+int mfo_mult = input.int(150, title = "Area Multiplier", group = mfo_grp)
+float mfo_pos_y = input.float(2.5, title = "Position Y", group = mfo_grp)
 string rsi_grp = "RSI"
 bool rsi_showed = input.bool(true, title = "Show", group = rsi_grp)
 int rsi_prd = input.int(40, title = "Period", group = rsi_grp)
@@ -48,16 +49,7 @@ get_wt_and_vwap() =>
     float vwap = leading_wt - lagging_wt
     [leading_wt, lagging_wt, vwap]
 
-get_mfo() => 
-    bool has_vol = not na(volume) and volume != 0
-    bool price_changed = close != high or close != low or high != low
-    float mfm = price_changed ? (2 * close - low - high) / (high - low) : 0
-    
-    if has_vol
-        float mfv = mfm * volume
-        math.sum(mfv, mfo_prd) * mfo_mult / math.sum(volume, mfo_prd)
-    else
-        ta.sma(mfm * mfo_mult, mfo_prd)
+get_mfo() => request.security(syminfo.tickerid, timeframe.period, ta.sma(((close - open) / (high - low)) * mfo_mult, mfo_prd) - mfo_pos_y)
         
 get_indicators() =>
     int offset = 0
