@@ -17,8 +17,165 @@ color green_color_30 = color.new(green_color, 70)
 color red_color_30 = color.new(red_color, 70)
 color aqua_color_70 = color.new(aqua_color, 70)
 color purple_color_70 = color.new(purple_color, 70)
-color aqua_color_40 = color.new(aqua_color, 40)
-color purple_color_40 = color.new(purple_color, 40)
+color aqua_color_20 = color.new(aqua_color, 20)
+color purple_color_20 = color.new(purple_color, 20)
+
+
+
+
+
+//** Volume Profile **//
+
+// Inputs
+string vp_grp = "Volume Profile"
+int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
+int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
+int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
+int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
+int vp_offset = input.int(20, "Offset From Last Bar", group = vp_grp)
+color vp_high_color = input.color(aqua_color_20, "Histogram Colors", inline = "hist", group = vp_grp)
+color vp_low_color = input.color(purple_color_20, "", inline = "hist", group = vp_grp)
+int vp_trans = input.int(10, "Transparency", 0, 100, group = vp_grp)
+
+
+// Methods
+method get_sin(int src, int bandwidth) =>
+    if src == 0
+        1
+    else
+        math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
+
+method get_multi_kernel_regression(float[] src, int prd)=>
+    int size = array.size(src)
+    float[] estimated_arr = array.new<float>(size)
+    float cur_price = na
+
+    for i = 0 to size - 1 
+        float sum = 0
+        float sumw = 0
+
+        for j = 0 to size - 1 
+            diff = i - j
+            weight = get_sin(diff, prd)
+            sum += array.get(src, j) * weight
+            sumw += weight
+
+        cur_price := sum / sumw
+        array.set(estimated_arr, i, cur_price >= 0 ? cur_price : 0)
+
+    estimated_arr
+
+int vp_cnum = 100
+float vp_top = ta.highest(vp_prd)
+float vp_bot = ta.lowest(vp_prd)
+float vp_dist = (vp_top - vp_bot) / 500
+float vp_step = (vp_top - vp_bot) / vp_cnum
+float[] vp_levels = array.new_float(vp_cnum + 1)
+
+for x = 0 to vp_cnum by 1
+    array.set(vp_levels, x, vp_bot + vp_step * x)
+
+method get_vol(float a, float b, float x, float y, float vol) =>
+    // Bar is completely below or above the range
+    if y < a or x > b
+        0
+    // Entire bar is inside the range but doesn't span it
+    else if x >= a and y <= b
+        p_range = (y - x) / (b - a)
+        p_range * vol
+    // Bar completely covers the range
+    else if x <= a and y >= b
+        p_bar = (b - a) / (y - x)
+        p_bar * vol
+    // Top of the bar is inside the range
+    else if x < a and y <= b
+        p_bar = (y - a) / (y - x)
+        p_bar * vol
+    // Bottom of the bar is inside the range
+    else if x >= a and y > b
+        p_bar = (b - x) / (y - x)
+        p_bar * vol
+    else
+        vol
+
+var lines = array.new<line>()
+var probs = array.new<box>()
+var volus = array.new<box>()
+var float line_float = na
+
+if array.size(lines) > 0
+    for i = array.size(lines) - 1 to 0
+        line.delete(array.get(lines, i))
+        array.remove(lines, i)
+
+    for i = array.size(probs) - 1 to 0
+        box.delete(array.get(probs, i))
+        array.remove(probs, i)
+
+    for i = array.size(volus) - 1 to 0
+        box.delete(array.get(volus, i))
+        array.remove(volus, i)
+ 
+if barstate.islast
+    float[] _volumes = array.new_float(vp_cnum, 0.)
+    float[] bullish_volumes = array.new_float(vp_cnum, 0.)
+
+    for bars = 0 to vp_prd - 1 by 1
+        float _high = high[bars]
+        float _low = low[bars]
+        float _volume = volume[bars]
+        bool _is_bullish = open[bars] < close[bars]
+
+        for x = 0 to vp_cnum - 1 by 1
+            array.set(_volumes, x, array.get(_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _volume))
+            
+            if _is_bullish
+                array.set(bullish_volumes, x, array.get(bullish_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _volume))
+
+    float[] smooth_volume = get_multi_kernel_regression(_volumes, vp_smoothing) 
+    var hl = array.new_float(vp_pivot, na)
+    var hr = array.new_float(vp_pivot, na)
+
+    for i = 0 to array.size(smooth_volume) - 1
+        float _max = array.max(smooth_volume, i) 
+        int _idx = array.indexof(smooth_volume, _max)
+
+        if _max > array.percentile_nearest_rank(smooth_volume, vp_peak_thresh)
+            for j = 0 to array.size(hl) - 1
+                array.set(hl, j, array.get(smooth_volume, math.max(0, _idx - 1 - j)))
+                array.set(hr, j, array.get(smooth_volume, math.min(array.size(smooth_volume) - 1, _idx + 1 + j)))
+                            
+    float[] colors = array.new_float(vp_cnum, 0.)
+
+    for i = 0 to vp_cnum - 1
+        float max_level = array.get(_volumes, i)
+        float bullish_level = array.get(bullish_volumes, i)
+        array.set(colors, i, bullish_level / max_level)
+
+    float max_vol = array.max(_volumes)
+
+    for x = 0 to vp_cnum - 1 by 1
+        array.set(_volumes, x, array.get(_volumes, x) * vp_prd / (3 * max_vol))
+
+    float[] normal_volumes = get_multi_kernel_regression(_volumes, vp_smoothing)
+    int edge = bar_index + math.round(array.max(normal_volumes)) + vp_offset
+    var vol_bars = array.new_box(vp_cnum, na)
+
+    for i = 0 to vp_cnum - 1 by 1
+        box.delete(array.get(vol_bars, i))
+        array.set(
+         vol_bars, i,
+         box.new(edge - math.round(array.get(normal_volumes, i)), 
+          array.get(vp_levels, i + 1) - vp_dist, 
+          edge, 
+          array.get(vp_levels, i) + vp_dist, 
+          border_width = 0, 
+          bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
+         )
+
+
+
+
 
 //** S/R **//
 
@@ -227,272 +384,3 @@ plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Ban
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
 fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? aqua_color_70 : purple_color_70, title = "Ribbon Fill Color")
-
-
-
-
-
-
-
-
-
-//** Volume Profile **//
-
-// Inputs
-string vp_grp = "Volume Profile"
-int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
-int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
-int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
-int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_score_len = input.int(20, "Mean Score Length", group = vp_grp)
-color vp_high_color = input.color(aqua_color_40, "Histogram Colors", inline = "hist", group = vp_grp)
-color vp_low_color = input.color(purple_color_40, "", inline = "hist", group = vp_grp)
-int vp_trans = input.int(10, "Transparency", 0, 100, group = vp_grp)
-color vp_alpha = color.new(color.black, 100)
-
-
-// Methods
-method get_gamma(float src) =>
-    var float math_two_sqrt_over_pi = 1.8603827342052657173362492472666631120594218414085755
-    var int gamma_n = 10
-    var float gamma_r = 10.900511
-    var float[] series_gamma_dk = array.from(
-     2.48574089138753565546e-5,
-     1.05142378581721974210,
-     -3.45687097222016235469,
-     4.51227709466894823700,
-     -2.98285225323576655721, 
-     1.05639711577126713077, 
-     -1.95428773191645869583e-1, 
-     1.70970543404441224307e-2, 
-     -5.71926117404305781283e-4, 
-     4.63399473359905636708e-6, 
-     -2.71994908488607703910e-9)
-
-    // float z = src
-
-    if src < 0.5
-        float s = array.get(series_gamma_dk, 0)
-
-        for int i = 1 to gamma_n by 1
-            s += array.get(series_gamma_dk, i) / (i - src)
-            s
-
-        gamma = math.pi / math.sin(math.pi * src) * s * math_two_sqrt_over_pi * math.pow((0.5 - src + gamma_r) / math.e, 0.5 - src)
-        gamma
-    else
-        float s = array.get(series_gamma_dk, 0)
-
-        for int i = 1 to gamma_n by 1
-            s += array.get(series_gamma_dk, i) / (src + i - 1.0)
-            s
-
-        gamma = s * math_two_sqrt_over_pi * math.pow((src - 0.5 + gamma_r) / math.e, src - 0.5)
-        gamma
-
-method get_dist_pdf(float x, int v) =>
-    get_gamma((v + 1) / 2) / (math.sqrt(v * math.pi) * get_gamma(v / 2)) * math.pow(1 + x * x / v, -(v + 1) / 2)
-
-method rise_factorial(float c, int n) =>
-    float product = 1.0
-
-    if n > 0
-        for i = 0 to n - 1
-            product *= (c + i)
-            
-    product
-
-method get_hypergeometric(float a, float b, float c, float z) =>
-    float sum = 0.0
-
-    for i = 0 to 2
-        sum += rise_factorial(a, i) * rise_factorial(b, i) * math.pow(z, i) / (rise_factorial(c, i) * rise_factorial(i, i))
-    
-    sum
-
-method get_dist_cdf(float x, int v) =>
-    1 / 2.0 + x * get_gamma((v + 1) / 2.0) * (get_hypergeometric(1 / 2.0, (v + 1) / 2.0, 3.0 / 2, x * x / v) / (math.sqrt(v * math.pi) * get_gamma(v / 2)))
-
-method round_num(float number)=>
-    if number >= 1000000000
-        str.tostring(math.round(number / 1000000000, 2)) + " B"
-    else if number >= 1000000
-        str.tostring(math.round(number / 1000000, 2)) + " M"
-    else if number >= 1000
-        str.tostring(math.round(number / 1000, 2)) + " K"
-    else 
-        str.tostring(math.round(number, 2))
-
-int vp_stdev_len = vp_score_len
-float vp_mean = ta.sma(close, vp_score_len)
-float vp_p = (1 - 0.99) / 2
-
-float vp_lower = -100
-float vp_upper = 100
-float vp_mid = (vp_lower + vp_upper) / 2
-
-while math.abs(get_dist_cdf(vp_mid, vp_stdev_len - 1) - vp_p) > 0.000001
-    if get_dist_cdf(vp_mid, vp_stdev_len - 1) > vp_p
-        vp_upper := vp_mid
-    else
-        vp_lower := vp_mid
-
-    vp_mid := (vp_lower + vp_upper) / 2
-
-float vp_value = vp_mid
-
-if vp_value < 0
-    vp_value := -vp_value
-
-float vp_squared_diff = math.pow(open - vp_mean, 2)
-float vp_summed_squares = math.sum(vp_squared_diff, vp_stdev_len)
-float vp_mean_squared_error = vp_summed_squares / (vp_stdev_len - 1)
-float vp_rmse = math.sqrt(vp_mean_squared_error)
-float vp_root_standard_error = math.sqrt(1 + 1 / vp_stdev_len + vp_squared_diff / vp_summed_squares)
-float vp_offset = vp_value * vp_rmse * vp_root_standard_error
-
-method sinc(int src, int bandwidth) =>
-    if src == 0
-        1
-    else
-        math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
-
-method multi_kernel_regression(float[] src, int prd)=>
-    int size = array.size(src)
-    float[] estimated_arr = array.new<float>(size)
-    float cur_price = na
-
-    for i = 0 to size - 1 
-        float sum = 0
-        float sumw = 0
-
-        for j = 0 to size - 1 
-            diff = i - j
-            weight = sinc(diff, prd)
-            sum += array.get(src, j) * weight
-            sumw += weight
-
-        cur_price := sum / sumw
-        array.set(estimated_arr, i, cur_price >= 0 ? cur_price : 0)
-
-    estimated_arr
-
-int vp_cnum = 100
-float vp_top = ta.highest(vp_prd)
-float vp_bot = ta.lowest(vp_prd)
-float vp_dist = (vp_top - vp_bot) / 500
-float vp_step = (vp_top - vp_bot) / vp_cnum
-float vp_range = vp_step * vp_pivot
-float[] vp_levels = array.new_float(vp_cnum + 1)
-
-for x = 0 to vp_cnum by 1
-    array.set(vp_levels, x, vp_bot + vp_step * x)
-
-method get_vol(float a, float b, float x, float y, float vol) =>
-    // Bar is completely below or above the range
-    if y < a or x > b
-        0
-    // Entire bar is inside the range but doesn't span it
-    else if x >= a and y <= b
-        p_range = (y - x) / (b - a)
-        p_range * vol
-    // Bar completely covers the range
-    else if x <= a and y >= b
-        p_bar = (b - a) / (y - x)
-        p_bar * vol
-    // Top of the bar is inside the range
-    else if x < a and y <= b
-        p_bar = (y - a) / (y - x)
-        p_bar * vol
-    // Bottom of the bar is inside the range
-    else if x >= a and y > b
-        p_bar = (b - x) / (y - x)
-        p_bar * vol
-    else
-        vol
-
-var lines = array.new<line>()
-var probs = array.new<box>()
-var volus = array.new<box>()
-var float line_float = na
-
-if array.size(lines) > 0
-    for i = array.size(lines) - 1 to 0
-        line.delete(array.get(lines, i))
-        array.remove(lines, i)
-
-    for i = array.size(probs) - 1 to 0
-        box.delete(array.get(probs, i))
-        array.remove(probs, i)
-
-    for i = array.size(volus) - 1 to 0
-        box.delete(array.get(volus, i))
-        array.remove(volus, i)
- 
-if barstate.islast
-    float[] _volumes = array.new_float(vp_cnum, 0.)
-    float[] bullish_volumes = array.new_float(vp_cnum, 0.)
-
-    for bars = 0 to vp_prd - 1 by 1
-        High = high[bars]
-        Low = low[bars]
-        Volume = volume[bars]
-        state = open[bars] < close[bars]
-
-        for x = 0 to vp_cnum - 1 by 1
-            array.set(_volumes, x, array.get(_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), Low, High, Volume))
-            
-            if state
-                array.set(bullish_volumes, x, array.get(bullish_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), Low, High, Volume))
-
-    float[] smooth_volume = multi_kernel_regression(_volumes, vp_smoothing) 
-    var hl = array.new_float(vp_pivot, na)
-    var hr = array.new_float(vp_pivot, na)
-
-    for i = 0 to array.size(smooth_volume) - 1
-        max = array.max(smooth_volume, i) 
-        var previous = 0.
-        idx = array.indexof(smooth_volume, max)
-
-        if max > array.percentile_nearest_rank(smooth_volume, vp_peak_thresh)
-            for j = 0 to array.size(hl) - 1
-                array.set(hl, j, array.get(smooth_volume, math.max(0, idx - 1 - j)))
-                array.set(hr, j, array.get(smooth_volume, math.min(array.size(smooth_volume) - 1, idx + 1 + j)))
-                            
-    color_array = array.new_float(vp_cnum, 0.)
-
-    for i = 0 to vp_cnum - 1
-        max_level = array.get(_volumes, i)
-        bullish_level = array.get(bullish_volumes, i)
-        array.set(color_array, i, bullish_level/max_level)
-
-    maxvol = array.max(_volumes)
-
-    for x = 0 to vp_cnum - 1 by 1
-        array.set(_volumes, x, array.get(_volumes, x) * vp_prd / (3 * maxvol))
-
-    normal_volumes = multi_kernel_regression(_volumes, vp_smoothing)
-    // edge = bar_index - vp_prd + 1
-    int demo = 80
-    edge = bar_index + demo
-    var vol_bars = array.new_box(vp_cnum, na)
-
-    for i = 0 to vp_cnum - 1 by 1
-        box.delete(array.get(vol_bars, i))
-        array.set(
-         vol_bars, i, 
-        //  box.new(edge, 
-        //   array.get(levels, i + 1) - dist, 
-        //   edge + math.round(array.get(normal_volumes, i)), 
-        //   array.get(levels, i) + dist, 
-        //   border_width = 0, 
-        //   bgcolor = color.new(color.from_gradient(array.get(color_array, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
-        //  )
-         box.new(edge - math.round(array.get(normal_volumes, i)), 
-          array.get(vp_levels, i + 1) - vp_dist, 
-          edge, 
-          array.get(vp_levels, i) + vp_dist, 
-          border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(color_array, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
-         )
- 
