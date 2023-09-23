@@ -17,8 +17,8 @@ color green_color_30 = color.new(green_color, 70)
 color red_color_30 = color.new(red_color, 70)
 color aqua_color_70 = color.new(aqua_color, 70)
 color purple_color_70 = color.new(purple_color, 70)
-color aqua_color_20 = color.new(aqua_color, 20)
-color purple_color_20 = color.new(purple_color, 20)
+color aqua_color_10 = color.new(aqua_color, 10)
+color purple_color_10 = color.new(purple_color, 10)
 
 
 
@@ -33,9 +33,9 @@ int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
 int vp_offset = input.int(20, "Offset From Last Bar", group = vp_grp)
-color vp_high_color = input.color(aqua_color_20, "Histogram Colors", inline = "hist", group = vp_grp)
-color vp_low_color = input.color(purple_color_20, "", inline = "hist", group = vp_grp)
-int vp_trans = input.int(10, "Transparency", 0, 100, group = vp_grp)
+color vp_high_color = input.color(aqua_color_10, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
+color vp_low_color = input.color(purple_color_10, "", inline = "Histogram Colors", group = vp_grp)
+int vp_trans = input.int(20, "Transparency", 0, 100, group = vp_grp)
 
 
 // Methods
@@ -366,7 +366,7 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 
 
 // Plots
-barcolor(up > dn ? aqua_color : purple_color)
+barcolor(up > dn ? aqua_color : purple_color, title = "Custom Bar Colors")
 
 float offset_perc = get_width_by_percent(300, signal_offset)
 plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.tiny, display = display.pane)
