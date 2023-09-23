@@ -12,13 +12,11 @@ color green_color = #16F9BA
 color red_color = #F23A64
 color pink_color = #DB3AF2
 color aqua_color = #21BAF3
-color purple_color = #673AB7
+color purple_color = #722FFA
 color green_color_30 = color.new(green_color, 70)
 color red_color_30 = color.new(red_color, 70)
 color aqua_color_70 = color.new(aqua_color, 70)
 color purple_color_70 = color.new(purple_color, 70)
-color aqua_color_10 = color.new(aqua_color, 10)
-color purple_color_10 = color.new(purple_color, 10)
 
 
 
@@ -28,14 +26,15 @@ color purple_color_10 = color.new(purple_color, 10)
 
 // Inputs
 string vp_grp = "Volume Profile"
+bool vp_showed = input.bool(true, title = "Show", group = vp_grp)
 int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
 int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_offset = input.int(20, "Offset From Last Bar", group = vp_grp)
-color vp_high_color = input.color(aqua_color_10, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
-color vp_low_color = input.color(purple_color_10, "", inline = "Histogram Colors", group = vp_grp)
-int vp_trans = input.int(20, "Transparency", 0, 100, group = vp_grp)
+int vp_offset = input.int(15, "Offset From Last Bar", group = vp_grp)
+color vp_high_color = input.color(aqua_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
+color vp_low_color = input.color(purple_color, "", inline = "Histogram Colors", group = vp_grp)
+int vp_trans = input.int(50, "Transparency", 0, 100, group = vp_grp)
 
 
 // Methods
@@ -68,7 +67,6 @@ method get_multi_kernel_regression(float[] src, int prd)=>
 int vp_cnum = 100
 float vp_top = ta.highest(vp_prd)
 float vp_bot = ta.lowest(vp_prd)
-float vp_dist = (vp_top - vp_bot) / 500
 float vp_step = (vp_top - vp_bot) / vp_cnum
 float[] vp_levels = array.new_float(vp_cnum + 1)
 
@@ -116,59 +114,59 @@ if array.size(lines) > 0
         box.delete(array.get(volus, i))
         array.remove(volus, i)
  
-if barstate.islast
-    float[] _volumes = array.new_float(vp_cnum, 0.)
-    float[] bullish_volumes = array.new_float(vp_cnum, 0.)
+if barstate.islast and vp_showed
+    float[] _vols = array.new_float(vp_cnum, 0.)
+    float[] _bullish_vols = array.new_float(vp_cnum, 0.)
 
     for bars = 0 to vp_prd - 1 by 1
         float _high = high[bars]
         float _low = low[bars]
-        float _volume = volume[bars]
+        float _vol = volume[bars]
         bool _is_bullish = open[bars] < close[bars]
 
         for x = 0 to vp_cnum - 1 by 1
-            array.set(_volumes, x, array.get(_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _volume))
+            array.set(_vols, x, array.get(_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
             
             if _is_bullish
-                array.set(bullish_volumes, x, array.get(bullish_volumes, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _volume))
+                array.set(_bullish_vols, x, array.get(_bullish_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
 
-    float[] smooth_volume = get_multi_kernel_regression(_volumes, vp_smoothing) 
+    float[] smooth_vols = get_multi_kernel_regression(_vols, vp_smoothing) 
     var hl = array.new_float(vp_pivot, na)
     var hr = array.new_float(vp_pivot, na)
 
-    for i = 0 to array.size(smooth_volume) - 1
-        float _max = array.max(smooth_volume, i) 
-        int _idx = array.indexof(smooth_volume, _max)
+    for i = 0 to array.size(smooth_vols) - 1
+        float _max = array.max(smooth_vols, i) 
+        int _idx = array.indexof(smooth_vols, _max)
 
-        if _max > array.percentile_nearest_rank(smooth_volume, vp_peak_thresh)
+        if _max > array.percentile_nearest_rank(smooth_vols, vp_peak_thresh)
             for j = 0 to array.size(hl) - 1
-                array.set(hl, j, array.get(smooth_volume, math.max(0, _idx - 1 - j)))
-                array.set(hr, j, array.get(smooth_volume, math.min(array.size(smooth_volume) - 1, _idx + 1 + j)))
+                array.set(hl, j, array.get(smooth_vols, math.max(0, _idx - 1 - j)))
+                array.set(hr, j, array.get(smooth_vols, math.min(array.size(smooth_vols) - 1, _idx + 1 + j)))
                             
     float[] colors = array.new_float(vp_cnum, 0.)
 
     for i = 0 to vp_cnum - 1
-        float max_level = array.get(_volumes, i)
-        float bullish_level = array.get(bullish_volumes, i)
+        float max_level = array.get(_vols, i)
+        float bullish_level = array.get(_bullish_vols, i)
         array.set(colors, i, bullish_level / max_level)
 
-    float max_vol = array.max(_volumes)
+    float max_vol = array.max(_vols)
 
     for x = 0 to vp_cnum - 1 by 1
-        array.set(_volumes, x, array.get(_volumes, x) * vp_prd / (3 * max_vol))
+        array.set(_vols, x, array.get(_vols, x) * vp_prd / (3 * max_vol))
 
-    float[] normal_volumes = get_multi_kernel_regression(_volumes, vp_smoothing)
-    int edge = bar_index + math.round(array.max(normal_volumes)) + vp_offset
+    float[] normal_vols = get_multi_kernel_regression(_vols, vp_smoothing)
+    int edge = bar_index + math.round(array.max(normal_vols)) + vp_offset
     var vol_bars = array.new_box(vp_cnum, na)
 
     for i = 0 to vp_cnum - 1 by 1
         box.delete(array.get(vol_bars, i))
         array.set(
          vol_bars, i,
-         box.new(edge - math.round(array.get(normal_volumes, i)), 
-          array.get(vp_levels, i + 1) - vp_dist, 
+         box.new(edge - math.round(array.get(normal_vols, i)), 
+          array.get(vp_levels, i + 1), 
           edge, 
-          array.get(vp_levels, i) + vp_dist, 
+          array.get(vp_levels, i), 
           border_width = 0, 
           bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
          )
@@ -181,6 +179,7 @@ if barstate.islast
 
 // Inputs
 string sr_grp = "S/R"
+bool sr_showed = input.bool(true, title = "Show", group = sr_grp)
 color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
@@ -211,7 +210,7 @@ var sr_lines_h = array.new_line(sr_size, na)
 var sr_lines_l = array.new_line(sr_size, na)
 var sr_lines_f = array.new_linefill(sr_size, na)
 
-if sr_ph or sr_pl
+if (sr_ph or sr_pl) and sr_showed
     for i = 0 to array.size(sr_levels) - 1
         array.set(sr_levels, i, na)
 
@@ -274,35 +273,35 @@ if sr_ph or sr_pl
                     if sr_pl[i] and pp_count < sr_size
                         array.set(sr_levels, pp_count, low[i + sr_rb])
 
+if sr_showed
+    var line sr_highest_fill_1 = na, line.delete(sr_highest_fill_1)
+    var line sr_highest_fill_2 = na, line.delete(sr_highest_fill_2)
+    var line sr_lowest_fill_1 = na, line.delete(sr_lowest_fill_1)
+    var line sr_lowest_fill_2 = na, line.delete(sr_lowest_fill_2)
+    color sr_high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
+    color sr_low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
+    sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_perc, bar_index, sr_highest_ph + sr_zone_perc, xloc.bar_index, extend.both, na)
+    sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_perc, bar_index, sr_highest_ph - sr_zone_perc, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_perc, bar_index, sr_lowest_pl + sr_zone_perc, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_perc, bar_index, sr_lowest_pl - sr_zone_perc, xloc.bar_index, extend.both, na)
+    linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 80))
+    linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 80))
 
-var line sr_highest_fill_1 = na, line.delete(sr_highest_fill_1)
-var line sr_highest_fill_2 = na, line.delete(sr_highest_fill_2)
-var line sr_lowest_fill_1 = na, line.delete(sr_lowest_fill_1)
-var line sr_lowest_fill_2 = na, line.delete(sr_lowest_fill_2)
-color sr_high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
-color sr_low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
-sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_perc, bar_index, sr_highest_ph + sr_zone_perc, xloc.bar_index, extend.both, na)
-sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_perc, bar_index, sr_highest_ph - sr_zone_perc, xloc.bar_index, extend.both, na)
-sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_perc, bar_index, sr_lowest_pl + sr_zone_perc, xloc.bar_index, extend.both, na)
-sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_perc, bar_index, sr_lowest_pl - sr_zone_perc, xloc.bar_index, extend.both, na)
-linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 80))
-linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 80))
+    if sr_ph or sr_pl
+        for i = 0 to array.size(sr_lines) - 1
+            array.set(sr_levels_tmp, i, array.get(sr_levels, i))
 
-if sr_ph or sr_pl
     for i = 0 to array.size(sr_lines) - 1
-        array.set(sr_levels_tmp, i, array.get(sr_levels, i))
+        line.delete(array.get(sr_lines, i))
+        line.delete(array.get(sr_lines_h, i))
+        line.delete(array.get(sr_lines_l, i))
+        linefill.delete(array.get(sr_lines_f, i))
 
-for i = 0 to array.size(sr_lines) - 1
-    line.delete(array.get(sr_lines, i))
-    line.delete(array.get(sr_lines_h, i))
-    line.delete(array.get(sr_lines_l, i))
-    linefill.delete(array.get(sr_lines_f, i))
-
-    if array.get(sr_levels_tmp, i)
-        line_col = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
-        array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) + sr_zone_perc, xloc.bar_index, extend.both, na))
-        array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) - sr_zone_perc, xloc.bar_index, extend.both, na))
-        array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_col, 80)))
+        if array.get(sr_levels_tmp, i)
+            line_col = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
+            array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) + sr_zone_perc, xloc.bar_index, extend.both, na))
+            array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) - sr_zone_perc, xloc.bar_index, extend.both, na))
+            array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_col, 80)))
 
 
 
@@ -369,10 +368,10 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 barcolor(up > dn ? aqua_color : purple_color, title = "Custom Bar Colors")
 
 float offset_perc = get_width_by_percent(300, signal_offset)
-plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.tiny, display = display.pane)
-plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Sell Label", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.tiny, display = display.pane)
-plotshape(ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
-plotshape(ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.auto, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Sell Label", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.auto, display = display.pane)
+plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 
 plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_30, display = display.pane)
 plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_30, display = display.pane)

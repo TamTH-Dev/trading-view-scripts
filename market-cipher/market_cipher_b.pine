@@ -10,9 +10,9 @@ color blue_light_color = #3DCBFF
 color yellow_color = #F2E40A
 color green_color = #16F9BA
 color red_color = #F23A64
-color pink_color = #DB3AF2
+color pink_color = #E02FF9
 color aqua_color = #21BAF3
-color purple_color = #673AB7
+color purple_color = #722FFA
 
 
 // Inputs
@@ -83,9 +83,9 @@ plot(mfo_showed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(green_col
 
 plot(0, title = "Zero Line", color = white_color, display = display.pane)
 
-plot(rsi_showed ? rsi : na, title = "RSI", color = pink_color)
+plot(rsi_showed ? rsi : na, title = "RSI", color = purple_color)
 
-plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = rsi > stoch_rsi ? aqua_color : purple_color, linewidth = 2)
+plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = rsi > stoch_rsi ? green_color : red_color, linewidth = 2)
 
 plot(ta.crossover(leading_wt, lagging_wt) ? lagging_wt : na, title = "Buy Signal", color = color.new(green_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
 plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Signal", color = color.new(red_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
