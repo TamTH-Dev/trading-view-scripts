@@ -24,8 +24,13 @@ string wt_grp = "Waves Trend"
 bool wt_showed = input.bool(true, title = "Show", group = wt_grp)
 int wt_chl_prd = input.int(9, title = "Channel Period", group = wt_grp)
 int wt_avg_prd = input.int(12, title = "Average Period", group = wt_grp)
-float wt_ma_src = input.source(hlc3, title = 'MA Source')
-int wt_ma_len = input.int(3, title = 'MA Length')
+float wt_ma_src = input.source(hlc3, title = "MA Source", group = wt_grp)
+int wt_ma_len = input.int(3, title = "MA Length", group = wt_grp)
+bool wt_div_showed = input.bool(true, title = "Show Divergence", group = wt_grp)
+int wt_long_bearish_div_level = input.int(45, title = "Long Bearish Divergence Level", group = wt_grp)
+int wt_long_bullish_div_level = input.int(-65, title = "Long Bullish Divergence Level", group = wt_grp)
+int wt_short_brearish_div_level = input.int(15, title = "Short Bearish Divergence Level", group = wt_grp)
+int wt_short_bullish_div_level = input.int(-40, title = "Short Bullish Divergence Level", group = wt_grp)
 string mfo_grp = "MFO"
 bool mfo_showed = input.bool(true, title = "Show", group = mfo_grp)
 int mfo_prd = input.int(60, title = "Period", group = mfo_grp)
@@ -41,6 +46,21 @@ bool vwap_showed = input.bool(true, title = "Show VWAP")
 
 
 // Methods
+get_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+get_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+method fractalize(float src) => get_top_fractal(src) ? 1 : get_bot_fractal(src) ? -1 : 0
+
+method get_div_points(float src, int top_limit, int botLimit) =>
+    float top_fractal = fractalize(src) > 0 and src[2] >= top_limit ? src[2] : na
+    float bot_fractal = fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na
+    float high_prev = ta.valuewhen(top_fractal, src[2], 0)[2]
+    float high_price = ta.valuewhen(top_fractal, high[2], 0)[2]
+    float low_prev = ta.valuewhen(bot_fractal, src[2], 0)[2]
+    float low_price = ta.valuewhen(bot_fractal, low[2], 0)[2]
+    bool is_bearish = top_fractal and high[2] > high_price and src[2] < high_prev
+    bool is_bullish = bot_fractal and low[2] < low_price and src[2] > low_prev
+    [top_fractal, bot_fractal, low_prev, is_bearish, is_bullish]
+
 get_wt_and_vwap() =>
     float src = request.security(syminfo.tickerid, timeframe.period, wt_ma_src)
     float esa = ta.ema(src, wt_chl_prd)
@@ -61,7 +81,10 @@ get_indicators() =>
     float stoch_rsi = ta.sma(ta.stoch(close, high, low, stoch_rsi_prd), 2)
     [leading_wt[offset], lagging_wt[offset], vwap[offset], mfo[offset], rsi[offset], stoch_rsi[offset]]
 
+
 [leading_wt, lagging_wt, vwap, mfo, rsi, stoch_rsi] = request.security(syminfo.tickerid, timeframe.period, get_indicators())
+[wt_long_top_fractal, wt_long_bot_fractal, wtLow_prev, is_wt_long_bearish_div, is_wt_long_bullish_div] = get_div_points(lagging_wt, wt_long_bearish_div_level, wt_long_bullish_div_level)
+[wt_short_top_fractal, wt_short_bot_fractal, wtLow_prev_add, is_wt_short_bearish_div, is_wt_short_bullish_div] =  get_div_points(lagging_wt, wt_short_brearish_div_level, wt_short_bullish_div_level)
 
 
 // Plots
@@ -95,52 +118,11 @@ plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Sign
 plotchar(ta.crossover(leading_wt, lagging_wt) and leading_wt < oversold_threshold, title = "Strong Buy Signal", char = "⛳", color = green_color, location = location.bottom, size = size.tiny, display = display.pane)
 plotchar(ta.crossover(lagging_wt, leading_wt) and leading_wt > overbought_threshold, title = "Strong Sell Signal", char = "⛳", color = red_color, location = location.bottom, size = size.tiny, display = display.pane)
 
-
-
-
-
-
-get_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
-get_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
-fractalize(src) => get_top_fractal(src) ? 1 : get_bot_fractal(src) ? -1 : 0
-
-f_findDivs(src, topLimit, botLimit, useLimits) =>
-    fractalTop = fractalize(src) > 0 and (useLimits ? src[2] >= topLimit : true) ? src[2] : na
-    fractalBot = fractalize(src) < 0 and (useLimits ? src[2] <= botLimit : true) ? src[2] : na
-    highPrev = ta.valuewhen(fractalTop, src[2], 0)[2]
-    highPrice = ta.valuewhen(fractalTop, high[2], 0)[2]
-    lowPrev = ta.valuewhen(fractalBot, src[2], 0)[2]
-    lowPrice = ta.valuewhen(fractalBot, low[2], 0)[2]
-    bearSignal = fractalTop and high[2] > highPrice and src[2] < highPrev
-    bullSignal = fractalBot and low[2] < lowPrice and src[2] > lowPrev
-    bearDivHidden = fractalTop and high[2] < highPrice and src[2] > highPrev
-    bullDivHidden = fractalBot and low[2] > lowPrice and src[2] < lowPrev
-    [fractalTop, fractalBot, lowPrev, bearSignal, bullSignal, bearDivHidden, bullDivHidden]
-
-
-
-wtDivOBLevel = input.int(45, title = 'WT Bearish Divergence min')
-wtDivOSLevel = input.int(-65, title = 'WT Bullish Divergence min')
-wtDivOBLevel_addshow = input.bool(true, title = 'Show 2nd WT Regular Divergences')
-wtDivOBLevel_add = input.int(15, title = 'WT 2nd Bearish Divergence')
-wtDivOSLevel_add = input.int(-40, title = 'WT 2nd Bullish Divergence 15 min')
-
-
-
-[wtFractalTop, wtFractalBot, wtLow_prev, wtBearDiv, wtBullDiv, wtBearDivHidden, wtBullDivHidden] = f_findDivs(lagging_wt, wtDivOBLevel, wtDivOSLevel, true)
-[wtFractalTop_add, wtFractalBot_add, wtLow_prev_add, wtBearDiv_add, wtBullDiv_add, wtBearDivHidden_add, wtBullDivHidden_add] =  f_findDivs(lagging_wt, wtDivOBLevel_add, wtDivOSLevel_add, true)
-[wtFractalTop_nl, wtFractalBot_nl, wtLow_prev_nl, wtBearDiv_nl, wtBullDiv_nl, wtBearDivHidden_nl, wtBullDivHidden_nl] =  f_findDivs(lagging_wt, 0, 0, false)
-
-wtBearDivHidden_ = wtBearDivHidden_nl
-wtBullDivHidden_ = wtBullDivHidden_nl
-wtBearDivColor = true and wtBearDiv ? red_color : na
-wtBullDivColor = true and wtBullDiv ? green_color : na
-wtBearDivColor_add = true and wtDivOBLevel_addshow and wtBearDiv_add ? #9a0202 : na
-wtBullDivColor_add = true and wtDivOBLevel_addshow and wtBullDiv_add ? #1b5e20 : na
-
-
-
-plot(series = wtFractalTop ? lagging_wt[2] : na, title = 'WT Bearish Divergence', color = wtBearDivColor, linewidth = 2, offset = -2)
-plot(series = wtFractalBot ? lagging_wt[2] : na, title = 'WT Bullish Divergence', color = wtBullDivColor, linewidth = 2, offset = -2)
-plot(series = wtFractalTop_add ? lagging_wt[2] : na, title = 'WT 2nd Bearish Divergence', color = wtBearDivColor_add, linewidth = 2, offset = -2)
-plot(series = wtFractalBot_add ? lagging_wt[2] : na, title = 'WT 2nd Bullish Divergence', color = wtBullDivColor_add, linewidth = 2, offset = -2)
+wt_long_bearish_div_color = wt_div_showed and is_wt_long_bearish_div ? red_color : na
+wt_long_bullish_div_color = wt_div_showed and is_wt_long_bullish_div ? green_color : na
+wt_short_bearish_div_color = wt_div_showed and is_wt_short_bearish_div ? color.new(red_color, 60) : na
+wt_short_bullish_div_color = wt_div_showed and is_wt_short_bullish_div ? color.new(green_color, 60) : na
+plot(series = wt_long_top_fractal ? lagging_wt[2] : na, title = "Wave Trend Long Bearish Divergence", color = wt_long_bearish_div_color, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wt_long_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Long Bullish Divergence", color = wt_long_bullish_div_color, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wt_short_top_fractal ? lagging_wt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wt_short_bearish_div_color, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wt_short_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Short Bullish Divergence", color = wt_short_bullish_div_color, linewidth = 2, offset = -2, display = display.pane)
