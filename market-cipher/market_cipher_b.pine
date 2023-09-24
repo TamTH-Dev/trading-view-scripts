@@ -118,8 +118,8 @@ plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Sign
 
 bool is_oversold_buy_signal = ta.crossover(leading_wt, lagging_wt) and leading_wt < oversold_threshold
 bool is_overbought_sell_signal = ta.crossover(lagging_wt, leading_wt) and leading_wt > overbought_threshold
-plotchar(is_oversold_buy_signal ? -108 : na, title = "Oversold Buy Signal", char = "•", color = color.new(green_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
-plotchar(is_overbought_sell_signal ? -108 : na, title = "Oversold Sell Signal", char = "•", color = color.new(red_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
+plotchar(is_oversold_buy_signal ? -107 : na, title = "Oversold Buy Signal", char = "•", color = color.new(green_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
+plotchar(is_overbought_sell_signal ? -107 : na, title = "Oversold Sell Signal", char = "•", color = color.new(red_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
 
 bool is_div_buy_signal = wt_div_showed and (is_wt_long_bullish_div or is_wt_short_bullish_div)
 bool is_div_sell_signal = wt_div_showed and (is_wt_long_bearish_div or is_wt_short_bearish_div)
