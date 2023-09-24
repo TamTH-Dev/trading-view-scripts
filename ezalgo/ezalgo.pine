@@ -199,8 +199,8 @@ float sr_pl = ta.pivotlow (sr_rb, sr_rb)
 var sr_levels = array.new_float(sr_size, na)
 float sr_highest_prd = ta.highest(sr_prd)
 float sr_lowest_prd = ta.lowest(sr_prd)
-float sr_channel_perc = get_width_by_percent(sr_prd, 10)
-float sr_zone_perc = get_width_by_percent(300, sr_zone_width_percent)
+float sr_channel_width = get_width_by_percent(sr_prd, 10)
+float sr_zone_width = get_width_by_percent(300, sr_zone_width_percent)
 bool[] sr_aas = array.new_bool(41, true)
 float sr_highest_ph = 0.0, sr_highest_ph := sr_highest_ph[1]
 float sr_lowest_pl = 0.0, sr_lowest_pl := sr_lowest_pl[1]
@@ -231,8 +231,8 @@ if (sr_ph or sr_pl) and sr_showed
                 break
 
             if array.get(sr_aas, pp_count)
-                upl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) + sr_channel_perc
-                dnl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) - sr_channel_perc
+                upl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) + sr_channel_width
+                dnl = (sr_ph[i] ? high[i + sr_rb] : low[i + sr_rb]) - sr_channel_width
                 tmp = array.new_bool(41, true)
                 count = 0
                 points = 0
@@ -280,10 +280,10 @@ if sr_showed
     var line sr_lowest_fill_2 = na, line.delete(sr_lowest_fill_2)
     color sr_high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
     color sr_low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
-    sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_perc, bar_index, sr_highest_ph + sr_zone_perc, xloc.bar_index, extend.both, na)
-    sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_perc, bar_index, sr_highest_ph - sr_zone_perc, xloc.bar_index, extend.both, na)
-    sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_perc, bar_index, sr_lowest_pl + sr_zone_perc, xloc.bar_index, extend.both, na)
-    sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_perc, bar_index, sr_lowest_pl - sr_zone_perc, xloc.bar_index, extend.both, na)
+    sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_width, bar_index, sr_highest_ph + sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_width, bar_index, sr_highest_ph - sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_width, bar_index, sr_lowest_pl + sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
     linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 80))
     linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 80))
 
@@ -299,8 +299,8 @@ if sr_showed
 
         if array.get(sr_levels_tmp, i)
             line_col = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
-            array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) + sr_zone_perc, xloc.bar_index, extend.both, na))
-            array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_perc, bar_index, array.get(sr_levels_tmp, i) - sr_zone_perc, xloc.bar_index, extend.both, na))
+            array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_width, bar_index, array.get(sr_levels_tmp, i) + sr_zone_width, xloc.bar_index, extend.both, na))
+            array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_width, bar_index, array.get(sr_levels_tmp, i) - sr_zone_width, xloc.bar_index, extend.both, na))
             array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_col, 80)))
 
 
