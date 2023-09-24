@@ -126,10 +126,10 @@ bool is_div_sell_signal = wt_div_showed and (is_wt_long_bearish_div or is_wt_sho
 plotchar(is_div_buy_signal ? -106 : na, title = "Divergence Buy Signal", char = "•", color = green_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
 plotchar(is_div_sell_signal ? -106 : na, title = "Divergence Sell Signal", char = "•", color = red_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
 
-wt_long_bearish_div_color = wt_div_showed and is_wt_long_bearish_div ? red_color : na
-wt_long_bullish_div_color = wt_div_showed and is_wt_long_bullish_div ? green_color : na
-wt_short_bearish_div_color = wt_div_showed and is_wt_short_bearish_div ? color.new(red_color, 60) : na
-wt_short_bullish_div_color = wt_div_showed and is_wt_short_bullish_div ? color.new(green_color, 60) : na
+color wt_long_bearish_div_color = wt_div_showed and is_wt_long_bearish_div ? red_color : na
+color wt_long_bullish_div_color = wt_div_showed and is_wt_long_bullish_div ? green_color : na
+color wt_short_bearish_div_color = wt_div_showed and is_wt_short_bearish_div ? color.new(red_color, 60) : na
+color wt_short_bullish_div_color = wt_div_showed and is_wt_short_bullish_div ? color.new(green_color, 60) : na
 plot(series = wt_long_top_fractal ? lagging_wt[2] : na, title = "Wave Trend Long Bearish Divergence", color = wt_long_bearish_div_color, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wt_long_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Long Bullish Divergence", color = wt_long_bullish_div_color, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wt_short_top_fractal ? lagging_wt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wt_short_bearish_div_color, linewidth = 2, offset = -2, display = display.pane)
