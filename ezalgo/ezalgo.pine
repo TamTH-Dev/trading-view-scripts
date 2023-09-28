@@ -13,10 +13,10 @@ color red_color = #F23A64
 color pink_color = #DB3AF2
 color aqua_color = #21BAF3
 color purple_color = #722FFA
-color green_color_30 = color.new(green_color, 70)
-color red_color_30 = color.new(red_color, 70)
-color aqua_color_70 = color.new(aqua_color, 70)
-color purple_color_70 = color.new(purple_color, 70)
+color green_color_20 = color.new(green_color, 80)
+color red_color_20 = color.new(red_color, 80)
+color aqua_color_40 = color.new(aqua_color, 50)
+color purple_color_40 = color.new(purple_color, 50)
 
 
 
@@ -34,7 +34,7 @@ int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
 int vp_offset = input.int(15, "Offset From Last Bar", group = vp_grp)
 color vp_high_color = input.color(aqua_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
 color vp_low_color = input.color(purple_color, "", inline = "Histogram Colors", group = vp_grp)
-int vp_trans = input.int(50, "Transparency", 0, 100, group = vp_grp)
+int vp_trans = input.int(40, "Transparency", 0, 100, group = vp_grp)
 
 
 // Methods
@@ -129,19 +129,6 @@ if barstate.islast and vp_showed
             
             if _is_bullish
                 array.set(_bullish_vols, x, array.get(_bullish_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
-
-    float[] smooth_vols = get_multi_kernel_regression(_vols, vp_smoothing) 
-    var hl = array.new_float(vp_pivot, na)
-    var hr = array.new_float(vp_pivot, na)
-
-    for i = 0 to array.size(smooth_vols) - 1
-        float _max = array.max(smooth_vols, i) 
-        int _idx = array.indexof(smooth_vols, _max)
-
-        if _max > array.percentile_nearest_rank(smooth_vols, vp_peak_thresh)
-            for j = 0 to array.size(hl) - 1
-                array.set(hl, j, array.get(smooth_vols, math.max(0, _idx - 1 - j)))
-                array.set(hr, j, array.get(smooth_vols, math.min(array.size(smooth_vols) - 1, _idx + 1 + j)))
                             
     float[] colors = array.new_float(vp_cnum, 0.)
 
@@ -284,8 +271,8 @@ if sr_showed
     sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_width, bar_index, sr_highest_ph - sr_zone_width, xloc.bar_index, extend.both, na)
     sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_width, bar_index, sr_lowest_pl + sr_zone_width, xloc.bar_index, extend.both, na)
     sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
-    linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 80))
-    linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 80))
+    linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 90))
+    linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 90))
 
     if sr_ph or sr_pl
         for i = 0 to array.size(sr_lines) - 1
@@ -298,10 +285,14 @@ if sr_showed
         linefill.delete(array.get(sr_lines_f, i))
 
         if array.get(sr_levels_tmp, i)
-            line_col = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
-            array.set(sr_lines_h, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) + sr_zone_width, bar_index, array.get(sr_levels_tmp, i) + sr_zone_width, xloc.bar_index, extend.both, na))
-            array.set(sr_lines_l, i, line.new(bar_index - 355, array.get(sr_levels_tmp, i) - sr_zone_width, bar_index, array.get(sr_levels_tmp, i) - sr_zone_width, xloc.bar_index, extend.both, na))
-            array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_col, 80)))
+            color line_color = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
+            float top_line_offset = array.get(sr_levels_tmp, i) + sr_zone_width
+            float bot_line_offset = array.get(sr_levels_tmp, i) - sr_zone_width
+
+            if (top_line_offset != sr_highest_ph + sr_zone_width and bot_line_offset != sr_highest_ph - sr_zone_width and top_line_offset != sr_lowest_pl + sr_zone_width and bot_line_offset != sr_lowest_pl - sr_zone_width)
+                array.set(sr_lines_h, i, line.new(bar_index - 355, top_line_offset, bar_index, top_line_offset, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line_offset, bar_index, bot_line_offset, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, 90)))
 
 
 
@@ -321,6 +312,8 @@ int ribbon_lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval 
 string reversal_bands_grp = "Reversal Bands"
 bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
+string custom_bar_colors_grp = "Custom Bar Colors"
+bool custom_bar_colors_used = input.bool(false, "Use", group = custom_bar_colors_grp)
 
 
 // Methods
@@ -365,7 +358,7 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 
 
 // Plots
-barcolor(up > dn ? aqua_color : purple_color, title = "Custom Bar Colors")
+barcolor(custom_bar_colors_used ? (up > dn ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
 
 float offset_perc = get_width_by_percent(300, signal_offset)
 plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.auto, display = display.pane)
@@ -373,13 +366,13 @@ plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, titl
 plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 
-plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = green_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = purple_color_40, display = display.pane)
+plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = purple_color_40, display = display.pane)
+plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = purple_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = aqua_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = aqua_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = aqua_color_40, display = display.pane)
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
-fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? aqua_color_70 : purple_color_70, title = "Ribbon Fill Color")
+fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? green_color_20 : red_color_20, title = "Ribbon Fill Color")
