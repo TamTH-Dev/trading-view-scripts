@@ -15,8 +15,8 @@ color aqua_color = #21BAF3
 color purple_color = #722FFA
 color green_color_20 = color.new(green_color, 80)
 color red_color_20 = color.new(red_color, 80)
-color aqua_color_40 = color.new(aqua_color, 50)
-color purple_color_40 = color.new(purple_color, 50)
+color aqua_color_50 = color.new(aqua_color, 50)
+color purple_color_50 = color.new(purple_color, 50)
 
 
 
@@ -366,12 +366,12 @@ plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, titl
 plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 
-plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = purple_color_40, display = display.pane)
-plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = purple_color_40, display = display.pane)
-plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = purple_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = aqua_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = aqua_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = aqua_color_40, display = display.pane)
+plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = purple_color_50, display = display.pane)
+plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = purple_color_50, display = display.pane)
+plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = purple_color_50, display = display.pane)
+plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = aqua_color_50, display = display.pane)
+plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = aqua_color_50, display = display.pane)
+plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = aqua_color_50, display = display.pane)
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
