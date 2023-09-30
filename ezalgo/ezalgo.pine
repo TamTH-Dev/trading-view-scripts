@@ -37,6 +37,7 @@ int vp_offset = input.int(15, "Offset From Last Bar", group = vp_grp)
 color vp_high_color = input.color(aqua_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
 color vp_low_color = input.color(purple_color, "", inline = "Histogram Colors", group = vp_grp)
 int vp_trans = input.int(40, "Transparency", 0, 100, group = vp_grp)
+int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
 
 // Methods
@@ -145,14 +146,14 @@ if barstate.islast and vp_showed
         array.set(_vols, x, array.get(_vols, x) * vp_prd / (3 * max_vol))
 
     float[] normal_vols = get_multi_kernel_regression(_vols, vp_smoothing)
-    int edge = bar_index + math.round(array.max(normal_vols)) + vp_offset
+    int edge = bar_index + math.round(array.max(normal_vols) / vp_compaction_factor) + vp_offset
     var vol_bars = array.new_box(vp_cnum, na)
 
     for i = 0 to vp_cnum - 1 by 1
         box.delete(array.get(vol_bars, i))
         array.set(
          vol_bars, i,
-         box.new(edge - math.round(array.get(normal_vols, i)), 
+         box.new(edge - math.round(array.get(normal_vols, i) / vp_compaction_factor), 
           array.get(vp_levels, i + 1), 
           edge, 
           array.get(vp_levels, i), 
