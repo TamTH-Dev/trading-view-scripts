@@ -89,9 +89,9 @@ get_indicators() =>
 [wt_short_top_fractal, wt_short_bot_fractal, wt_short_low_prev, is_wt_short_bearish_div, is_wt_short_bullish_div] =  get_div_points(lagging_wt, wt_short_brearish_div_level, wt_short_bullish_div_level)
 
 // Plots
-var space_0_line = plot(-100, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
-var space_1_line = plot(-120, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
-fill(space_0_line, space_1_line, title = "Space", color = color.new(white_color, 100), editable = false)
+// var space_0_line = plot(-100, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+// var space_1_line = plot(-120, title = "Space", color = color.new(white_color, 100), editable = false, display = display.pane)
+// fill(space_0_line, space_1_line, title = "Space", color = color.new(white_color, 100), editable = false)
 
 plot(threshold_showed ? overbought_threshold : na, title = "Overbought Threshold", color = color.new(white_color, 80), display = display.pane)
 plot(threshold_showed ? oversold_threshold : na, title = "Oversold Threshold", color = color.new(white_color, 80), display = display.pane)
@@ -116,15 +116,15 @@ plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = rsi > 
 plot(ta.crossover(leading_wt, lagging_wt) ? lagging_wt : na, title = "Buy Signal", color = color.new(green_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
 plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Signal", color = color.new(red_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
 
-bool is_oversold_buy_signal = ta.crossover(leading_wt, lagging_wt) and leading_wt < oversold_threshold
-bool is_overbought_sell_signal = ta.crossover(lagging_wt, leading_wt) and leading_wt > overbought_threshold
-plotchar(is_oversold_buy_signal ? -107 : na, title = "Oversold Buy Signal", char = "•", color = color.new(green_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
-plotchar(is_overbought_sell_signal ? -107 : na, title = "Oversold Sell Signal", char = "•", color = color.new(red_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
+// bool is_oversold_buy_signal = ta.crossover(leading_wt, lagging_wt) and leading_wt < oversold_threshold
+// bool is_overbought_sell_signal = ta.crossover(lagging_wt, leading_wt) and leading_wt > overbought_threshold
+// plotchar(is_oversold_buy_signal ? -107 : na, title = "Oversold Buy Signal", char = "•", color = color.new(green_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
+// plotchar(is_overbought_sell_signal ? -107 : na, title = "Oversold Sell Signal", char = "•", color = color.new(red_color, 30), location = location.absolute, offset = 0, size = size.tiny, display = display.pane)
 
-bool is_div_buy_signal = wt_div_showed and (is_wt_long_bullish_div or is_wt_short_bullish_div)
-bool is_div_sell_signal = wt_div_showed and (is_wt_long_bearish_div or is_wt_short_bearish_div)
-plotchar(is_div_buy_signal ? -106 : na, title = "Divergence Buy Signal", char = "•", color = green_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
-plotchar(is_div_sell_signal ? -106 : na, title = "Divergence Sell Signal", char = "•", color = red_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
+// bool is_div_buy_signal = wt_div_showed and (is_wt_long_bullish_div or is_wt_short_bullish_div)
+// bool is_div_sell_signal = wt_div_showed and (is_wt_long_bearish_div or is_wt_short_bearish_div)
+// plotchar(is_div_buy_signal ? -106 : na, title = "Divergence Buy Signal", char = "•", color = green_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
+// plotchar(is_div_sell_signal ? -106 : na, title = "Divergence Sell Signal", char = "•", color = red_color, location = location.absolute, offset = -2, size = size.small, display = display.pane)
 
 color wt_long_bearish_div_color = wt_div_showed and is_wt_long_bearish_div ? red_color : na
 color wt_long_bullish_div_color = wt_div_showed and is_wt_long_bullish_div ? green_color : na

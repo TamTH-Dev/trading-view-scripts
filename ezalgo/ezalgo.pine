@@ -13,10 +13,8 @@ color red_color = #F23A64
 color pink_color = #DB3AF2
 color aqua_color = #21BAF3
 color purple_color = #722FFA
-color green_color_20 = color.new(green_color, 80)
-color red_color_20 = color.new(red_color, 80)
-color green_color_60 = color.new(green_color, 40)
-color red_color_60 = color.new(red_color, 40)
+color green_color_30 = color.new(green_color, 70)
+color red_color_30 = color.new(red_color, 70)
 color aqua_color_50 = color.new(aqua_color, 50)
 color purple_color_50 = color.new(purple_color, 50)
 
@@ -170,10 +168,12 @@ if barstate.islast and vp_showed
 // Inputs
 string sr_grp = "S/R"
 bool sr_showed = input.bool(true, title = "Show", group = sr_grp)
+int sr_prd = input.int(284, title = "Period", group = sr_grp)
 color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
-int sr_zone_width_percent = input.int(1, title = "Zone Width In %", minval = 0, group = sr_grp)
+int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
+int sr_trans = input.int(80, title = "Transparent", group = sr_grp)
 
 
 // Methods
@@ -183,7 +183,6 @@ method get_width_by_percent(int len, int perc) => (ta.highest(len) - ta.lowest(l
 // Plots
 int sr_size = 21
 int sr_rb = 10
-int sr_prd = 284
 float sr_ph = ta.pivothigh(sr_rb, sr_rb)
 float sr_pl = ta.pivotlow (sr_rb, sr_rb)
 var sr_levels = array.new_float(sr_size, na)
@@ -274,8 +273,8 @@ if sr_showed
     sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_width, bar_index, sr_highest_ph - sr_zone_width, xloc.bar_index, extend.both, na)
     sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_width, bar_index, sr_lowest_pl + sr_zone_width, xloc.bar_index, extend.both, na)
     sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
-    linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, 90))
-    linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, 90))
+    linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, sr_trans))
+    linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, sr_trans))
 
     if sr_ph or sr_pl
         for i = 0 to array.size(sr_lines) - 1
@@ -289,13 +288,15 @@ if sr_showed
 
         if array.get(sr_levels_tmp, i)
             color line_color = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
-            float top_line_offset = array.get(sr_levels_tmp, i) + sr_zone_width
-            float bot_line_offset = array.get(sr_levels_tmp, i) - sr_zone_width
+            float top_line = array.get(sr_levels_tmp, i) + sr_zone_width
+            float bot_line = array.get(sr_levels_tmp, i) - sr_zone_width
+            bool top_line_existed = math.abs(array.get(sr_levels_tmp, i) - sr_highest_ph) < sr_zone_width
+            bool bot_line_existed = math.abs(array.get(sr_levels_tmp, i) - sr_lowest_pl) < sr_zone_width
 
-            if (top_line_offset != sr_highest_ph + sr_zone_width and bot_line_offset != sr_highest_ph - sr_zone_width and top_line_offset != sr_lowest_pl + sr_zone_width and bot_line_offset != sr_lowest_pl - sr_zone_width)
-                array.set(sr_lines_h, i, line.new(bar_index - 355, top_line_offset, bar_index, top_line_offset, xloc.bar_index, extend.both, na))
-                array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line_offset, bar_index, bot_line_offset, xloc.bar_index, extend.both, na))
-                array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, 90)))
+            if (not top_line_existed and not bot_line_existed)
+                array.set(sr_lines_h, i, line.new(bar_index - 355, top_line, bar_index, top_line, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line, bar_index, bot_line, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, sr_trans)))
 
 
 
@@ -364,21 +365,21 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 barcolor(custom_bar_colors_used ? (up > dn ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
 
 float offset_perc = get_width_by_percent(300, signal_offset)
-plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Buy Label" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.auto, display = display.pane)
-plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Sell Label", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.auto, display = display.pane)
-plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and -60 <= lagging_wt and lagging_wt <= -40, title = "Mild Buy" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
-plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and 60 >= lagging_wt and lagging_wt >= 40, title = "Mild Sell", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Strong Buy Signal" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Strong Sell Signal", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53, title = "Mild Sell Signal", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 
-plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = purple_color_50, display = display.pane)
-plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = purple_color_50, display = display.pane)
-plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = purple_color_50, display = display.pane)
-plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = aqua_color_50, display = display.pane)
-plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = aqua_color_50, display = display.pane)
-plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = aqua_color_50, display = display.pane)
+plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = red_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_30, display = display.pane)
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
-fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? green_color_20 : red_color_20, title = "Ribbon Fill Color")
+fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? green_color_30 : red_color_30, title = "Ribbon Fill Color")
 
 
 
@@ -387,121 +388,121 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 //** Master Pattern **//
 
 // Inputs
-string mp_grp = "Master Pattern"
-int mp_contraction_lookback = input.int(3, "Contraction Detection Lookback", minval = 1, group = mp_grp)
-int mp_liq_levels = input.int(20, "Liquidity Levels", minval = 1, group = mp_grp)
-bool mp_major_showed = input.bool(true, "Show Major Pattern", group = mp_grp)
-bool mp_minor_showed = input.bool(true, "Show Minor Pattern", group = mp_grp)
-color mp_bullish_color = input.color(green_color_60, "Bullish Pattern", inline = "Bullish Pattern", group = mp_grp)
-bool mp_bullish_box_showed = input.bool(true, "Area", inline = "bull", group = mp_grp)
-bool mp_bullish_line_showed = input.bool(true, "Line", inline = "bull", group = mp_grp)
-color mp_bearish_color = input.color(red_color_60, "Bearish Pattern", inline = "Bearish Pattern", group = mp_grp)
-bool mp_bearish_box_showed = input.bool(true, "Area", inline = "bear", group = mp_grp)
-bool mp_bearish_line_showed = input.bool(true, "Line", inline = "bear", group = mp_grp)
-bool mp_liq_levels_showed = input.bool(true, "Show Liquidity Levels", group = mp_grp)
-color mp_bullish_liq_color = input.color(green_color_60, "Upper Liquidity", group = mp_grp)
-color mp_bearish_liq_color = input.color(red_color_60, "Lower Liquidity", group = mp_grp)
+// string mp_grp = "Master Pattern"
+// int mp_contraction_lookback = input.int(3, "Contraction Detection Lookback", minval = 1, group = mp_grp)
+// int mp_liq_levels = input.int(20, "Liquidity Levels", minval = 1, group = mp_grp)
+// bool mp_major_showed = input.bool(true, "Show Major Pattern", group = mp_grp)
+// bool mp_minor_showed = input.bool(true, "Show Minor Pattern", group = mp_grp)
+// color mp_bullish_color = input.color(green_color_30, "Bullish Pattern", inline = "Bullish Pattern", group = mp_grp)
+// bool mp_bullish_box_showed = input.bool(true, "Area", inline = "bull", group = mp_grp)
+// bool mp_bullish_line_showed = input.bool(true, "Line", inline = "bull", group = mp_grp)
+// color mp_bearish_color = input.color(red_color_30, "Bearish Pattern", inline = "Bearish Pattern", group = mp_grp)
+// bool mp_bearish_box_showed = input.bool(true, "Area", inline = "bear", group = mp_grp)
+// bool mp_bearish_line_showed = input.bool(true, "Line", inline = "bear", group = mp_grp)
+// bool mp_liq_levels_showed = input.bool(true, "Show Liquidity Levels", group = mp_grp)
+// color mp_bullish_liq_color = input.color(green_color_30, "Upper Liquidity", group = mp_grp)
+// color mp_bearish_liq_color = input.color(red_color_30, "Lower Liquidity", group = mp_grp)
 
-type master_pattern
-    box area
-    line avg
-    bool break_up
-    bool break_down
+// type master_pattern
+//     box area
+//     line avg
+//     bool break_up
+//     bool break_down
 
-var mp_phy = 0., var mp_phx = 0, var mp_pht = 0.
-var mp_ply = 0., var mp_plx = 0, var mp_plt = 0.
-var float mp_top = na
-var float mp_btm = na
-int mp_bar_idx = bar_index
-float mp_ph = ta.pivothigh(mp_contraction_lookback, mp_contraction_lookback)
-float mp_pl = ta.pivotlow(mp_contraction_lookback, mp_contraction_lookback)
+// var mp_phy = 0., var mp_phx = 0, var mp_pht = 0.
+// var mp_ply = 0., var mp_plx = 0, var mp_plt = 0.
+// var float mp_top = na
+// var float mp_btm = na
+// int mp_bar_idx = bar_index
+// float mp_ph = ta.pivothigh(mp_contraction_lookback, mp_contraction_lookback)
+// float mp_pl = ta.pivotlow(mp_contraction_lookback, mp_contraction_lookback)
 
-if mp_ph
-    mp_pht := math.sign(mp_ph - mp_phy)
-    mp_phy := mp_ph
+// if mp_ph
+//     mp_pht := math.sign(mp_ph - mp_phy)
+//     mp_phy := mp_ph
 
-    if mp_pht == -1 and mp_plt == 1
-        mp_top := mp_ph
-        mp_btm := mp_ply
-        mp_phx := mp_bar_idx - mp_contraction_lookback
+//     if mp_pht == -1 and mp_plt == 1
+//         mp_top := mp_ph
+//         mp_btm := mp_ply
+//         mp_phx := mp_bar_idx - mp_contraction_lookback
 
-if mp_pl
-    mp_plt := math.sign(mp_pl - mp_ply)
-    mp_ply := mp_pl
+// if mp_pl
+//     mp_plt := math.sign(mp_pl - mp_ply)
+//     mp_ply := mp_pl
 
-    if mp_pht  == -1 and mp_plt == 1
-        mp_top := mp_phy
-        mp_btm := mp_pl
-        mp_plx := mp_bar_idx - mp_contraction_lookback
+//     if mp_pht  == -1 and mp_plt == 1
+//         mp_top := mp_phy
+//         mp_btm := mp_pl
+//         mp_plx := mp_bar_idx - mp_contraction_lookback
 
-var master_pattern master = master_pattern.new()
-bool mp_is_bullish = high[mp_contraction_lookback] > mp_top and mp_top > mp_btm
-bool mp_is_bearish = low[mp_contraction_lookback] < mp_btm and mp_top > mp_btm
+// var master_pattern master = master_pattern.new()
+// bool mp_is_bullish = high[mp_contraction_lookback] > mp_top and mp_top > mp_btm
+// bool mp_is_bearish = low[mp_contraction_lookback] < mp_btm and mp_top > mp_btm
 
-if mp_is_bullish or mp_is_bearish
-    color style_color = mp_is_bullish ? mp_bullish_color : mp_bearish_color
-    master.avg.set_x2(mp_bar_idx - mp_contraction_lookback)
-    val = math.avg(mp_top, mp_btm)
+// if mp_is_bullish or mp_is_bearish
+//     color style_color = mp_is_bullish ? mp_bullish_color : mp_bearish_color
+//     master.avg.set_x2(mp_bar_idx - mp_contraction_lookback)
+//     val = math.avg(mp_top, mp_btm)
 
-    master := master_pattern.new(
-      (mp_is_bullish and mp_bullish_box_showed) or (mp_is_bearish and mp_bearish_box_showed) ? box.new(math.max(mp_phx, mp_plx), mp_top, mp_bar_idx - mp_contraction_lookback, mp_btm, na, bgcolor = mp_minor_showed ? color.new(style_color, 80) : na) : na
-      , (mp_is_bullish and mp_bullish_line_showed) or (mp_is_bearish and mp_bearish_line_showed) ? line.new(mp_bar_idx - mp_contraction_lookback, val, mp_bar_idx, val, color = mp_minor_showed ? style_color : na) : na
-      , mp_is_bullish
-      , mp_is_bearish)
-    mp_top := na
-    mp_btm := na
+//     master := master_pattern.new(
+//       (mp_is_bullish and mp_bullish_box_showed) or (mp_is_bearish and mp_bearish_box_showed) ? box.new(math.max(mp_phx, mp_plx), mp_top, mp_bar_idx - mp_contraction_lookback, mp_btm, na, bgcolor = mp_minor_showed ? color.new(style_color, 80) : na) : na
+//       , (mp_is_bullish and mp_bullish_line_showed) or (mp_is_bearish and mp_bearish_line_showed) ? line.new(mp_bar_idx - mp_contraction_lookback, val, mp_bar_idx, val, color = mp_minor_showed ? style_color : na) : na
+//       , mp_is_bullish
+//       , mp_is_bearish)
+//     mp_top := na
+//     mp_btm := na
 
-if master.break_up
-    if low < master.area.get_bottom()
-        if not mp_major_showed
-            master.area.delete()
-            master.avg.delete()
-        else
-            master.area.set_border_color(mp_bullish_color)
+// if master.break_up
+//     if low < master.area.get_bottom()
+//         if not mp_major_showed
+//             master.area.delete()
+//             master.avg.delete()
+//         else
+//             master.area.set_border_color(mp_bullish_color)
 
-            if not mp_minor_showed
-                master.area.set_bgcolor(color.new(mp_bullish_color, 50))
-                master.avg.set_color(mp_bullish_color)
-else if master.break_down
-    if high > master.area.get_top()
-        if not mp_major_showed
-            master.area.delete()
-            master.avg.delete()
-        else
-            master.area.set_border_color(mp_bearish_color)
+//             if not mp_minor_showed
+//                 master.area.set_bgcolor(color.new(mp_bullish_color, 50))
+//                 master.avg.set_color(mp_bullish_color)
+// else if master.break_down
+//     if high > master.area.get_top()
+//         if not mp_major_showed
+//             master.area.delete()
+//             master.avg.delete()
+//         else
+//             master.area.set_border_color(mp_bearish_color)
 
-            if not mp_minor_showed
-                master.area.set_bgcolor(color.new(mp_bearish_color, 50))
-                master.avg.set_color(mp_bearish_color)
+//             if not mp_minor_showed
+//                 master.area.set_bgcolor(color.new(mp_bearish_color, 50))
+//                 master.avg.set_color(mp_bearish_color)
 
-if not na(master.avg)
-    master.avg.set_x2(mp_bar_idx)
+// if not na(master.avg)
+//     master.avg.set_x2(mp_bar_idx)
 
-var line mp_liq_up = na, var mp_liq_up_reach = false
-var line mp_liq_dn = na, var mp_liq_dn_reach = false
-float mp_liq_ph = ta.pivothigh(mp_liq_levels, mp_liq_levels)
-float mp_liq_pl = ta.pivotlow(mp_liq_levels, mp_liq_levels)
+// var line mp_liq_up = na, var mp_liq_up_reach = false
+// var line mp_liq_dn = na, var mp_liq_dn_reach = false
+// float mp_liq_ph = ta.pivothigh(mp_liq_levels, mp_liq_levels)
+// float mp_liq_pl = ta.pivotlow(mp_liq_levels, mp_liq_levels)
 
-if mp_liq_ph and mp_liq_levels_showed
-    if not mp_liq_up_reach
-        mp_liq_up.set_x2(mp_bar_idx - mp_liq_levels)
+// if mp_liq_ph and mp_liq_levels_showed
+//     if not mp_liq_up_reach
+//         mp_liq_up.set_x2(mp_bar_idx - mp_liq_levels)
 
-    mp_liq_up := line.new(mp_bar_idx - mp_liq_levels, mp_liq_ph, mp_bar_idx, mp_liq_ph, color = mp_bullish_liq_color, style = line.style_dotted)
-    mp_liq_up_reach := false
-else if not mp_liq_up_reach and mp_liq_levels_showed
-    mp_liq_up.set_x2(mp_bar_idx)
+//     mp_liq_up := line.new(mp_bar_idx - mp_liq_levels, mp_liq_ph, mp_bar_idx, mp_liq_ph, color = mp_bullish_liq_color, style = line.style_dotted)
+//     mp_liq_up_reach := false
+// else if not mp_liq_up_reach and mp_liq_levels_showed
+//     mp_liq_up.set_x2(mp_bar_idx)
 
-    if high > mp_liq_up.get_y1()
-        mp_liq_up_reach := true
+//     if high > mp_liq_up.get_y1()
+//         mp_liq_up_reach := true
 
-if mp_liq_pl and mp_liq_levels_showed
-    if not mp_liq_dn_reach
-        mp_liq_dn.set_x2(mp_bar_idx - mp_liq_levels)
+// if mp_liq_pl and mp_liq_levels_showed
+//     if not mp_liq_dn_reach
+//         mp_liq_dn.set_x2(mp_bar_idx - mp_liq_levels)
 
-    mp_liq_dn := line.new(mp_bar_idx - mp_liq_levels, mp_liq_pl, mp_bar_idx, mp_liq_pl, color = mp_bearish_liq_color, style = line.style_dotted)
-    mp_liq_dn_reach := false
-else if not mp_liq_dn_reach and mp_liq_levels_showed
-    mp_liq_dn.set_x2(mp_bar_idx)
+//     mp_liq_dn := line.new(mp_bar_idx - mp_liq_levels, mp_liq_pl, mp_bar_idx, mp_liq_pl, color = mp_bearish_liq_color, style = line.style_dotted)
+//     mp_liq_dn_reach := false
+// else if not mp_liq_dn_reach and mp_liq_levels_showed
+//     mp_liq_dn.set_x2(mp_bar_idx)
 
-    if low < mp_liq_dn.get_y1()
-        mp_liq_dn_reach := true
+//     if low < mp_liq_dn.get_y1()
+//         mp_liq_dn_reach := true
