@@ -31,7 +31,7 @@ int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
 int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_offset = input.int(15, "Offset From Last Bar", group = vp_grp)
+int vp_offset = input.int(10, "Offset From Last Bar", group = vp_grp)
 color vp_high_color = input.color(aqua_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
 color vp_low_color = input.color(purple_color, "", inline = "Histogram Colors", group = vp_grp)
 int vp_trans = input.int(40, "Transparency", 0, 100, group = vp_grp)
@@ -519,77 +519,65 @@ bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
 string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
 color db_txt_color = input.color(color.white, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
-string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
+string db_size = input.string("Normal", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
 
 var _db_location = db_location == "Top Right" ? position.top_right : db_location == "Middle Right" ? position.middle_right : db_location == "Bottom Right" ? position.bottom_right : db_location == "Top Center" ? position.top_center : db_location == "Middle Center" ? position.middle_center : db_location == "Bottom Center" ? position.bottom_center : db_location == "Top Left" ? position.top_left : db_location == "Middle Left" ? position.middle_left : position.bottom_left
 var _db_size = db_size == "Large" ? size.large : db_size == "Normal" ? size.normal : db_size == "Small" ? size.small : size.tiny
 var db_instance = db_showed ? table.new(_db_location, 2, 15, db_bg_color, #000000, 2, db_bg_color, 1) : na
 
-get_chart_tf_in_mins() =>
-    float _resInMinutes = timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly  ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : na)
 
-build_db_cell(column, row, txt, signal=false) => table.cell(db_instance, column, row, txt, 0, 0, signal ? #000000 : db_txt_color, text_size = _db_size)
-build_db_cell_bg(column, row, col) => table.cell_set_bgcolor(db_instance, column, row, col)
+// Methods
+get_res_in_mins_by_tf() =>
+    float _res_in_mins = timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly  ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : na)
 
-equal_tf(res) => str.tonumber(res) == get_chart_tf_in_mins() and not timeframe.isseconds
-higher_tf(res) => str.tonumber(res) > get_chart_tf_in_mins() or timeframe.isseconds
-too_small_tf(res) => (timeframe.isweekly and res == "1") or (timeframe.ismonthly and str.tonumber(res) < 10)
+build_db_cell(col, row, txt, signal = false) => table.cell(db_instance, col, row, txt, 0, 0, signal ? #000000 : db_txt_color, text_size = _db_size)
+build_db_cell_bg(col, row, color) => table.cell_set_bgcolor(db_instance, col, row, color)
 
-get_bullish_status_by_tf(sym, res, src) =>
-    bool bull_ = na
-    bull_ := equal_tf(res) ? src : bull_
-    bull_ := higher_tf(res) ? request.security(sym, res, src, barmerge.gaps_off, barmerge.lookahead_on) : bull_
-    bull_array = request.security_lower_tf(syminfo.tickerid, higher_tf(res) ? str.tostring(get_chart_tf_in_mins()) + (timeframe.isseconds ? "S" : "") : too_small_tf(res) ? (timeframe.isweekly ? "3" : "10") : res, src)
+is_equal_tf(res) => str.tonumber(res) == get_res_in_mins_by_tf() and not timeframe.isseconds
+is_higher_tf(res) => str.tonumber(res) > get_res_in_mins_by_tf() or timeframe.isseconds
+is_too_small_tf(res) => (timeframe.isweekly and res == "1") or (timeframe.ismonthly and str.tonumber(res) < 10)
+
+method get_bullish_status_by_tf(string sym, string res, bool is_ema_bullish) =>
+    bool _is_bullish = na
+    _is_bullish := is_equal_tf(res) ? is_ema_bullish : _is_bullish
+    _is_bullish := is_higher_tf(res) ? request.security(sym, res, is_ema_bullish, barmerge.gaps_off, barmerge.lookahead_on) : _is_bullish
+    _is_bullish_arr = request.security_lower_tf(syminfo.tickerid, is_higher_tf(res) ? str.tostring(get_res_in_mins_by_tf()) + (timeframe.isseconds ? "S" : "") : is_too_small_tf(res) ? (timeframe.isweekly ? "3" : "10") : res, is_ema_bullish)
     
-    if array.size(bull_array) > 1 and not equal_tf(res) and not higher_tf(res)
-        bull_ := array.pop(bull_array)
+    if array.size(_is_bullish_arr) > 1 and not is_equal_tf(res) and not is_higher_tf(res)
+        _is_bullish := array.pop(_is_bullish_arr)
 
-    array.clear(bull_array)
-    bull_
+    array.clear(_is_bullish_arr)
+    _is_bullish
 
 bool is_ema_bullish = close > ta.ema(close, 144)
 
-tf_1_status = get_bullish_status_by_tf(syminfo.tickerid, "1", is_ema_bullish)
-tf_3_status = get_bullish_status_by_tf(syminfo.tickerid, "3", is_ema_bullish)
-tf_5_status = get_bullish_status_by_tf(syminfo.tickerid, "5", is_ema_bullish)
 tf_15_status = get_bullish_status_by_tf(syminfo.tickerid, "15", is_ema_bullish)
 tf_30_status = get_bullish_status_by_tf(syminfo.tickerid, "30", is_ema_bullish)
 tf_60_status = get_bullish_status_by_tf(syminfo.tickerid, "60", is_ema_bullish)
-tf_120_status = get_bullish_status_by_tf(syminfo.tickerid, "120", is_ema_bullish)
 tf_240_status = get_bullish_status_by_tf(syminfo.tickerid, "240", is_ema_bullish)
 tf_480_status = get_bullish_status_by_tf(syminfo.tickerid, "480", is_ema_bullish)
+tf_720_status = get_bullish_status_by_tf(syminfo.tickerid, "720", is_ema_bullish)
 tf_daily_status = get_bullish_status_by_tf(syminfo.tickerid, "1440", is_ema_bullish)
+// tf_weekly_status = get_bullish_status_by_tf(syminfo.tickerid, "10080", is_ema_bullish)
 
-int trigger = nz(ta.barssince(is_bullish), bar_index) < nz(ta.barssince(is_bearish), bar_index) ? 1 : 0
 
+// Plots
 if barstate.islast and db_showed
-    build_db_cell(0, 0, "EzAlgo")
-    build_db_cell(0, 1, "Current Position")
-    build_db_cell(0, 2, "Current Trend")
-    build_db_cell(0, 3, "Volume")
-    build_db_cell(0, 4, "Timeframe")
-    build_db_cell(0, 5, "1 min:")
-    build_db_cell(0, 6, "3 min:")
-    build_db_cell(0, 7, "5 min:")
-    build_db_cell(0, 8, "15 min:")
-    build_db_cell(0, 9, "30 min:")
-    build_db_cell(0, 10, "1 H:")
-    build_db_cell(0, 11, "2 H:")
-    build_db_cell(0, 12, "4 H:")
-    build_db_cell(0, 13, "8 H:")
-    build_db_cell(0, 14, "Daily:")
-    build_db_cell(1, 0, "V.5")
-    build_db_cell(1, 1, trigger ? "Buy" : "Sell", true), build_db_cell_bg(1, 1, trigger ? green_color : red_color)
-    build_db_cell(1, 2, is_ema_bullish ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 2, is_ema_bullish ? green_color : red_color)
-    build_db_cell(1, 3, str.tostring(volume))
-    build_db_cell(1, 4, "Trends")
-    build_db_cell(1, 5, tf_1_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 5, tf_1_status ? green_color : red_color)
-    build_db_cell(1, 6, tf_3_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 6, tf_3_status ? green_color : red_color)
-    build_db_cell(1, 7, tf_5_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 7, tf_5_status ? green_color : red_color)
-    build_db_cell(1, 8, tf_15_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 8, tf_15_status ? green_color : red_color)
-    build_db_cell(1, 9, tf_30_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 9, tf_30_status ? green_color : red_color)
-    build_db_cell(1, 10, tf_60_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 10, tf_60_status ? green_color : red_color)
-    build_db_cell(1, 11, tf_120_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 11, tf_120_status ? green_color : red_color)
-    build_db_cell(1, 12, tf_240_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 12, tf_240_status ? green_color : red_color)
-    build_db_cell(1, 13, tf_480_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 13, tf_480_status ? green_color : red_color)
-    build_db_cell(1, 14, tf_daily_status ? "Bullish" : "Bearish", true), build_db_cell_bg(1, 14, tf_daily_status ? green_color : red_color)
+    build_db_cell(0, 0, "Timeframe")
+    build_db_cell(0, 1, "15M")
+    build_db_cell(0, 2, "30M")
+    build_db_cell(0, 3, "1H")
+    build_db_cell(0, 4, "4H")
+    build_db_cell(0, 5, "8H")
+    build_db_cell(0, 6, "12H")
+    build_db_cell(0, 7, "Daily")
+    // build_db_cell(0, 8, "Weekly")
+    build_db_cell(1, 0, "Bias")
+    build_db_cell(1, 1, tf_15_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 2, tf_30_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 3, tf_60_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 4, tf_240_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 5, tf_480_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 6, tf_720_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 7, tf_daily_status ? "🟢" : "🔴", true)
+    // build_db_cell(1, 8, tf_weekly_status ? "🟢" : "🔴", true)
