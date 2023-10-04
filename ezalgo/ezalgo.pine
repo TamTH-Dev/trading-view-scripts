@@ -5,18 +5,16 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_boxes_count = 500)
 
 // Colors
 color white_color = color.white
-color blue_dark_color = #082EBF
-color blue_light_color = #3DCBFF
 color yellow_color = #F2E40A
+color orange_color = #F2643A
 color green_color = #16F9BA
 color red_color = #F23A64
-color pink_color = #DB3AF2
 color aqua_color = #21BAF3
-color purple_color = #722FFA
-color green_color_30 = color.new(green_color, 70)
-color red_color_30 = color.new(red_color, 70)
-color aqua_color_50 = color.new(aqua_color, 50)
-color purple_color_50 = color.new(purple_color, 50)
+color purple_color = #5932e6
+color green_color_40 = color.new(green_color, 60)
+color red_color_40 = color.new(red_color, 60)
+color aqua_color_30 = color.new(aqua_color, 70)
+color purple_color_30 = color.new(purple_color, 70)
 
 
 
@@ -31,10 +29,10 @@ int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
 int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_offset = input.int(10, "Offset From Last Bar", group = vp_grp)
-color vp_high_color = input.color(aqua_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
-color vp_low_color = input.color(purple_color, "", inline = "Histogram Colors", group = vp_grp)
-int vp_trans = input.int(40, "Transparency", 0, 100, group = vp_grp)
+int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
+int vp_trans = input.int(70, "Transparency", 0, 100, group = vp_grp)
+color vp_high_color = input.color(yellow_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
+color vp_low_color = input.color(orange_color, "", inline = "Histogram Colors", group = vp_grp)
 int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
 
@@ -118,6 +116,7 @@ if array.size(lines) > 0
 if barstate.islast and vp_showed
     float[] _vols = array.new_float(vp_cnum, 0.)
     float[] _bullish_vols = array.new_float(vp_cnum, 0.)
+    int _trans = 100 - vp_trans
 
     for bars = 0 to vp_prd - 1 by 1
         float _high = high[bars]
@@ -156,7 +155,7 @@ if barstate.islast and vp_showed
           edge, 
           array.get(vp_levels, i), 
           border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
+          bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, color.new(vp_low_color, _trans), color.new(vp_high_color, _trans)), _trans))
          )
 
 
@@ -173,7 +172,7 @@ color sr_support_color = input.color(green_color, title = "Support Color", group
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(80, title = "Transparent", group = sr_grp)
+int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
 
 
 // Methods
@@ -308,7 +307,6 @@ if sr_showed
 string buy_sell_grp = "Buy & Sell Signals"
 bool buy_sell_signals_showed = input.bool(true, title = "Show", group = buy_sell_grp)
 float sensitivity = input.float(1.7, title = "Sensitivity", minval = 1, maxval = 6, group = buy_sell_grp)
-int signal_offset = input.int(2, title = "Offset", minval = 0, group = buy_sell_grp)
 string trend_ribbon_grp = "Trend Ribbon"
 bool ribbon_showed = input.bool(true, title = "Show", group = trend_ribbon_grp)
 int ribbon_leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
@@ -317,7 +315,7 @@ string reversal_bands_grp = "Reversal Bands"
 bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
 string custom_bar_colors_grp = "Custom Bar Colors"
-bool custom_bar_colors_used = input.bool(false, "Use", group = custom_bar_colors_grp)
+bool custom_bar_colors_used = input.bool(true, "Use", group = custom_bar_colors_grp)
 
 
 // Methods
@@ -348,10 +346,10 @@ float leading_range = smooth_rng(src, 27, 1.5)
 float lagging_range = smooth_rng(src, 55, sensitivity)
 float avg_range = (leading_range + lagging_range) / 2
 float clean_range = filter_rng(src, avg_range)
-float up = 0.0, up := clean_range > clean_range[1] ? nz(up[1]) + 1 : clean_range < clean_range[1] ? 0 : nz(up[1])
-float dn = 0.0, dn := clean_range < clean_range[1] ? nz(dn[1]) + 1 : clean_range > clean_range[1] ? 0 : nz(dn[1])
-bool bullish_cond = bool(na), bullish_cond := src > clean_range and src > src[1] and up > 0 or src > clean_range and src < src[1] and up > 0
-bool bearish_cond = bool(na), bearish_cond := src < clean_range and src < src[1] and dn > 0 or src < clean_range and src > src[1] and dn > 0
+float up_signal = 0.0, up_signal := clean_range > clean_range[1] ? nz(up_signal[1]) + 1 : clean_range < clean_range[1] ? 0 : nz(up_signal[1])
+float dn_signal = 0.0, dn_signal := clean_range < clean_range[1] ? nz(dn_signal[1]) + 1 : clean_range > clean_range[1] ? 0 : nz(dn_signal[1])
+bool bullish_cond = bool(na), bullish_cond := src > clean_range and src > src[1] and up_signal > 0 or src > clean_range and src < src[1] and up_signal > 0
+bool bearish_cond = bool(na), bearish_cond := src < clean_range and src < src[1] and dn_signal > 0 or src < clean_range and src > src[1] and dn_signal > 0
 int final_cond = 0, final_cond := bullish_cond ? 1 : bearish_cond ? -1 : final_cond[1]
 bool is_bullish = bullish_cond and final_cond[1] == -1
 bool is_bearish = bearish_cond and final_cond[1] == 1
@@ -362,24 +360,29 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 
 
 // Plots
-barcolor(custom_bar_colors_used ? (up > dn ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
+barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
 
-float offset_perc = get_width_by_percent(300, signal_offset)
-plotshape(buy_sell_signals_showed and is_bullish ? low - offset_perc : na, title = "Strong Buy Signal" , style = shape.labelup, location = location.absolute, color = green_color, offset = 0, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and is_bearish ? high + offset_perc : na, title = "Strong Sell Signal", style = shape.labeldown, location = location.absolute, color = red_color, offset = 0, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
-plotshape(buy_sell_signals_showed and ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53, title = "Mild Sell Signal", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+bool has_mild_buy_signal = ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53
+bool has_mild_sell_signal = ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53
+bool consistent_buy_signal = is_bullish and has_mild_buy_signal
+bool consistent_sell_signal = is_bearish and has_mild_sell_signal
+plotshape(buy_sell_signals_showed and is_bullish and not consistent_buy_signal, title = "Bullish Buy Signal" , style = shape.triangleup, location = location.belowbar, color = aqua_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish and not consistent_sell_signal, title = "Bearish Sell Signal", style = shape.triangledown, location = location.abovebar, color = purple_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and has_mild_buy_signal and not consistent_buy_signal, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and has_mild_sell_signal and not consistent_sell_signal, title = "Mild Sell Signal", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and consistent_buy_signal, title = "Same Buy Signal" , style = shape.diamond, location = location.belowbar, color = yellow_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and consistent_sell_signal, title = "Same Sell Signal", style = shape.diamond, location = location.abovebar, color = orange_color, size = size.small, display = display.pane)
 
-plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = red_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = green_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_30, display = display.pane)
-plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_30, display = display.pane)
+plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_40, display = display.pane)
+plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_40, display = display.pane)
+plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = red_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = green_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_40, display = display.pane)
+plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_40, display = display.pane)
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
-fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? green_color_30 : red_color_30, title = "Ribbon Fill Color")
+fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? aqua_color_30 : purple_color_30, title = "Ribbon Fill Color")
 
 
 
@@ -393,15 +396,15 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 // int mp_liq_levels = input.int(20, "Liquidity Levels", minval = 1, group = mp_grp)
 // bool mp_major_showed = input.bool(true, "Show Major Pattern", group = mp_grp)
 // bool mp_minor_showed = input.bool(true, "Show Minor Pattern", group = mp_grp)
-// color mp_bullish_color = input.color(green_color_30, "Bullish Pattern", inline = "Bullish Pattern", group = mp_grp)
+// color mp_bullish_color = input.color(green_color_40, "Bullish Pattern", inline = "Bullish Pattern", group = mp_grp)
 // bool mp_bullish_box_showed = input.bool(true, "Area", inline = "bull", group = mp_grp)
 // bool mp_bullish_line_showed = input.bool(true, "Line", inline = "bull", group = mp_grp)
-// color mp_bearish_color = input.color(red_color_30, "Bearish Pattern", inline = "Bearish Pattern", group = mp_grp)
+// color mp_bearish_color = input.color(red_color_40, "Bearish Pattern", inline = "Bearish Pattern", group = mp_grp)
 // bool mp_bearish_box_showed = input.bool(true, "Area", inline = "bear", group = mp_grp)
 // bool mp_bearish_line_showed = input.bool(true, "Line", inline = "bear", group = mp_grp)
 // bool mp_liq_levels_showed = input.bool(true, "Show Liquidity Levels", group = mp_grp)
-// color mp_bullish_liq_color = input.color(green_color_30, "Upper Liquidity", group = mp_grp)
-// color mp_bearish_liq_color = input.color(red_color_30, "Lower Liquidity", group = mp_grp)
+// color mp_bullish_liq_color = input.color(green_color_40, "Upper Liquidity", group = mp_grp)
+// color mp_bearish_liq_color = input.color(red_color_40, "Lower Liquidity", group = mp_grp)
 
 // type master_pattern
 //     box area
