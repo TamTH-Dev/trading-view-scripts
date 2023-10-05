@@ -11,6 +11,8 @@ color green_color = #16F9BA
 color red_color = #F23A64
 color aqua_color = #21BAF3
 color purple_color = #5932e6
+color light_gray_color = #6c757d
+color dark_gray_color = #343a40
 color green_color_40 = color.new(green_color, 60)
 color red_color_40 = color.new(red_color, 60)
 color aqua_color_30 = color.new(aqua_color, 70)
@@ -30,9 +32,9 @@ int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
 int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
-int vp_trans = input.int(70, "Transparency", 0, 100, group = vp_grp)
-color vp_high_color = input.color(yellow_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
-color vp_low_color = input.color(orange_color, "", inline = "Histogram Colors", group = vp_grp)
+int vp_trans = input.int(60, "Transparency", 0, 100, group = vp_grp)
+color vp_high_color = input.color(light_gray_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
+color vp_low_color = input.color(dark_gray_color, "", inline = "Histogram Colors", group = vp_grp)
 int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
 
