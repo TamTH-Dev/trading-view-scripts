@@ -43,11 +43,19 @@ int rsi_prd = input.int(40, title = "Period", group = rsi_grp)
 string stoch_rsi_grp = "Stochastic RSI"
 bool stoch_rsi_showed = input.bool(true, title = "Show", group = stoch_rsi_grp)
 int stoch_rsi_prd = input.int(81, title = "Period", group = stoch_rsi_grp)
+string wr_grp = "Williams %R"
+bool wr_showed = input.bool(true, title = "Show", group = wr_grp)
+int wr_prd = input.int(14, title = "Period", group = wr_grp)
 string vwap_grp = "VWAP"
 bool vwap_showed = input.bool(true, title = "Show", group = vwap_grp)
 
 
 // Methods
+method get_wr(int prd) =>
+	float max = ta.highest(prd)
+	float min = ta.lowest(prd)
+	100 * (close - max) / (max - min)
+
 get_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
 get_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
 method fractalize(float src) => get_top_fractal(src) ? 1 : get_bot_fractal(src) ? -1 : 0
@@ -89,6 +97,8 @@ get_indicators() =>
 [wt_long_top_fractal, wt_long_bot_fractal, wt_long_low_prev, is_wt_long_bearish_div, is_wt_long_bullish_div] = get_div_points(lagging_wt, wt_long_bearish_div_level, wt_long_bullish_div_level)
 [wt_short_top_fractal, wt_short_bot_fractal, wt_short_low_prev, is_wt_short_bearish_div, is_wt_short_bullish_div] =  get_div_points(lagging_wt, wt_short_brearish_div_level, wt_short_bullish_div_level)
 
+float williams_r = get_wr(wr_prd)
+
 // Plots
 plot(threshold_showed ? overbought_threshold : na, title = "Overbought Threshold", color = color.new(white_color, 90), display = display.pane)
 plot(threshold_showed ? oversold_threshold : na, title = "Oversold Threshold", color = color.new(white_color, 90), display = display.pane)
@@ -104,7 +114,7 @@ plot(vwap_showed ? vwap : na, title = "VWAP", color = color.new(yellow_color, 55
 
 plot(mfo_showed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(green_color, 60) : color.new(red_color, 60), linewidth = 2, style = plot.style_area)
 
-plot(0, title = "Zero Line", color = color.new(white_color, 50), display = display.pane)
+plot(0, title = "Zero Line", color = white_color, display = display.pane)
 
 plot(ta.crossover(leading_wt, lagging_wt) ? lagging_wt : na, title = "Buy Signal", color = color.new(green_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
 plot(ta.crossunder(leading_wt, lagging_wt) ? lagging_wt : na, title = "Sell Signal", color = color.new(red_color, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
@@ -121,3 +131,5 @@ plot(series = wt_short_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Sho
 plot(rsi_showed ? rsi : na, title = "RSI", color = purple_color)
 
 plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = aqua_color)
+
+plot(wr_showed ? williams_r : na, title = "Williams %R", color = pink_color)
