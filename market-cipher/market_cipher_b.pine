@@ -10,7 +10,6 @@ color blue_light_color = #3DCBFF
 color yellow_color = #F2E40A
 color green_color = #16F9BA
 color red_color = #F23A64
-color pink_color = #E02FF9
 color aqua_color = #21BAF3
 color purple_color = #722FFA
 color orange_color = #FAA448
@@ -132,4 +131,4 @@ plot(rsi_showed ? rsi : na, title = "RSI", color = purple_color)
 
 plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = aqua_color)
 
-plot(wr_showed ? williams_r : na, title = "Williams %R", color = pink_color)
+plot(wr_showed ? williams_r : na, title = "Williams %R", color = orange_color)
