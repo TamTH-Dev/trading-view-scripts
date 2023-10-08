@@ -4,6 +4,7 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_boxes_count = 500)
 
 
 // Colors
+color transparent_color = color.new(#000000, 100)
 color white_color = color.white
 color yellow_color = #F2E40A
 color orange_color = #F2643A
@@ -17,6 +18,7 @@ color green_color_40 = color.new(green_color, 60)
 color red_color_40 = color.new(red_color, 60)
 color aqua_color_30 = color.new(aqua_color, 70)
 color purple_color_30 = color.new(purple_color, 70)
+color txt_color = #EEEEEE
 
 
 
@@ -173,13 +175,16 @@ int sr_prd = input.int(284, title = "Period", group = sr_grp)
 color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
-int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
+int sr_zone_width_percent = input.int(3, title = "Zone Width In %", minval = 0, group = sr_grp)
 int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
 
 
 // Methods
 method get_width_by_percent(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
 
+method build_box(float top, float bot, float val) =>
+    int sr_txt_offset = bar_index + 20
+    box.new(sr_txt_offset, top, sr_txt_offset + 20, bot, bgcolor = transparent_color, border_width = 0, text = str.format("{0} | {1}", timeframe.period, val), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left)
 
 // Plots
 int sr_size = 21
@@ -199,6 +204,7 @@ var sr_lines = array.new_line(sr_size, na)
 var sr_lines_h = array.new_line(sr_size, na)
 var sr_lines_l = array.new_line(sr_size, na)
 var sr_lines_f = array.new_linefill(sr_size, na)
+var sr_boxes = array.new_box(sr_size, na)
 
 if (sr_ph or sr_pl) and sr_showed
     for i = 0 to array.size(sr_levels) - 1
@@ -268,6 +274,8 @@ if sr_showed
     var line sr_highest_fill_2 = na, line.delete(sr_highest_fill_2)
     var line sr_lowest_fill_1 = na, line.delete(sr_lowest_fill_1)
     var line sr_lowest_fill_2 = na, line.delete(sr_lowest_fill_2)
+    var box sr_highest_box_1 = na, box.delete(sr_highest_box_1)
+    var box sr_highest_box_2 = na, box.delete(sr_highest_box_2)
     color sr_high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
     color sr_low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
     sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_width, bar_index, sr_highest_ph + sr_zone_width, xloc.bar_index, extend.both, na)
@@ -276,6 +284,10 @@ if sr_showed
     sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
     linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, sr_trans))
     linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, sr_trans))
+    // sr_highest_box_1 := box.new(sr_txt_offset, sr_highest_ph + sr_zone_width, sr_txt_offset + 20, sr_highest_ph - sr_zone_width, bgcolor = transparent_color, border_width = 0, text = str.format("{0} | {1}", timeframe.period, sr_highest_ph), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left)
+    sr_highest_box_1 := build_box(sr_highest_ph + sr_zone_width, sr_highest_ph - sr_zone_width, sr_highest_ph)
+    sr_highest_box_2 := build_box(sr_lowest_pl + sr_zone_width, sr_lowest_pl - sr_zone_width, sr_lowest_pl)
+
 
     if sr_ph or sr_pl
         for i = 0 to array.size(sr_lines) - 1
@@ -286,18 +298,21 @@ if sr_showed
         line.delete(array.get(sr_lines_h, i))
         line.delete(array.get(sr_lines_l, i))
         linefill.delete(array.get(sr_lines_f, i))
+        box.delete(array.get(sr_boxes, i))
 
         if array.get(sr_levels_tmp, i)
             color line_color = close >= array.get(sr_levels_tmp, i) ? sr_support_color : sr_resistance_color
-            float top_line = array.get(sr_levels_tmp, i) + sr_zone_width
-            float bot_line = array.get(sr_levels_tmp, i) - sr_zone_width
-            bool top_line_existed = math.abs(array.get(sr_levels_tmp, i) - sr_highest_ph) < sr_zone_width
-            bool bot_line_existed = math.abs(array.get(sr_levels_tmp, i) - sr_lowest_pl) < sr_zone_width
+            float level = array.get(sr_levels_tmp, i)
+            float top_line = level + sr_zone_width
+            float bot_line = level - sr_zone_width
+            bool top_line_existed = math.abs(level - sr_highest_ph) < sr_zone_width
+            bool bot_line_existed = math.abs(level - sr_lowest_pl) < sr_zone_width
 
             if (not top_line_existed and not bot_line_existed)
                 array.set(sr_lines_h, i, line.new(bar_index - 355, top_line, bar_index, top_line, xloc.bar_index, extend.both, na))
                 array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line, bar_index, bot_line, xloc.bar_index, extend.both, na))
                 array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, sr_trans)))
+                array.set(sr_boxes, i, build_box(top_line, bot_line, level))
 
 
 
