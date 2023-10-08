@@ -524,7 +524,7 @@ bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
 string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
 color db_txt_color = input.color(color.white, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
-string db_size = input.string("Normal", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
+string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
 
 var _db_location = db_location == "Top Right" ? position.top_right : db_location == "Middle Right" ? position.middle_right : db_location == "Bottom Right" ? position.bottom_right : db_location == "Top Center" ? position.top_center : db_location == "Middle Center" ? position.middle_center : db_location == "Bottom Center" ? position.bottom_center : db_location == "Top Left" ? position.top_left : db_location == "Middle Left" ? position.middle_left : position.bottom_left
 var _db_size = db_size == "Large" ? size.large : db_size == "Normal" ? size.normal : db_size == "Small" ? size.small : size.tiny
@@ -555,8 +555,6 @@ method get_bullish_status_by_tf(string sym, string res, bool is_ema_bullish) =>
     _is_bullish
 
 bool is_ema_bullish = close > ta.ema(close, 144)
-
-tf_15_status = get_bullish_status_by_tf(syminfo.tickerid, "15", is_ema_bullish)
 tf_30_status = get_bullish_status_by_tf(syminfo.tickerid, "30", is_ema_bullish)
 tf_60_status = get_bullish_status_by_tf(syminfo.tickerid, "60", is_ema_bullish)
 tf_240_status = get_bullish_status_by_tf(syminfo.tickerid, "240", is_ema_bullish)
@@ -569,20 +567,18 @@ tf_daily_status = get_bullish_status_by_tf(syminfo.tickerid, "1440", is_ema_bull
 // Plots
 if barstate.islast and db_showed
     build_db_cell(0, 0, "Timeframe")
-    build_db_cell(0, 1, "15M")
-    build_db_cell(0, 2, "30M")
-    build_db_cell(0, 3, "1H")
-    build_db_cell(0, 4, "4H")
-    build_db_cell(0, 5, "8H")
-    build_db_cell(0, 6, "12H")
-    build_db_cell(0, 7, "Daily")
-    // build_db_cell(0, 8, "Weekly")
+    build_db_cell(0, 1, "30M")
+    build_db_cell(0, 2, "1H")
+    build_db_cell(0, 3, "4H")
+    build_db_cell(0, 4, "8H")
+    build_db_cell(0, 5, "12H")
+    build_db_cell(0, 6, "Daily")
+    // build_db_cell(0, 7, "Weekly")
     build_db_cell(1, 0, "Bias")
-    build_db_cell(1, 1, tf_15_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 2, tf_30_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 3, tf_60_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 4, tf_240_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 5, tf_480_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 6, tf_720_status ? "🟢" : "🔴", true)
-    build_db_cell(1, 7, tf_daily_status ? "🟢" : "🔴", true)
-    // build_db_cell(1, 8, tf_weekly_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 1, tf_30_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 2, tf_60_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 3, tf_240_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 4, tf_480_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 5, tf_720_status ? "🟢" : "🔴", true)
+    build_db_cell(1, 6, tf_daily_status ? "🟢" : "🔴", true)
+    // build_db_cell(1, 7, tf_weekly_status ? "🟢" : "🔴", true)
