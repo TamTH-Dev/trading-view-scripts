@@ -193,7 +193,7 @@ method get_sr_val_txt(float val) =>
     else if str.contains(prd, "W")
         tf := str.length(prd) == 1 ? '1W' : prd
     else if str.contains(prd, "M")
-        tf := ''
+        tf := str.length(prd) == 1 ? '1M' : prd
     else
         float mins = str.tonumber(prd)
 
@@ -202,10 +202,7 @@ method get_sr_val_txt(float val) =>
         else
             tf := str.format("{0}M",  mins)
 
-    if tf == ''
-        str.tostring(val)
-    else
-        str.format("{0} | {1}", tf, val)
+    str.format("{0} | {1}", tf, val)
 
 method build_sr_val_box(float top, float bot, float val, float v_padding) =>
     int sr_txt_offset = bar_index + 20
