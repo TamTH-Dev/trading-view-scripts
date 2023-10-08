@@ -175,16 +175,41 @@ int sr_prd = input.int(284, title = "Period", group = sr_grp)
 color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
-int sr_zone_width_percent = input.int(3, title = "Zone Width In %", minval = 0, group = sr_grp)
+int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
 int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
 
 
 // Methods
 method get_width_by_percent(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
 
-method build_box(float top, float bot, float val) =>
+method get_sr_val_txt(float val) =>
+    string prd = timeframe.period
+    string tf = na
+
+    if str.contains(prd, "S")
+        tf := str.length(prd) == 1 ? '1S' : prd
+    else if str.contains(prd, "D")
+        tf := str.length(prd) == 1 ? '1D' : prd
+    else if str.contains(prd, "W")
+        tf := str.length(prd) == 1 ? '1W' : prd
+    else if str.contains(prd, "M")
+        tf := ''
+    else
+        float mins = str.tonumber(prd)
+
+        if mins >= 60
+            tf := str.format("{0}H",  mins / 60)
+        else
+            tf := str.format("{0}M",  mins)
+
+    if tf == ''
+        str.tostring(val)
+    else
+        str.format("{0} | {1}", tf, val)
+
+method build_sr_val_box(float top, float bot, float val, float v_padding) =>
     int sr_txt_offset = bar_index + 20
-    box.new(sr_txt_offset, top, sr_txt_offset + 20, bot, bgcolor = transparent_color, border_width = 0, text = str.format("{0} | {1}", timeframe.period, val), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left)
+    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 200, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 // Plots
 int sr_size = 21
@@ -284,9 +309,8 @@ if sr_showed
     sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
     linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, sr_trans))
     linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, sr_trans))
-    // sr_highest_box_1 := box.new(sr_txt_offset, sr_highest_ph + sr_zone_width, sr_txt_offset + 20, sr_highest_ph - sr_zone_width, bgcolor = transparent_color, border_width = 0, text = str.format("{0} | {1}", timeframe.period, sr_highest_ph), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left)
-    sr_highest_box_1 := build_box(sr_highest_ph + sr_zone_width, sr_highest_ph - sr_zone_width, sr_highest_ph)
-    sr_highest_box_2 := build_box(sr_lowest_pl + sr_zone_width, sr_lowest_pl - sr_zone_width, sr_lowest_pl)
+    sr_highest_box_1 := build_sr_val_box(sr_highest_ph + sr_zone_width, sr_highest_ph - sr_zone_width, sr_highest_ph, sr_zone_width)
+    sr_highest_box_2 := build_sr_val_box(sr_lowest_pl + sr_zone_width, sr_lowest_pl - sr_zone_width, sr_lowest_pl, sr_zone_width)
 
 
     if sr_ph or sr_pl
@@ -312,7 +336,7 @@ if sr_showed
                 array.set(sr_lines_h, i, line.new(bar_index - 355, top_line, bar_index, top_line, xloc.bar_index, extend.both, na))
                 array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line, bar_index, bot_line, xloc.bar_index, extend.both, na))
                 array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, sr_trans)))
-                array.set(sr_boxes, i, build_box(top_line, bot_line, level))
+                array.set(sr_boxes, i, build_sr_val_box(top_line, bot_line, level, sr_zone_width))
 
 
 
@@ -537,7 +561,7 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 string db_grp = "Dashboard"
 bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
 string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
-color db_txt_color = input.color(color.white, "Table Text Color", group = db_grp)
+color db_txt_color = input.color(txt_color, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
 string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
 
