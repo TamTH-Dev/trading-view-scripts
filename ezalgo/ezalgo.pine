@@ -292,6 +292,7 @@ if (sr_ph or sr_pl) and sr_showed
                         array.set(sr_levels, pp_count, low[i + sr_rb])
 
 if sr_showed
+    int sr_line_offset = 500
     var line sr_highest_fill_1 = na, line.delete(sr_highest_fill_1)
     var line sr_highest_fill_2 = na, line.delete(sr_highest_fill_2)
     var line sr_lowest_fill_1 = na, line.delete(sr_lowest_fill_1)
@@ -300,10 +301,10 @@ if sr_showed
     var box sr_highest_box_2 = na, box.delete(sr_highest_box_2)
     color sr_high_color = close >= sr_highest_ph ? sr_support_color : sr_resistance_color
     color sr_low_color = close >= sr_lowest_pl ? sr_support_color : sr_resistance_color
-    sr_highest_fill_1 := line.new(bar_index - 311, sr_highest_ph + sr_zone_width, bar_index, sr_highest_ph + sr_zone_width, xloc.bar_index, extend.both, na)
-    sr_highest_fill_2 := line.new(bar_index - 311, sr_highest_ph - sr_zone_width, bar_index, sr_highest_ph - sr_zone_width, xloc.bar_index, extend.both, na)
-    sr_lowest_fill_1 := line.new(bar_index - 311, sr_lowest_pl + sr_zone_width, bar_index, sr_lowest_pl + sr_zone_width, xloc.bar_index, extend.both, na)
-    sr_lowest_fill_2 := line.new(bar_index - 311, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_highest_fill_1 := line.new(bar_index - sr_line_offset, sr_highest_ph + sr_zone_width, bar_index, sr_highest_ph + sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_highest_fill_2 := line.new(bar_index - sr_line_offset, sr_highest_ph - sr_zone_width, bar_index, sr_highest_ph - sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_1 := line.new(bar_index - sr_line_offset, sr_lowest_pl + sr_zone_width, bar_index, sr_lowest_pl + sr_zone_width, xloc.bar_index, extend.both, na)
+    sr_lowest_fill_2 := line.new(bar_index - sr_line_offset, sr_lowest_pl - sr_zone_width, bar_index, sr_lowest_pl - sr_zone_width, xloc.bar_index, extend.both, na)
     linefill.new(sr_highest_fill_1, sr_highest_fill_2, color.new(sr_high_color, sr_trans))
     linefill.new(sr_lowest_fill_1, sr_lowest_fill_2 , color.new(sr_low_color, sr_trans))
     sr_highest_box_1 := build_sr_val_box(sr_highest_ph + sr_zone_width, sr_highest_ph - sr_zone_width, sr_highest_ph, sr_zone_width)
@@ -330,8 +331,8 @@ if sr_showed
             bool bot_line_existed = math.abs(level - sr_lowest_pl) < sr_zone_width
 
             if (not top_line_existed and not bot_line_existed)
-                array.set(sr_lines_h, i, line.new(bar_index - 355, top_line, bar_index, top_line, xloc.bar_index, extend.both, na))
-                array.set(sr_lines_l, i, line.new(bar_index - 355, bot_line, bar_index, bot_line, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_h, i, line.new(bar_index - sr_line_offset, top_line, bar_index, top_line, xloc.bar_index, extend.both, na))
+                array.set(sr_lines_l, i, line.new(bar_index - sr_line_offset, bot_line, bar_index, bot_line, xloc.bar_index, extend.both, na))
                 array.set(sr_lines_f, i, linefill.new(array.get(sr_lines_h, i), array.get(sr_lines_l, i), color.new(line_color, sr_trans)))
                 array.set(sr_boxes, i, build_sr_val_box(top_line, bot_line, level, sr_zone_width))
 
