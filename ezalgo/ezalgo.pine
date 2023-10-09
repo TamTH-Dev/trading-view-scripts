@@ -18,7 +18,124 @@ color green_color_40 = color.new(green_color, 60)
 color red_color_40 = color.new(red_color, 60)
 color aqua_color_30 = color.new(aqua_color, 70)
 color purple_color_30 = color.new(purple_color, 70)
-color txt_color = #EEEEEE
+
+
+
+
+
+//** Range Sentiment Profile **//
+string rsp_grp = "Range Sentiment Profile"
+int rsp_length = input.int(80, minval = 2, group = rsp_grp)
+int rsp_rows = input.int(20, minval = 2, group = rsp_grp)
+bool rsp_ib_used = input.bool(false, 'Use Intrabar', inline = 'intrabar', group = rsp_grp) 
+string rsp_tf = input.timeframe('1', '' , inline = 'intrabar', group = rsp_grp)
+float rsp_width = input.float(20, 'Width %', minval = 0, maxval = 100, group = rsp_grp, tooltip = "Bin width percentage. Determine the length of the returned profile bin as a percentage of the Length setting")
+bool rsp_range_showed = input.bool(true, 'Show Range Levels', inline = 'range', group = rsp_grp)
+color rsp_range_color = input.color(color.new(#FFFFFF, 80), '', inline = 'range', group = rsp_grp)
+color rsp_bullish_bin_color = input.color(yellow_color, 'Bullish Bin Color', inline = 'bull', group = rsp_grp)
+bool rsp_bullish_max_showed = input.bool(true, 'Maximum', inline = 'bull', group = rsp_grp) 
+color rsp_bearish_bin_color = input.color(orange_color, 'Bearish Bin Color', inline = 'bear', group = rsp_grp)
+bool rsp_bearish_max_showed = input.bool(true, 'Minimum', inline = 'bear', group = rsp_grp)
+bool rsp_fill_showed = input.bool(true, 'Show Fill', inline = 'fill', group = rsp_grp)
+int rsp_offset = input.int(8, group = rsp_grp, tooltip = "Determine the amount of bars each graphical elements are shifted by")
+
+get_data() => [close, open]
+
+var boxes = array.new<box>(0)
+
+if barstate.isfirst
+    for i = 0 to rsp_rows - 1
+        boxes.push(box.new(na,na,na,na,na
+          , text_valign = text.align_center
+          , text_color = color.white))
+
+n = bar_index
+upper = ta.highest(rsp_length)
+lower = ta.lowest(rsp_length)
+sumad = math.sum(math.abs(close - open), rsp_length)
+
+[get_close, get_open] = request.security_lower_tf(syminfo.tickerid, rsp_tf, get_data())
+
+var ltop = line.new(na,na,na,na, color = rsp_range_color)
+var l75 = line.new(na,na,na,na, color = rsp_range_color, style = line.style_dashed)
+var l50 = line.new(na,na,na,na, color = rsp_range_color)
+var l25 = line.new(na,na,na,na, color = rsp_range_color, style = line.style_dashed)
+var lbtm = line.new(na,na,na,na, color = rsp_range_color)
+var fill = linefill.new(ltop, lbtm, na)
+
+var bull_max = line.new(na,na,na,na, color = rsp_bullish_bin_color)
+var bear_min = line.new(na,na,na,na, color = rsp_bearish_bin_color)
+
+if barstate.islast
+    avg = math.avg(upper, lower)
+    avg75 = math.avg(upper, avg)
+    avg25 = math.avg(lower, avg)
+
+    ltop.set_xy1(n - rsp_length, upper), ltop.set_xy2(n + rsp_offset, upper)
+    lbtm.set_xy1(n - rsp_length, lower), lbtm.set_xy2(n + rsp_offset, lower)
+    
+    if rsp_range_showed
+        l75.set_xy1(n - rsp_length, avg75), l75.set_xy2(n + rsp_offset, avg75)
+        l50.set_xy1(n - rsp_length, avg), l50.set_xy2(n + rsp_offset, avg)
+        l25.set_xy1(n - rsp_length, avg25), l25.set_xy2(n + rsp_offset, avg25)
+    else
+        ltop.set_color(na)
+        lbtm.set_color(na)
+
+    up = upper
+    dn = upper
+    sums = array.new_float(0)
+    sums_abs = array.new_float(0)
+
+    for i = 0 to rsp_rows - 1
+        dn -= (upper - lower) / rsp_rows
+        sum = 0.
+        den = 0.
+        
+        for j = 0 to rsp_length - 1
+            if rsp_ib_used
+                for k = 0 to (get_close[j]).size()-1
+                    c = (get_close[j]).get(k)
+                    o = (get_open[j]).get(k)
+                    sum += math.max(c, o) <= up and math.min(c, o) >= dn ? c - o : 0
+            else
+                sum += high[j] > dn and low[j] < up ? close[j] - open[j] : 0
+        
+        sums.push(sum)
+        sums_abs.push(math.abs(sum))
+
+        up := dn
+
+    max = sums_abs.max()
+    up := upper
+    dn := upper
+    
+    for [index, element] in sums
+        dn -= (upper - lower) / rsp_rows
+        x2 = n + int(element / max * rsp_length * (rsp_width / 100))
+        
+        css = element > 0 ? color.new(rsp_bullish_bin_color, 50) : color.new(rsp_bearish_bin_color, 50)
+
+        get_bx = boxes.get(index)
+        get_bx.set_lefttop(n + rsp_offset, .9 * up + .1 * dn)
+        get_bx.set_rightbottom(x2 + rsp_offset, .9 * dn + .1 * up)
+        get_bx.set_bgcolor(css)
+        get_bx.set_text(str.tostring(element / sumad * 100, format.percent))
+        
+        if element == sums.max() and rsp_bullish_max_showed
+            bull_max_val = math.avg(up, dn)
+            bull_max.set_xy1(n + rsp_offset, bull_max_val)
+            bull_max.set_xy2(n - rsp_length, bull_max_val)
+
+        if element == sums.min() and rsp_bearish_max_showed
+            bear_min_val = math.avg(up, dn)
+            bear_min.set_xy1(x2 + rsp_offset, bear_min_val)
+            bear_min.set_xy2(n - rsp_length, bear_min_val)
+            
+        up := dn
+    
+    if rsp_fill_showed
+        fill.set_color(sums.sum() > 0 ? color.new(rsp_bullish_bin_color, 95) : color.new(rsp_bearish_bin_color, 95))
 
 
 
@@ -27,140 +144,140 @@ color txt_color = #EEEEEE
 //** Volume Profile **//
 
 // Inputs
-string vp_grp = "Volume Profile"
-bool vp_showed = input.bool(true, title = "Show", group = vp_grp)
-int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
-int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
-int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
-int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
-int vp_trans = input.int(60, "Transparency", 0, 100, group = vp_grp)
-color vp_high_color = input.color(light_gray_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
-color vp_low_color = input.color(dark_gray_color, "", inline = "Histogram Colors", group = vp_grp)
-int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
+// string vp_grp = "Volume Profile"
+// bool vp_showed = input.bool(false, title = "Show", group = vp_grp)
+// int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
+// int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
+// int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
+// int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
+// int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
+// int vp_trans = input.int(60, "Transparency", 0, 100, group = vp_grp)
+// color vp_high_color = input.color(light_gray_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
+// color vp_low_color = input.color(dark_gray_color, "", inline = "Histogram Colors", group = vp_grp)
+// int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
 
-// Methods
-method get_sin(int src, int bandwidth) =>
-    if src == 0
-        1
-    else
-        math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
+// // Methods
+// method get_sin(int src, int bandwidth) =>
+//     if src == 0
+//         1
+//     else
+//         math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
 
-method get_multi_kernel_regression(float[] src, int prd)=>
-    int size = array.size(src)
-    float[] estimated_arr = array.new<float>(size)
-    float cur_price = na
+// method get_multi_kernel_regression(float[] src, int prd)=>
+//     int size = array.size(src)
+//     float[] estimated_arr = array.new<float>(size)
+//     float cur_price = na
 
-    for i = 0 to size - 1 
-        float sum = 0
-        float sumw = 0
+//     for i = 0 to size - 1 
+//         float sum = 0
+//         float sumw = 0
 
-        for j = 0 to size - 1 
-            diff = i - j
-            weight = get_sin(diff, prd)
-            sum += array.get(src, j) * weight
-            sumw += weight
+//         for j = 0 to size - 1 
+//             diff = i - j
+//             weight = get_sin(diff, prd)
+//             sum += array.get(src, j) * weight
+//             sumw += weight
 
-        cur_price := sum / sumw
-        array.set(estimated_arr, i, cur_price >= 0 ? cur_price : 0)
+//         cur_price := sum / sumw
+//         array.set(estimated_arr, i, cur_price >= 0 ? cur_price : 0)
 
-    estimated_arr
+//     estimated_arr
 
-int vp_cnum = 100
-float vp_top = ta.highest(vp_prd)
-float vp_bot = ta.lowest(vp_prd)
-float vp_step = (vp_top - vp_bot) / vp_cnum
-float[] vp_levels = array.new_float(vp_cnum + 1)
+// int vp_cnum = 100
+// float vp_top = ta.highest(vp_prd)
+// float vp_bot = ta.lowest(vp_prd)
+// float vp_step = (vp_top - vp_bot) / vp_cnum
+// float[] vp_levels = array.new_float(vp_cnum + 1)
 
-for x = 0 to vp_cnum by 1
-    array.set(vp_levels, x, vp_bot + vp_step * x)
+// for x = 0 to vp_cnum by 1
+//     array.set(vp_levels, x, vp_bot + vp_step * x)
 
-method get_vol(float a, float b, float x, float y, float vol) =>
-    // Bar is completely below or above the range
-    if y < a or x > b
-        0
-    // Entire bar is inside the range but doesn"t span it
-    else if x >= a and y <= b
-        p_range = (y - x) / (b - a)
-        p_range * vol
-    // Bar completely covers the range
-    else if x <= a and y >= b
-        p_bar = (b - a) / (y - x)
-        p_bar * vol
-    // Top of the bar is inside the range
-    else if x < a and y <= b
-        p_bar = (y - a) / (y - x)
-        p_bar * vol
-    // Bottom of the bar is inside the range
-    else if x >= a and y > b
-        p_bar = (b - x) / (y - x)
-        p_bar * vol
-    else
-        vol
+// method get_vol(float a, float b, float x, float y, float vol) =>
+//     // Bar is completely below or above the range
+//     if y < a or x > b
+//         0
+//     // Entire bar is inside the range but doesn"t span it
+//     else if x >= a and y <= b
+//         p_range = (y - x) / (b - a)
+//         p_range * vol
+//     // Bar completely covers the range
+//     else if x <= a and y >= b
+//         p_bar = (b - a) / (y - x)
+//         p_bar * vol
+//     // Top of the bar is inside the range
+//     else if x < a and y <= b
+//         p_bar = (y - a) / (y - x)
+//         p_bar * vol
+//     // Bottom of the bar is inside the range
+//     else if x >= a and y > b
+//         p_bar = (b - x) / (y - x)
+//         p_bar * vol
+//     else
+//         vol
 
-var lines = array.new<line>()
-var probs = array.new<box>()
-var volus = array.new<box>()
-var float line_float = na
+// var lines = array.new<line>()
+// var probs = array.new<box>()
+// var volus = array.new<box>()
+// var float line_float = na
 
-if array.size(lines) > 0
-    for i = array.size(lines) - 1 to 0
-        line.delete(array.get(lines, i))
-        array.remove(lines, i)
+// if array.size(lines) > 0
+//     for i = array.size(lines) - 1 to 0
+//         line.delete(array.get(lines, i))
+//         array.remove(lines, i)
 
-    for i = array.size(probs) - 1 to 0
-        box.delete(array.get(probs, i))
-        array.remove(probs, i)
+//     for i = array.size(probs) - 1 to 0
+//         box.delete(array.get(probs, i))
+//         array.remove(probs, i)
 
-    for i = array.size(volus) - 1 to 0
-        box.delete(array.get(volus, i))
-        array.remove(volus, i)
+//     for i = array.size(volus) - 1 to 0
+//         box.delete(array.get(volus, i))
+//         array.remove(volus, i)
  
-if barstate.islast and vp_showed
-    float[] _vols = array.new_float(vp_cnum, 0.)
-    float[] _bullish_vols = array.new_float(vp_cnum, 0.)
-    int _trans = 100 - vp_trans
+// if barstate.islast and vp_showed
+//     float[] _vols = array.new_float(vp_cnum, 0.)
+//     float[] _bullish_vols = array.new_float(vp_cnum, 0.)
+//     int _trans = 100 - vp_trans
 
-    for bars = 0 to vp_prd - 1 by 1
-        float _high = high[bars]
-        float _low = low[bars]
-        float _vol = volume[bars]
-        bool _is_bullish = open[bars] < close[bars]
+//     for bars = 0 to vp_prd - 1 by 1
+//         float _high = high[bars]
+//         float _low = low[bars]
+//         float _vol = volume[bars]
+//         bool _is_bullish = open[bars] < close[bars]
 
-        for x = 0 to vp_cnum - 1 by 1
-            array.set(_vols, x, array.get(_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
+//         for x = 0 to vp_cnum - 1 by 1
+//             array.set(_vols, x, array.get(_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
             
-            if _is_bullish
-                array.set(_bullish_vols, x, array.get(_bullish_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
+//             if _is_bullish
+//                 array.set(_bullish_vols, x, array.get(_bullish_vols, x) + get_vol(array.get(vp_levels, x), array.get(vp_levels, x + 1), _low, _high, _vol))
                             
-    float[] colors = array.new_float(vp_cnum, 0.)
+//     float[] colors = array.new_float(vp_cnum, 0.)
 
-    for i = 0 to vp_cnum - 1
-        float max_level = array.get(_vols, i)
-        float bullish_level = array.get(_bullish_vols, i)
-        array.set(colors, i, bullish_level / max_level)
+//     for i = 0 to vp_cnum - 1
+//         float max_level = array.get(_vols, i)
+//         float bullish_level = array.get(_bullish_vols, i)
+//         array.set(colors, i, bullish_level / max_level)
 
-    float max_vol = array.max(_vols)
+//     float max_vol = array.max(_vols)
 
-    for x = 0 to vp_cnum - 1 by 1
-        array.set(_vols, x, array.get(_vols, x) * vp_prd / (3 * max_vol))
+//     for x = 0 to vp_cnum - 1 by 1
+//         array.set(_vols, x, array.get(_vols, x) * vp_prd / (3 * max_vol))
 
-    float[] normal_vols = get_multi_kernel_regression(_vols, vp_smoothing)
-    int edge = bar_index + math.round(array.max(normal_vols) / vp_compaction_factor) + vp_offset
-    var vol_bars = array.new_box(vp_cnum, na)
+//     float[] normal_vols = get_multi_kernel_regression(_vols, vp_smoothing)
+//     int edge = bar_index + math.round(array.max(normal_vols) / vp_compaction_factor) + vp_offset
+//     var vol_bars = array.new_box(vp_cnum, na)
 
-    for i = 0 to vp_cnum - 1 by 1
-        box.delete(array.get(vol_bars, i))
-        array.set(
-         vol_bars, i,
-         box.new(edge - math.round(array.get(normal_vols, i) / vp_compaction_factor), 
-          array.get(vp_levels, i + 1), 
-          edge, 
-          array.get(vp_levels, i), 
-          border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, color.new(vp_low_color, _trans), color.new(vp_high_color, _trans)), _trans))
-         )
+//     for i = 0 to vp_cnum - 1 by 1
+//         box.delete(array.get(vol_bars, i))
+//         array.set(
+//          vol_bars, i,
+//          box.new(edge - math.round(array.get(normal_vols, i) / vp_compaction_factor), 
+//           array.get(vp_levels, i + 1), 
+//           edge, 
+//           array.get(vp_levels, i), 
+//           border_width = 0, 
+//           bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, color.new(vp_low_color, _trans), color.new(vp_high_color, _trans)), _trans))
+//          )
 
 
 
@@ -177,6 +294,7 @@ color sr_resistance_color = input.color(red_color, title = "Resistance Color", g
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
 int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
+color sr_val_color = input.color(#AFAFAF, title = "Value Color", group = sr_grp)
 
 
 // Methods
@@ -205,8 +323,8 @@ method get_sr_val_txt(float val) =>
     str.format("{0} | {1}", tf, val)
 
 method build_sr_val_box(float top, float bot, float val, float v_padding) =>
-    int sr_txt_offset = bar_index + 20
-    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 200, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = txt_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
+    int sr_txt_offset = bar_index + 32
+    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 200, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 // Plots
 int sr_size = 21
@@ -559,7 +677,7 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 string db_grp = "Dashboard"
 bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
 string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
-color db_txt_color = input.color(txt_color, "Table Text Color", group = db_grp)
+color db_txt_color = input.color(#EEEEEE, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
 string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
 
