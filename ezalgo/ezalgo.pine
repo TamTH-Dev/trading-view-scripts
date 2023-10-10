@@ -32,7 +32,7 @@ int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
 int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
-int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
+int vp_offset = input.int(15, "Offset From Last Bar", group = vp_grp)
 int vp_trans = input.int(0, "Transparency", 0, 100, group = vp_grp)
 color vp_high_color = input.color(light_gray_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
 color vp_low_color = input.color(dark_gray_color, "", inline = "Histogram Colors", group = vp_grp)
@@ -620,7 +620,7 @@ if barstate.islast and db_showed
 string gp_grp = "Golden Pocket"
 bool gp_showed = input.bool(true, "Show", group = gp_grp)
 int gp_prd = input.int(70, "Period", group = gp_grp)
-color gp_color = input.color(color.new(yellow_color, 20), "Color", group = gp_grp)
+color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
 float gp_highest_val = ta.highest(gp_prd)
 float gp_lowest_val = ta.lowest(gp_prd)
