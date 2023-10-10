@@ -6,14 +6,14 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_lines_count = 500,
 // Colors
 color transparent_color = color.new(#000000, 100)
 color white_color = color.white
-color yellow_color = #F2E40A
-color orange_color = #F2643A
-color green_color = #16F9BA
-color red_color = #F23A64
-color aqua_color = #21BAF3
+color yellow_color = #f2E40a
+color orange_color = #f2643a
+color green_color = #16f9ba
+color red_color = #f23a64
+color aqua_color = #21baf3
 color purple_color = #5932e6
-color light_gray_color = #3c3f4b
-color dark_gray_color = #242424
+color light_gray_color = #4a4e69
+color dark_gray_color = #22223b
 color green_color_40 = color.new(green_color, 60)
 color red_color_40 = color.new(red_color, 60)
 color aqua_color_30 = color.new(aqua_color, 70)
@@ -28,14 +28,14 @@ color purple_color_30 = color.new(purple_color, 70)
 // Inputs
 string vp_grp = "Volume Profile"
 bool vp_showed = input.bool(true, title = "Show", group = vp_grp)
-int vp_prd = input.int(120, "Period", 1, 500, group = vp_grp)
+int vp_prd = input.int(200, "Period", 1, 500, group = vp_grp)
 int vp_smoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
 int vp_pivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
 int vp_peak_thresh = input.int(80, "Peak Threshold", group = vp_grp)
 int vp_offset = input.int(12, "Offset From Last Bar", group = vp_grp)
-int vp_trans = input.int(30, "Transparency", 0, 100, group = vp_grp)
+int vp_trans = input.int(0, "Transparency", 0, 100, group = vp_grp)
 color vp_high_color = input.color(light_gray_color, "Histogram Colors", inline = "Histogram Colors", group = vp_grp)
-color vp_low_color = input.color(light_gray_color, "", inline = "Histogram Colors", group = vp_grp)
+color vp_low_color = input.color(dark_gray_color, "", inline = "Histogram Colors", group = vp_grp)
 int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
 
@@ -152,15 +152,10 @@ if barstate.islast and vp_showed
 
     for i = 0 to vp_cnum - 1 by 1
         box.delete(array.get(vol_bars, i))
-        array.set(
-         vol_bars, i,
-         box.new(edge - math.round(array.get(normal_vols, i) / vp_compaction_factor), 
-          array.get(vp_levels, i + 1), 
-          edge, 
-          array.get(vp_levels, i), 
-          border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(colors, i), 0, 1, vp_low_color, vp_high_color), vp_trans))
-         )
+        int vol = math.round(array.get(normal_vols, i) / vp_compaction_factor)
+        color box_color = vol > 0 ? color.new(color.from_gradient(array.get(colors, i), 0, 1, vp_low_color, vp_high_color), vp_trans) : transparent_color
+        box vol_box = box.new(edge - vol, array.get(vp_levels, i + 1), edge, array.get(vp_levels, i), border_width = 0, bgcolor = box_color)
+        array.set(vol_bars, i, vol_box)
 
 
 
