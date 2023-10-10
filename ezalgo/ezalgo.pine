@@ -171,14 +171,14 @@ color sr_support_color = input.color(green_color, title = "Support Color", group
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
-color sr_val_color = input.color(#AFAFAF, title = "Value Color", group = sr_grp)
+int sr_trans = input.int(85, title = "Transparent", group = sr_grp)
+color sr_val_color = input.color(#afafaf, title = "Value Color", group = sr_grp)
 
 
 // Methods
 method get_width_by_percent(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
 
-method get_sr_val_txt(float val) =>
+get_tf_txt() =>
     string prd = timeframe.period
     string tf = na
 
@@ -198,10 +198,15 @@ method get_sr_val_txt(float val) =>
         else
             tf := str.format("{0}M",  mins)
 
+    tf
+
+method get_sr_val_txt(float val) =>
+    string tf = get_tf_txt()
+
     str.format("{0} | {1}", tf, val)
 
 method build_sr_val_box(float top, float bot, float val, float v_padding) =>
-    int sr_txt_offset = bar_index + 32
+    int sr_txt_offset = bar_index + 24
     box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 200, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 
@@ -543,7 +548,7 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 // Inputs
 string db_grp = "Dashboard"
 bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
-string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
+string db_location = input.string("Top Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
 color db_txt_color = input.color(#EEEEEE, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
 string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
@@ -604,3 +609,48 @@ if barstate.islast and db_showed
     build_db_cell(1, 5, tf_720_status ? "🟢" : "🔴")
     build_db_cell(1, 6, tf_daily_status ? "🟢" : "🔴")
     // build_db_cell(1, 7, tf_weekly_status ? "🟢" : "🔴")
+
+
+
+
+
+//** Golden pocket  **//
+
+// Inputs
+string gp_grp = "Golden Pocket"
+bool gp_showed = input.bool(true, "Show", group = gp_grp)
+int gp_prd = input.int(70, "Period", group = gp_grp)
+color gp_color = input.color(color.new(yellow_color, 20), "Color", group = gp_grp)
+
+float gp_highest_val = ta.highest(gp_prd)
+float gp_lowest_val = ta.lowest(gp_prd)
+float gp_diff = gp_highest_val - gp_lowest_val
+float gp_st_val = gp_diff * 35 / 100
+float gp_nd_val = gp_diff * 38.2 / 100
+
+float gp_top = na
+float gp_bot = na
+
+if is_ema_bullish
+    gp_top := gp_diff * 38.2 / 100 + gp_lowest_val
+    gp_bot := gp_diff * 35 / 100 + gp_lowest_val
+else
+    gp_top := gp_highest_val - gp_diff * 35 / 100
+    gp_bot:= gp_highest_val - gp_diff * 38.2 / 100
+
+
+// Plots
+if gp_showed
+    var box gp_top_line = na, box.delete(gp_top_line)
+    var box gp_bot_line = na, box.delete(gp_bot_line)
+    var box gp_val_box = na, box.delete(gp_val_box)
+    int gp_val_offset = bar_index + 5
+    gp_top_line := box.new(bar_index - 20 , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, extend = extend.right)
+    gp_bot_line := box.new(bar_index - 20 , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top + 0.2 + get_width_by_percent(300, 2) * 2, gp_val_offset + 200, gp_top + 0.2, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+
+
+
+
+// plot(ta.ema(close, 144), color = color.yellow)
+// plot(ta.ema(close, 21), color = color.blue)
