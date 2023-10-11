@@ -566,7 +566,7 @@ string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small"
 
 var _db_location = db_location == "Top Right" ? position.top_right : db_location == "Middle Right" ? position.middle_right : db_location == "Bottom Right" ? position.bottom_right : db_location == "Top Center" ? position.top_center : db_location == "Middle Center" ? position.middle_center : db_location == "Bottom Center" ? position.bottom_center : db_location == "Top Left" ? position.top_left : db_location == "Middle Left" ? position.middle_left : position.bottom_left
 var _db_size = db_size == "Large" ? size.large : db_size == "Normal" ? size.normal : db_size == "Small" ? size.small : size.tiny
-var db_instance = db_showed ? table.new(_db_location, 2, 15, db_bg_color, #000000, 2, db_bg_color, 1) : na
+var db_instance = db_showed ? table.new(_db_location, 2, 15, db_bg_color, #0A0A0A, 2, db_bg_color, 1) : na
 
 
 // Methods
@@ -677,7 +677,7 @@ if gp_showed
 
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 5
-    gp_val_box := box.new(gp_val_offset, gp_top + 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2) * 3 / 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
 
 
