@@ -20,6 +20,32 @@ color aqua_color_30 = color.new(aqua_color, 70)
 color purple_color_30 = color.new(purple_color, 70)
 
 
+// General Methods
+method get_prd_width_by_perc(int prd, int perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+
+get_tf_txt() =>
+    string prd = timeframe.period
+    string tf = na
+
+    if str.contains(prd, "S")
+        tf := str.length(prd) == 1 ? '1S' : prd
+    else if str.contains(prd, "D")
+        tf := str.length(prd) == 1 ? '1D' : prd
+    else if str.contains(prd, "W")
+        tf := str.length(prd) == 1 ? '1W' : prd
+    else if str.contains(prd, "M")
+        tf := str.length(prd) == 1 ? '1M' : prd
+    else
+        float mins = str.tonumber(prd)
+
+        if mins >= 60
+            tf := str.format("{0}H",  mins / 60)
+        else
+            tf := str.format("{0}M",  mins)
+
+    tf
+
+
 
 
 
@@ -176,30 +202,6 @@ color sr_val_color = input.color(#afafaf, title = "Value Color", group = sr_grp)
 
 
 // Methods
-method get_width_by_percent(int len, int perc) => (ta.highest(len) - ta.lowest(len)) * perc / 100
-
-get_tf_txt() =>
-    string prd = timeframe.period
-    string tf = na
-
-    if str.contains(prd, "S")
-        tf := str.length(prd) == 1 ? '1S' : prd
-    else if str.contains(prd, "D")
-        tf := str.length(prd) == 1 ? '1D' : prd
-    else if str.contains(prd, "W")
-        tf := str.length(prd) == 1 ? '1W' : prd
-    else if str.contains(prd, "M")
-        tf := str.length(prd) == 1 ? '1M' : prd
-    else
-        float mins = str.tonumber(prd)
-
-        if mins >= 60
-            tf := str.format("{0}H",  mins / 60)
-        else
-            tf := str.format("{0}M",  mins)
-
-    tf
-
 method get_sr_val_txt(float val) =>
     string tf = get_tf_txt()
 
@@ -218,8 +220,8 @@ float sr_pl = ta.pivotlow (sr_rb, sr_rb)
 var sr_levels = array.new_float(sr_size, na)
 float sr_highest_prd = ta.highest(sr_prd)
 float sr_lowest_prd = ta.lowest(sr_prd)
-float sr_channel_width = get_width_by_percent(sr_prd, 10)
-float sr_zone_width = get_width_by_percent(300, sr_zone_width_percent)
+float sr_channel_width = get_prd_width_by_perc(sr_prd, 10)
+float sr_zone_width = get_prd_width_by_perc(300, sr_zone_width_percent)
 bool[] sr_aas = array.new_bool(41, true)
 float sr_highest_ph = 0.0, sr_highest_ph := sr_highest_ph[1]
 float sr_lowest_pl = 0.0, sr_lowest_pl := sr_lowest_pl[1]
@@ -614,12 +616,13 @@ if barstate.islast and db_showed
 
 
 
-//** Golden pocket  **//
+//** Golden Pocket **//
 
 // Inputs
 string gp_grp = "Golden Pocket"
 bool gp_showed = input.bool(true, "Show", group = gp_grp)
 int gp_prd = input.int(70, "Period", group = gp_grp)
+float gp_line_width = input.float(0.08, "Line's Width", group = gp_grp)
 color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
 float gp_highest_val = ta.highest(gp_prd)
@@ -638,16 +641,19 @@ else
     gp_top := gp_highest_val - gp_diff * 35 / 100
     gp_bot:= gp_highest_val - gp_diff * 38.2 / 100
 
-
 // Plots
-if gp_showed
+if barstate.islast and gp_showed
     var box gp_top_line = na, box.delete(gp_top_line)
     var box gp_bot_line = na, box.delete(gp_bot_line)
+    gp_top_line := box.new(bar_index - 20 , gp_top - gp_line_width / 2, bar_index, gp_top + gp_line_width / 2, bgcolor = gp_color, border_color = gp_color, border_width = 0, extend = extend.right)
+    gp_bot_line := box.new(bar_index - 20 , gp_bot - gp_line_width / 2, bar_index, gp_bot + gp_line_width / 2, bgcolor = gp_color, border_color = gp_color, border_width = 0, extend = extend.right)
+
+float val_box_width = get_prd_width_by_perc(gp_prd, 8)
+
+if gp_showed
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 5
-    gp_top_line := box.new(bar_index - 20 , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, extend = extend.right)
-    gp_bot_line := box.new(bar_index - 20 , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, extend = extend.right)
-    gp_val_box := box.new(gp_val_offset, gp_top + 0.2 + get_width_by_percent(300, 2) * 2, gp_val_offset + 200, gp_top + 0.2, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top + val_box_width * 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
 
 
