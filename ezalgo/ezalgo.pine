@@ -46,6 +46,15 @@ get_tf_txt() =>
     tf
 
 
+// Debugger
+f_print(_text) =>
+    // Create label on the first bar.
+    var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
+    // On next bars, update the label's x and y position, and the text it displays.
+    label.set_xy(_label, bar_index, ta.highest(10)[1])
+    label.set_text(_label, _text)
+
+
 
 
 
@@ -216,10 +225,10 @@ method build_sr_val_box(float top, float bot, float val, float v_padding) =>
 int sr_size = 21
 int sr_rb = 10
 float sr_ph = ta.pivothigh(sr_rb, sr_rb)
-float sr_pl = ta.pivotlow (sr_rb, sr_rb)
+float sr_pl = ta.pivotlow(sr_rb, sr_rb)
 var sr_levels = array.new_float(sr_size, na)
-float sr_highest_prd = ta.highest(sr_prd)
-float sr_lowest_prd = ta.lowest(sr_prd)
+float sr_highest_val = ta.highest(sr_prd)
+float sr_lowest_val = ta.lowest(sr_prd)
 float sr_channel_width = get_prd_width_by_perc(sr_prd, 10)
 float sr_zone_width = get_prd_width_by_perc(300, sr_zone_width_percent)
 bool[] sr_aas = array.new_bool(41, true)
@@ -233,8 +242,8 @@ if (sr_ph or sr_pl) and sr_showed
     for i = 0 to array.size(sr_levels) - 1
         array.set(sr_levels, i, na)
 
-    sr_highest_ph := sr_lowest_prd
-    sr_lowest_pl := sr_highest_prd
+    sr_highest_ph := sr_lowest_val
+    sr_lowest_pl := sr_highest_val
     int pp_count = 0
 
     for i = 0 to sr_prd
@@ -242,8 +251,8 @@ if (sr_ph or sr_pl) and sr_showed
             break
 
         if not na(sr_ph[i]) or not na(sr_pl[i])
-            sr_highest_ph := math.max(sr_highest_ph, nz(sr_ph[i], sr_lowest_prd), nz(sr_pl[i], sr_lowest_prd))
-            sr_lowest_pl := math.min(sr_lowest_pl, nz(sr_ph[i], sr_highest_prd), nz(sr_pl[i], sr_highest_prd))
+            sr_highest_ph := math.max(sr_highest_ph, nz(sr_ph[i], sr_lowest_val), nz(sr_pl[i], sr_lowest_val))
+            sr_lowest_pl := math.min(sr_lowest_pl, nz(sr_ph[i], sr_highest_val), nz(sr_pl[i], sr_highest_val))
             pp_count += 1
 
             if pp_count > 40
@@ -622,38 +631,53 @@ if barstate.islast and db_showed
 string gp_grp = "Golden Pocket"
 bool gp_showed = input.bool(true, "Show", group = gp_grp)
 int gp_prd = input.int(70, "Period", group = gp_grp)
-float gp_line_width = input.float(0.08, "Line's Width", group = gp_grp)
 color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
+int gp_rb = 10
+float gp_ph = ta.pivothigh(gp_rb, gp_rb)
+float gp_pl = ta.pivotlow(gp_rb, gp_rb)
+float gp_highest_ph = 0.0, gp_highest_ph := gp_highest_ph[1]
+float gp_lowest_pl = 0.0, gp_lowest_pl := gp_lowest_pl[1]
 float gp_highest_val = ta.highest(gp_prd)
 float gp_lowest_val = ta.lowest(gp_prd)
-float gp_diff = gp_highest_val - gp_lowest_val
-float gp_st_val = gp_diff * 35 / 100
-float gp_nd_val = gp_diff * 38.2 / 100
 
-float gp_top = na
-float gp_bot = na
-
-if is_ema_bullish
-    gp_top := gp_diff * 38.2 / 100 + gp_lowest_val
-    gp_bot := gp_diff * 35 / 100 + gp_lowest_val
-else
-    gp_top := gp_highest_val - gp_diff * 35 / 100
-    gp_bot:= gp_highest_val - gp_diff * 38.2 / 100
 
 // Plots
-if barstate.islast and gp_showed
+if gp_showed
+    gp_highest_ph := gp_lowest_val
+    gp_lowest_pl := gp_highest_val
+
+    for i = 0 to gp_prd
+        if na(close[i])
+            break
+
+        if not na(gp_ph[i]) or not na(gp_pl[i])
+            gp_highest_ph := math.max(gp_highest_ph, nz(gp_ph[i], gp_lowest_val), nz(gp_pl[i], gp_lowest_val))
+            gp_lowest_pl := math.min(gp_lowest_pl, nz(gp_ph[i], gp_highest_val), nz(gp_pl[i], gp_highest_val))
+
+    float gp_max = is_ema_bullish ? math.max(gp_highest_ph, gp_highest_val) : gp_highest_ph
+    float gp_min = not is_ema_bullish ? math.min(gp_lowest_pl, gp_lowest_val) : gp_lowest_pl
+    float gp_diff = gp_max - gp_min
+    float gp_st_val = gp_diff * 35 / 100
+    float gp_nd_val = gp_diff * 38.2 / 100
+    float gp_top = na
+    float gp_bot = na
+
+    if is_ema_bullish
+        gp_top := gp_diff * 38.2 / 100 + gp_lowest_pl
+        gp_bot := gp_diff * 35 / 100 + gp_lowest_pl
+    else
+        gp_top := gp_highest_ph - gp_diff * 35 / 100
+        gp_bot:= gp_highest_ph - gp_diff * 38.2 / 100
+
     var box gp_top_line = na, box.delete(gp_top_line)
     var box gp_bot_line = na, box.delete(gp_bot_line)
-    gp_top_line := box.new(bar_index - 20 , gp_top - gp_line_width / 2, bar_index, gp_top + gp_line_width / 2, bgcolor = gp_color, border_color = gp_color, border_width = 0, extend = extend.right)
-    gp_bot_line := box.new(bar_index - 20 , gp_bot - gp_line_width / 2, bar_index, gp_bot + gp_line_width / 2, bgcolor = gp_color, border_color = gp_color, border_width = 0, extend = extend.right)
+    gp_top_line := box.new(bar_index - gp_prd , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+    gp_bot_line := box.new(bar_index - gp_prd , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
 
-float val_box_width = get_prd_width_by_perc(gp_prd, 8)
-
-if gp_showed
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 5
-    gp_val_box := box.new(gp_val_offset, gp_top + val_box_width * 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top + 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
 
 
