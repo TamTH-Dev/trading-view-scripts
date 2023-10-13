@@ -6,6 +6,7 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_lines_count = 500,
 // Colors
 color transparent_color = color.new(#000000, 100)
 color white_color = color.white
+color blue_color = color.blue
 color yellow_color = #f2E40a
 color orange_color = #f2643a
 color green_color = #16f9ba
@@ -28,13 +29,13 @@ get_tf_txt() =>
     string tf = na
 
     if str.contains(prd, "S")
-        tf := str.length(prd) == 1 ? '1S' : prd
+        tf := str.length(prd) == 1 ? "1S" : prd
     else if str.contains(prd, "D")
-        tf := str.length(prd) == 1 ? '1D' : prd
+        tf := str.length(prd) == 1 ? "1D" : prd
     else if str.contains(prd, "W")
-        tf := str.length(prd) == 1 ? '1W' : prd
+        tf := str.length(prd) == 1 ? "1W" : prd
     else if str.contains(prd, "M")
-        tf := str.length(prd) == 1 ? '1M' : prd
+        tf := str.length(prd) == 1 ? "1M" : prd
     else
         float mins = str.tonumber(prd)
 
@@ -50,7 +51,7 @@ get_tf_txt() =>
 f_print(_text) =>
     // Create label on the first bar.
     var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
-    // On next bars, update the label's x and y position, and the text it displays.
+    // On next bars, update the label"s x and y position, and the text it displays.
     label.set_xy(_label, bar_index, ta.highest(10)[1])
     label.set_text(_label, _text)
 
@@ -348,7 +349,7 @@ string buy_sell_grp = "Buy & Sell Signals"
 bool buy_sell_signals_showed = input.bool(true, title = "Show", group = buy_sell_grp)
 float sensitivity = input.float(1.7, title = "Sensitivity", minval = 1, maxval = 6, group = buy_sell_grp)
 string trend_ribbon_grp = "Trend Ribbon"
-bool ribbon_showed = input.bool(true, title = "Show", group = trend_ribbon_grp)
+bool ribbon_showed = input.bool(false, title = "Show", group = trend_ribbon_grp)
 int ribbon_leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
 int ribbon_lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval = 1, group = trend_ribbon_grp)
 string reversal_bands_grp = "Reversal Bands"
@@ -679,8 +680,85 @@ if gp_showed
     int gp_val_offset = bar_index + 5
     gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2) * 3 / 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
-
-
-
 // plot(ta.ema(close, 144), color = color.yellow)
 // plot(ta.ema(close, 21), color = color.blue)
+
+
+
+
+
+//** Ichimoku **//
+
+// Inputs
+string ichimoku_grp = "Ichimoku Kinko Hyo"
+bool ichimoku_showed = input.bool(true, "Show", group = ichimoku_grp)
+string ichimoku_strategy = input.string("Scalping", "Strategy", ["Scalping", "Default"], group = ichimoku_grp)
+
+string tenkan_sen_txt = "Tenkan-sen"
+string kijun_sen_txt = "Kijun-sen"
+string chikou_span_txt = "Chikou-span"
+string senkou_span_a_txt = "Senkou-span A"
+string senkou_span_b_txt = "Senkou-span B"
+string kumo_cloud_txt = "Kumo Cloud"
+string kumo_offset_txt = "Kumo Offset"
+int tenkan_sen_prd = 9
+int kijun_sen_prd = 26
+int chikou_span_offset = 25
+int senkou_span_b_prd = 52
+int kumo_offset = 25
+string thunder_tenkan_sen_txt = "Thunder Tenkan-sen"
+string thunder_kijun_sen_txt = "Thunder Kijun-sen"
+string thunder_senkou_span_a_txt = "Thunder Senkou-span A"
+string thunder_senkou_span_b_txt = "Thunder Senkou-span B"
+string thunder_kumo_cloud_txt = "Thunder Kumo Cloud"
+string thunder_kumo_offset_txt = "Thunder Kumo Offset"
+int thunder_tenkan_sen_prd = 7
+int thunder_kijun_sen_prd = 21
+int thunder_senkou_span_b_prd = 48
+int thunder_kumo_offset = 20
+string lightning_tenkan_sen_txt = "Lightning Tenkan-sen"
+string lightning_kijun_sen_txt = "Lightning Kijun-sen"
+string lightning_senkou_span_a_txt = "Lightning Senkou-span A"
+string lightning_senkou_span_b_txt = "Lightning Senkou-span B"
+string lightning_kumo_cloud_txt = "Lightning Kumo Cloud"
+string lightning_kumo_offset_txt = "Lightning Kumo Offset"
+int lightning_tenkan_sen_prd = 7
+int lightning_kijun_sen_prd = 12
+int lightning_senkou_span_b_prd = 15
+int lightning_kumo_offset = 5
+
+
+// Methods
+method get_middle_point(int timeframes) => math.avg(ta.lowest(timeframes), ta.highest(timeframes))
+
+
+// Plots
+bool is_ichimoku_default = ichimoku_strategy == "Default"
+bool is_ichimoku_scalping = ichimoku_strategy == "Scalping"
+
+float tenkan_sen = get_middle_point(tenkan_sen_prd)
+float kijun_sen = get_middle_point(kijun_sen_prd)
+float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
+float senkou_span_b = get_middle_point(senkou_span_b_prd)
+plot(is_ichimoku_default and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = aqua_color, title = chikou_span_txt, linewidth = 1)
+var senkou_span_a_plot = plot(is_ichimoku_default and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = senkou_span_a_txt)
+var senkou_span_b_plot = plot(is_ichimoku_default and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = senkou_span_b_txt)
+fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 90) : color.new(red_color, 90), title = kumo_cloud_txt)
+plot(is_ichimoku_default and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1)
+plot(is_ichimoku_default and ichimoku_showed ? tenkan_sen : na, color = blue_color, title = tenkan_sen_txt, linewidth = 1)
+
+float thunder_tenkan_sen = get_middle_point(thunder_tenkan_sen_prd)
+float thunder_kijun_sen = get_middle_point(thunder_kijun_sen_prd)
+float thunder_senkou_span_a = math.avg(thunder_tenkan_sen, thunder_kijun_sen)
+float thunder_senkou_span_b = get_middle_point(thunder_senkou_span_b_prd)
+var thunder_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = thunder_senkou_span_a_txt)
+var thunder_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = thunder_senkou_span_b_txt)
+fill(thunder_senkou_span_a_plot, thunder_senkou_span_b_plot, color = thunder_senkou_span_a > thunder_senkou_span_b ? color.new(green_color, 90) : color.new(red_color, 90), title = thunder_kumo_cloud_txt)
+
+float lightning_tenkan_sen = get_middle_point(lightning_tenkan_sen_prd)
+float lightning_kijun_sen = get_middle_point(lightning_kijun_sen_prd)
+float lightning_senkou_span_a = math.avg(lightning_tenkan_sen, lightning_kijun_sen)
+float lightning_senkou_span_b = get_middle_point(lightning_senkou_span_b_prd)
+var lightning_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = color.new(aqua_color, 20), linewidth = 1, title = lightning_senkou_span_a_txt)
+var lightning_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = color.new(purple_color, 20), linewidth = 1, title = lightning_senkou_span_b_txt)
+fill(lightning_senkou_span_a_plot, lightning_senkou_span_b_plot, color = lightning_senkou_span_a > lightning_senkou_span_b ? color.new(aqua_color, 90) : color.new(purple_color, 90), title = lightning_kumo_cloud_txt)
