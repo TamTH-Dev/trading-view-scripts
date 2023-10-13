@@ -15,10 +15,6 @@ color aqua_color = #21baf3
 color purple_color = #5932e6
 color light_gray_color = #364156
 color dark_gray_color = #212d40
-color green_color_40 = color.new(green_color, 60)
-color red_color_40 = color.new(red_color, 60)
-color aqua_color_30 = color.new(aqua_color, 70)
-color purple_color_30 = color.new(purple_color, 70)
 
 
 // General Methods
@@ -207,8 +203,8 @@ color sr_support_color = input.color(green_color, title = "Support Color", group
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(85, title = "Transparent", group = sr_grp)
-color sr_val_color = input.color(#afafaf, title = "Value Color", group = sr_grp)
+int sr_trans = input.int(90, title = "Transparent", group = sr_grp)
+color sr_val_color = input.color(#888888, title = "Value Color", group = sr_grp)
 
 
 // Methods
@@ -414,17 +410,20 @@ plotshape(buy_sell_signals_showed and has_mild_sell_signal and not consistent_se
 plotshape(buy_sell_signals_showed and consistent_buy_signal, title = "Same Buy Signal" , style = shape.diamond, location = location.belowbar, color = yellow_color, size = size.small, display = display.pane)
 plotshape(buy_sell_signals_showed and consistent_sell_signal, title = "Same Sell Signal", style = shape.diamond, location = location.abovebar, color = orange_color, size = size.small, display = display.pane)
 
-plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = red_color_40, display = display.pane)
-plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = red_color_40, display = display.pane)
-plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = red_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = green_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = green_color_40, display = display.pane)
-plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = green_color_40, display = display.pane)
+var upper_rev_s_band_plot = plot(rev_bands_showed ? upper_rev_s_band : na, title = "Upper Reversal Short Band", color = transparent_color, display = display.pane)
+var upper_rev_m_band_plot = plot(rev_bands_showed ? upper_rev_m_band : na, title = "Upper Reversal Medium Band", color = transparent_color, display = display.pane)
+var upper_rev_l_band_plot = plot(rev_bands_showed ? upper_rev_l_band : na, title = "Upper Reversal Long Band", color = transparent_color, display = display.pane)
+fill(upper_rev_s_band_plot, upper_rev_m_band_plot, color.new(purple_color, 80))
+fill(upper_rev_m_band_plot, upper_rev_l_band_plot, color.new(purple_color, 70))
+var lower_rev_l_band_plot = plot(rev_bands_showed ? lower_rev_l_band : na, title = "Lower Reversal Long Band", color = transparent_color, display = display.pane)
+var lower_rev_m_band_plot = plot(rev_bands_showed ? lower_rev_m_band : na, title = "Lower Reversal Medium Band", color = transparent_color, display = display.pane)
+var lower_rev_s_band_plot = plot(rev_bands_showed ? lower_rev_s_band : na, title = "Lower Reversal Short Band", color = transparent_color, display = display.pane)
+fill(lower_rev_s_band_plot, lower_rev_m_band_plot, color.new(aqua_color, 80))
+fill(lower_rev_m_band_plot, lower_rev_l_band_plot, color.new(aqua_color, 70))
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
-fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? aqua_color_30 : purple_color_30, title = "Ribbon Fill Color")
-
+fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? color.new(aqua_color, 70) : color.new(purple_color, 70), title = "Ribbon Fill Color")
 
 
 
