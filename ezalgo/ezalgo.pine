@@ -566,40 +566,128 @@ string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small"
 
 var _db_location = db_location == "Top Right" ? position.top_right : db_location == "Middle Right" ? position.middle_right : db_location == "Bottom Right" ? position.bottom_right : db_location == "Top Center" ? position.top_center : db_location == "Middle Center" ? position.middle_center : db_location == "Bottom Center" ? position.bottom_center : db_location == "Top Left" ? position.top_left : db_location == "Middle Left" ? position.middle_left : position.bottom_left
 var _db_size = db_size == "Large" ? size.large : db_size == "Normal" ? size.normal : db_size == "Small" ? size.small : size.tiny
-var db_instance = db_showed ? table.new(_db_location, 2, 15, db_bg_color, #0A0A0A, 2, db_bg_color, 1) : na
+var db_instance = db_showed ? table.new(_db_location, 3, 15, db_bg_color, #0A0A0A, 2, db_bg_color, 1) : na
 
 
 // Methods
-get_res_in_mins_by_tf() =>
-    float _res_in_mins = timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly  ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : na)
-
 build_db_cell(col, row, txt) => table.cell(db_instance, col, row, txt, 0, 0, db_txt_color, text_size = _db_size)
 build_db_cell_bg(col, row, color) => table.cell_set_bgcolor(db_instance, col, row, color)
 
-is_equal_tf(res) => str.tonumber(res) == get_res_in_mins_by_tf() and not timeframe.isseconds
-is_higher_tf(res) => str.tonumber(res) > get_res_in_mins_by_tf() or timeframe.isseconds
-is_too_small_tf(res) => (timeframe.isweekly and res == "1") or (timeframe.ismonthly and str.tonumber(res) < 10)
+extract_tf(prd) =>
+    int len = str.length(prd)
 
-method get_bullish_status_by_tf(string sym, string res, bool is_ema_bullish) =>
-    bool _is_bullish = na
-    _is_bullish := is_equal_tf(res) ? is_ema_bullish : _is_bullish
-    _is_bullish := is_higher_tf(res) ? request.security(sym, res, is_ema_bullish, barmerge.gaps_off, barmerge.lookahead_on) : _is_bullish
-    _is_bullish_arr = request.security_lower_tf(syminfo.tickerid, is_higher_tf(res) ? str.tostring(get_res_in_mins_by_tf()) + (timeframe.isseconds ? "S" : "") : is_too_small_tf(res) ? (timeframe.isweekly ? "3" : "10") : res, is_ema_bullish)
+    if str.contains(prd, "M")
+        if (str.length(prd) == 1)
+            [1, "M"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "M"]
+    else if str.contains(prd, "W")
+        if (str.length(prd) == 1)
+            [1, "W"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "W"]
+    else if str.contains(prd, "D")
+        if (str.length(prd) == 1)
+            [1, "D"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "D"]
+    else if str.contains(prd, "S")
+        if (str.length(prd) == 1)
+            [1, "S"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "S"]
+    else
+        [str.tonumber(prd), ""]
+
+get_res_in_mins_by_tf() =>
+    float _res_in_mins = timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly  ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : na)
+
+is_equal_tf(res) => res == timeframe.period
+
+is_higher_tf(res) =>
+    [cur_prd, cur_unit] = extract_tf(timeframe.period)
+    [res_prd, res_unit] = extract_tf(res)
+
+    if res_unit == cur_unit
+        res_prd > cur_prd
+    else
+        if res_unit == "M"
+            true
+        else if res_unit == "W"
+            if cur_unit == "M"
+                false
+            else
+                true
+        else if res_unit == "D"
+            if cur_unit == "M" or cur_unit == "W"
+                false
+            else
+                true
+        else if res_unit == "S"
+            false
+        else
+            if cur_unit == "M" or cur_unit == "W" or cur_unit == "D"
+                false
+            else
+                true
+
+
+// is_too_small_tf(res) => (timeframe.isweekly and res == "1") or (timeframe.ismonthly and str.tonumber(res) < 10)
+
+get_trend_and_strength(val, ema_21, ema_144) =>
+    if val > ema_144
+        int strength = val > ema_21 and ema_21 > ema_144 ? 2 : 1
+        [true, strength]
+    else if val < ema_144
+        int strength = val < ema_21 and ema_21 < ema_144 ? 2 : 1
+        [false, strength]
+    else
+        [false, 1]
+
+
+// demo(res) =>
+//     float[] test = request.security_lower_tf(syminfo.tickerid, "10S", close)
+//     if res == "60"
+//         f_print(test)
+
+get_bullish_status_by_tf(res) =>
+    float val = request.security(syminfo.tickerid, res, close, barmerge.gaps_off, barmerge.lookahead_on)
+    float ema_21 = request.security(syminfo.tickerid, res, ta.ema(close, 21), barmerge.gaps_off, barmerge.lookahead_on)
+    float ema_144 = request.security(syminfo.tickerid, res, ta.ema(close, 144), barmerge.gaps_off, barmerge.lookahead_on)
     
-    if array.size(_is_bullish_arr) > 1 and not is_equal_tf(res) and not is_higher_tf(res)
-        _is_bullish := array.pop(_is_bullish_arr)
 
-    array.clear(_is_bullish_arr)
-    _is_bullish
+    float[] test = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, ta.ema(close, 144))
+    // float[] test = request.security_lower_tf(syminfo.tickerid, res, ta.ema(close, 144))
+    if res == "60"
+        f_print("Test: " + str.tostring(test))
+    /// Test here
+    // bool _is_bullish = na
+    // test = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : "S", close)
+    
+    // if array.size(_is_bullish_arr) > 1 and not is_equal_tf(res) and not is_higher_tf(res)
+    //     _is_bullish := array.pop(_is_bullish_arr)
 
-bool is_ema_bullish = close > ta.ema(close, 144)
-tf_30_status = get_bullish_status_by_tf(syminfo.tickerid, "30", is_ema_bullish)
-tf_60_status = get_bullish_status_by_tf(syminfo.tickerid, "60", is_ema_bullish)
-tf_240_status = get_bullish_status_by_tf(syminfo.tickerid, "240", is_ema_bullish)
-tf_480_status = get_bullish_status_by_tf(syminfo.tickerid, "480", is_ema_bullish)
-tf_720_status = get_bullish_status_by_tf(syminfo.tickerid, "720", is_ema_bullish)
-tf_daily_status = get_bullish_status_by_tf(syminfo.tickerid, "1440", is_ema_bullish)
-// tf_weekly_status = get_bullish_status_by_tf(syminfo.tickerid, "10080", is_ema_bullish)
+    // array.clear(test)
+    ////
+
+
+    // if res == "60"
+    //     f_print("is_equal_tf: " + str.tostring(is_equal_tf(res)) + "\nis_higher_tf: " + str.tostring(is_higher_tf(res)))
+
+    if is_equal_tf(res) or is_higher_tf(res)
+        get_trend_and_strength(val, ema_21, ema_144)
+    else
+        [false, 1]
+
+
+[tf_cur_status, tf_cur_strength] = get_bullish_status_by_tf(timeframe.period)
+[tf_30_status, tf_30_strength] = get_bullish_status_by_tf("30")
+[tf_60_status, tf_60_strength] = get_bullish_status_by_tf("60")
+[tf_240_status, tf_240_strength] = get_bullish_status_by_tf("240")
+[tf_480_status, tf_480_strength] = get_bullish_status_by_tf("480")
+[tf_720_status, tf_720_strength] = get_bullish_status_by_tf("720")
+[tf_daily_status, tf_daily_strength] = get_bullish_status_by_tf("D")
+// tf_weekly_status = get_bullish_status_by_tf(syminfo.tickerid, "10080", is_ema_144_bullish)
 
 
 // Plots
@@ -620,6 +708,17 @@ if barstate.islast and db_showed
     build_db_cell(1, 5, tf_720_status ? "🟢" : "🔴")
     build_db_cell(1, 6, tf_daily_status ? "🟢" : "🔴")
     // build_db_cell(1, 7, tf_weekly_status ? "🟢" : "🔴")
+    build_db_cell(2, 0, "Strength")
+    build_db_cell(2, 1, tf_30_strength == 1 ? "Demo" : "2Demo")
+    build_db_cell(2, 2, tf_60_strength == 1 ? "Demo" : "2Demo")
+    build_db_cell(2, 3, tf_240_strength == 1 ? "Demo" : "2Demo")
+    build_db_cell(2, 4, tf_480_strength == 1 ? "Demo" : "2Demo")
+    build_db_cell(2, 5, tf_720_strength == 1 ? "Demo" : "2Demo")
+    build_db_cell(2, 6, tf_daily_strength == 1 ? "Demo" : "2Demo")
+
+
+plot(ta.ema(close, 144), color = color.yellow)
+plot(ta.ema(close, 21), color = color.blue)
 
 
 
@@ -628,59 +727,56 @@ if barstate.islast and db_showed
 //** Golden Pocket **//
 
 // Inputs
-string gp_grp = "Golden Pocket"
-bool gp_showed = input.bool(true, "Show", group = gp_grp)
-int gp_prd = input.int(70, "Period", group = gp_grp)
-color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
+// string gp_grp = "Golden Pocket"
+// bool gp_showed = input.bool(true, "Show", group = gp_grp)
+// int gp_prd = input.int(70, "Period", group = gp_grp)
+// color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
-int gp_rb = 10
-float gp_ph = ta.pivothigh(gp_rb, gp_rb)
-float gp_pl = ta.pivotlow(gp_rb, gp_rb)
-float gp_highest_ph = 0.0, gp_highest_ph := gp_highest_ph[1]
-float gp_lowest_pl = 0.0, gp_lowest_pl := gp_lowest_pl[1]
-float gp_highest_val = ta.highest(gp_prd)
-float gp_lowest_val = ta.lowest(gp_prd)
+// int gp_rb = 10
+// float gp_ph = ta.pivothigh(gp_rb, gp_rb)
+// float gp_pl = ta.pivotlow(gp_rb, gp_rb)
+// float gp_highest_ph = 0.0, gp_highest_ph := gp_highest_ph[1]
+// float gp_lowest_pl = 0.0, gp_lowest_pl := gp_lowest_pl[1]
+// float gp_highest_val = ta.highest(gp_prd)
+// float gp_lowest_val = ta.lowest(gp_prd)
 
 
-// Plots
-if gp_showed
-    gp_highest_ph := gp_lowest_val
-    gp_lowest_pl := gp_highest_val
+// // Plots
+// if gp_showed
+//     gp_highest_ph := gp_lowest_val
+//     gp_lowest_pl := gp_highest_val
 
-    for i = 0 to gp_prd
-        if na(close[i])
-            break
+//     for i = 0 to gp_prd
+//         if na(close[i])
+//             break
 
-        if not na(gp_ph[i]) or not na(gp_pl[i])
-            gp_highest_ph := math.max(gp_highest_ph, nz(gp_ph[i], gp_lowest_val), nz(gp_pl[i], gp_lowest_val))
-            gp_lowest_pl := math.min(gp_lowest_pl, nz(gp_ph[i], gp_highest_val), nz(gp_pl[i], gp_highest_val))
+//         if not na(gp_ph[i]) or not na(gp_pl[i])
+//             gp_highest_ph := math.max(gp_highest_ph, nz(gp_ph[i], gp_lowest_val), nz(gp_pl[i], gp_lowest_val))
+//             gp_lowest_pl := math.min(gp_lowest_pl, nz(gp_ph[i], gp_highest_val), nz(gp_pl[i], gp_highest_val))
 
-    float gp_max = is_ema_bullish ? math.max(gp_highest_ph, gp_highest_val) : gp_highest_ph
-    float gp_min = not is_ema_bullish ? math.min(gp_lowest_pl, gp_lowest_val) : gp_lowest_pl
-    float gp_diff = gp_max - gp_min
-    float gp_st_val = gp_diff * 35 / 100
-    float gp_nd_val = gp_diff * 38.2 / 100
-    float gp_top = na
-    float gp_bot = na
+//     float gp_max = tf_cur_status ? math.max(gp_highest_ph, gp_highest_val) : gp_highest_ph
+//     float gp_min = not tf_cur_status ? math.min(gp_lowest_pl, gp_lowest_val) : gp_lowest_pl
+//     float gp_diff = gp_max - gp_min
+//     float gp_st_val = gp_diff * 35 / 100
+//     float gp_nd_val = gp_diff * 38.2 / 100
+//     float gp_top = na
+//     float gp_bot = na
 
-    if is_ema_bullish
-        gp_top := gp_diff * 38.2 / 100 + gp_lowest_pl
-        gp_bot := gp_diff * 35 / 100 + gp_lowest_pl
-    else
-        gp_top := gp_highest_ph - gp_diff * 35 / 100
-        gp_bot:= gp_highest_ph - gp_diff * 38.2 / 100
+//     if tf_cur_status
+//         gp_top := gp_diff * 38.2 / 100 + gp_lowest_pl
+//         gp_bot := gp_diff * 35 / 100 + gp_lowest_pl
+//     else
+//         gp_top := gp_highest_ph - gp_diff * 35 / 100
+//         gp_bot:= gp_highest_ph - gp_diff * 38.2 / 100
 
-    var box gp_top_line = na, box.delete(gp_top_line)
-    var box gp_bot_line = na, box.delete(gp_bot_line)
-    gp_top_line := box.new(bar_index - gp_prd , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
-    gp_bot_line := box.new(bar_index - gp_prd , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+//     var box gp_top_line = na, box.delete(gp_top_line)
+//     var box gp_bot_line = na, box.delete(gp_bot_line)
+//     gp_top_line := box.new(bar_index - gp_prd , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+//     gp_bot_line := box.new(bar_index - gp_prd , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
 
-    var box gp_val_box = na, box.delete(gp_val_box)
-    int gp_val_offset = bar_index + 5
-    gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2) * 3 / 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
-
-// plot(ta.ema(close, 144), color = color.yellow)
-// plot(ta.ema(close, 21), color = color.blue)
+//     var box gp_val_box = na, box.delete(gp_val_box)
+//     int gp_val_offset = bar_index + 10
+//     gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2) * 3 / 2, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
 
 
