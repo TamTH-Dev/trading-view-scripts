@@ -706,10 +706,6 @@ if barstate.islast and db_showed
     build_db_cell(2, 6, tf_weekly_strength == 1 ? weak_strength_icon : strong_strength_icon)
 
 
-// plot(ta.ema(close, 144), color = color.yellow)
-// plot(ta.ema(close, 21), color = color.blue)
-
-
 
 
 
