@@ -6,13 +6,13 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_lines_count = 500,
 // Colors
 color transparent_color = color.new(#000000, 100)
 color white_color = color.white
-color blue_color = color.blue
 color yellow_color = #f2E40a
 color orange_color = #f2643a
 color green_color = #16f9ba
 color red_color = #f23a64
 color aqua_color = #21baf3
 color purple_color = #5932e6
+color pink_color = #dd16fa
 color light_gray_color = #364156
 color dark_gray_color = #212d40
 
@@ -41,6 +41,61 @@ get_tf_txt() =>
             tf := str.format("{0}M",  mins)
 
     tf
+
+extract_tf(prd) =>
+    int len = str.length(prd)
+
+    if str.contains(prd, "M")
+        if (str.length(prd) == 1)
+            [1, "M"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "M"]
+    else if str.contains(prd, "W")
+        if (str.length(prd) == 1)
+            [1, "W"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "W"]
+    else if str.contains(prd, "D")
+        if (str.length(prd) == 1)
+            [1, "D"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "D"]
+    else if str.contains(prd, "S")
+        if (str.length(prd) == 1)
+            [1, "S"]
+        else
+            [str.tonumber(str.substring(prd, 0, len - 1)), "S"]
+    else
+        [str.tonumber(prd), ""]
+
+is_equal_tf(res) => res == timeframe.period
+
+is_higher_tf(res) =>
+    [cur_prd, cur_unit] = extract_tf(timeframe.period)
+    [res_prd, res_unit] = extract_tf(res)
+
+    if res_unit == cur_unit
+        res_prd > cur_prd
+    else
+        if res_unit == "M"
+            true
+        else if res_unit == "W"
+            if cur_unit == "M"
+                false
+            else
+                true
+        else if res_unit == "D"
+            if cur_unit == "M" or cur_unit == "W"
+                false
+            else
+                true
+        else if res_unit == "S"
+            false
+        else
+            if cur_unit == "M" or cur_unit == "W" or cur_unit == "D"
+                false
+            else
+                true
 
 
 // Debugger
@@ -202,7 +257,7 @@ int sr_prd = input.int(284, title = "Period", group = sr_grp)
 color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
-int sr_zone_width_percent = input.int(2, title = "Zone Width In %", minval = 0, group = sr_grp)
+int sr_zone_width_percent = input.int(1, title = "Zone Width In %", minval = 0, group = sr_grp)
 int sr_trans = input.int(90, title = "Transparent", group = sr_grp)
 color sr_val_color = input.color(#888888, title = "Value Color", group = sr_grp)
 
@@ -349,7 +404,7 @@ bool ribbon_showed = input.bool(false, title = "Show", group = trend_ribbon_grp)
 int ribbon_leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
 int ribbon_lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval = 1, group = trend_ribbon_grp)
 string reversal_bands_grp = "Reversal Bands"
-bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
+bool rev_bands_showed = input.bool(false, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
 string custom_bar_colors_grp = "Custom Bar Colors"
 bool custom_bar_colors_used = input.bool(true, "Use", group = custom_bar_colors_grp)
@@ -577,60 +632,7 @@ var db_instance = db_showed ? table.new(_db_location, 3, 7, db_bg_color, #0A0A0A
 build_db_cell(col, row, txt) => table.cell(db_instance, col, row, txt, 0, 0, db_txt_color, text_size = _db_size)
 build_db_cell_bg(col, row, color) => table.cell_set_bgcolor(db_instance, col, row, color)
 
-extract_tf(prd) =>
-    int len = str.length(prd)
 
-    if str.contains(prd, "M")
-        if (str.length(prd) == 1)
-            [1, "M"]
-        else
-            [str.tonumber(str.substring(prd, 0, len - 1)), "M"]
-    else if str.contains(prd, "W")
-        if (str.length(prd) == 1)
-            [1, "W"]
-        else
-            [str.tonumber(str.substring(prd, 0, len - 1)), "W"]
-    else if str.contains(prd, "D")
-        if (str.length(prd) == 1)
-            [1, "D"]
-        else
-            [str.tonumber(str.substring(prd, 0, len - 1)), "D"]
-    else if str.contains(prd, "S")
-        if (str.length(prd) == 1)
-            [1, "S"]
-        else
-            [str.tonumber(str.substring(prd, 0, len - 1)), "S"]
-    else
-        [str.tonumber(prd), ""]
-
-is_equal_tf(res) => res == timeframe.period
-
-is_higher_tf(res) =>
-    [cur_prd, cur_unit] = extract_tf(timeframe.period)
-    [res_prd, res_unit] = extract_tf(res)
-
-    if res_unit == cur_unit
-        res_prd > cur_prd
-    else
-        if res_unit == "M"
-            true
-        else if res_unit == "W"
-            if cur_unit == "M"
-                false
-            else
-                true
-        else if res_unit == "D"
-            if cur_unit == "M" or cur_unit == "W"
-                false
-            else
-                true
-        else if res_unit == "S"
-            false
-        else
-            if cur_unit == "M" or cur_unit == "W" or cur_unit == "D"
-                false
-            else
-                true
 
 get_status_and_strength(price, ema_21, ema_144) =>
     if price > ema_144
@@ -760,11 +762,11 @@ if gp_showed
         gp_top := gp_highest_ph - gp_diff * 35 / 100
         gp_bot:= gp_highest_ph - gp_diff * 38.2 / 100
 
-    // Prevent gp_top and go_bot are too close to the other
-    if (gp_top - gp_bot < 1)
-        float extra_space = (1 - (gp_top - gp_bot)) / 2
-        gp_top := gp_top + extra_space
-        gp_bot := gp_bot - extra_space
+    // // Prevent gp_top and go_bot are too close to the other
+    // if (gp_top - gp_bot < 1)
+    //     float extra_space = (1 - (gp_top - gp_bot)) / 2
+    //     gp_top := gp_top + extra_space
+    //     gp_bot := gp_bot - extra_space
 
     var box gp_top_line = na, box.delete(gp_top_line)
     var box gp_bot_line = na, box.delete(gp_bot_line)
@@ -773,7 +775,7 @@ if gp_showed
 
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
-    gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2) * 5 / 3, gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
 
 
 
@@ -832,25 +834,25 @@ float tenkan_sen = get_middle_point(tenkan_sen_prd)
 float kijun_sen = get_middle_point(kijun_sen_prd)
 float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
 float senkou_span_b = get_middle_point(senkou_span_b_prd)
-plot(is_ichimoku_swing and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = aqua_color, title = chikou_span_txt, linewidth = 1, display = display.pane)
-var senkou_span_b_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = senkou_span_b_txt, display = display.pane)
-var senkou_span_a_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = senkou_span_a_txt, display = display.pane)
-fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 90), title = kumo_cloud_txt)
+plot(is_ichimoku_swing and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = color.new(#FAA448, 0), title = chikou_span_txt, linewidth = 1, display = display.pane)
+var senkou_span_b_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = red_color, linewidth = 1, title = senkou_span_b_txt, display = display.pane)
+var senkou_span_a_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = green_color, linewidth = 1, title = senkou_span_a_txt, display = display.pane)
+fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = kumo_cloud_txt)
 plot(is_ichimoku_swing and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
-plot(is_ichimoku_swing and ichimoku_showed ? tenkan_sen : na, color = blue_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
+plot(is_ichimoku_swing and ichimoku_showed ? tenkan_sen : na, color = aqua_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
 
 float thunder_tenkan_sen = get_middle_point(thunder_tenkan_sen_prd)
 float thunder_kijun_sen = get_middle_point(thunder_kijun_sen_prd)
 float thunder_senkou_span_a = math.avg(thunder_tenkan_sen, thunder_kijun_sen)
 float thunder_senkou_span_b = get_middle_point(thunder_senkou_span_b_prd)
-var thunder_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = thunder_senkou_span_b_txt, display = display.pane)
-var thunder_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = thunder_senkou_span_a_txt, display = display.pane)
+var thunder_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = red_color, linewidth = 1, title = thunder_senkou_span_b_txt, display = display.pane)
+var thunder_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = green_color, linewidth = 1, title = thunder_senkou_span_a_txt, display = display.pane)
 fill(thunder_senkou_span_a_plot, thunder_senkou_span_b_plot, color = thunder_senkou_span_a > thunder_senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = thunder_kumo_cloud_txt)
 
 float lightning_tenkan_sen = get_middle_point(lightning_tenkan_sen_prd)
 float lightning_kijun_sen = get_middle_point(lightning_kijun_sen_prd)
 float lightning_senkou_span_a = math.avg(lightning_tenkan_sen, lightning_kijun_sen)
 float lightning_senkou_span_b = get_middle_point(lightning_senkou_span_b_prd)
-var lightning_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = color.new(purple_color, 20), linewidth = 1, title = lightning_senkou_span_b_txt, display = display.pane)
-var lightning_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = color.new(aqua_color, 20), linewidth = 1, title = lightning_senkou_span_a_txt, display = display.pane)
+var lightning_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = purple_color, linewidth = 1, title = lightning_senkou_span_b_txt, display = display.pane)
+var lightning_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = aqua_color, linewidth = 1, title = lightning_senkou_span_a_txt, display = display.pane)
 fill(lightning_senkou_span_a_plot, lightning_senkou_span_b_plot, color = lightning_senkou_span_a > lightning_senkou_span_b ? color.new(aqua_color, 95) : color.new(purple_color, 95), title = lightning_kumo_cloud_txt)
