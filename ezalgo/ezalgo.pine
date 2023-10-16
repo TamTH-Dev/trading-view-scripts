@@ -568,10 +568,9 @@ string db_location = input.string("Top Right", "Table Location", ["Top Right", "
 color db_txt_color = input.color(#EEEEEE, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
 string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
-
 var _db_location = db_location == "Top Right" ? position.top_right : db_location == "Middle Right" ? position.middle_right : db_location == "Bottom Right" ? position.bottom_right : db_location == "Top Center" ? position.top_center : db_location == "Middle Center" ? position.middle_center : db_location == "Bottom Center" ? position.bottom_center : db_location == "Top Left" ? position.top_left : db_location == "Middle Left" ? position.middle_left : position.bottom_left
 var _db_size = db_size == "Large" ? size.large : db_size == "Normal" ? size.normal : db_size == "Small" ? size.small : size.tiny
-var db_instance = db_showed ? table.new(_db_location, 3, 15, db_bg_color, #0A0A0A, 2, db_bg_color, 1) : na
+var db_instance = db_showed ? table.new(_db_location, 3, 7, db_bg_color, #0A0A0A, 2, db_bg_color, 1) : na
 
 
 // Methods
@@ -674,44 +673,45 @@ get_status_and_strength_by_tf(res) =>
         get_status_and_strength(l_price, l_ema_21, l_ema_144)
 
 [is_tf_cur_bullish, tf_cur_strength] = get_status_and_strength(close, ta.ema(close, 21), ta.ema(close, 144))
-[is_tf_1h_bullish, tf_60_strength] = get_status_and_strength_by_tf("60")
-[is_tf_4h_bullish, tf_240_strength] = get_status_and_strength_by_tf("240")
-[is_tf_8h_bullish, tf_480_strength] = get_status_and_strength_by_tf("480")
-[is_tf_12h_bullish, tf_720_strength] = get_status_and_strength_by_tf("720")
+[is_tf_30m_bullish, tf_30m_strength] = get_status_and_strength_by_tf("30")
+[is_tf_1h_bullish, tf_1h_strength] = get_status_and_strength_by_tf("60")
+[is_tf_4h_bullish, tf_4h_strength] = get_status_and_strength_by_tf("240")
+[is_tf_8h_bullish, tf_8h_strength] = get_status_and_strength_by_tf("480")
+[is_tf_12h_bullish, tf_12h_strength] = get_status_and_strength_by_tf("720")
 [is_tf_daily_bullish, tf_daily_strength] = get_status_and_strength_by_tf("D")
-[is_tf_weekly_bullish, tf_weekly_strength] = get_status_and_strength_by_tf("W")
+// [is_tf_weekly_bullish, tf_weekly_strength] = get_status_and_strength_by_tf("W")
 
 
 // Plots
 if barstate.islast and db_showed
     build_db_cell(0, 0, "Timeframe")
-    build_db_cell(0, 1, "1H")
-    build_db_cell(0, 2, "4H")
-    build_db_cell(0, 3, "8H")
-    build_db_cell(0, 4, "12H")
-    build_db_cell(0, 5, "Daily")
-    build_db_cell(0, 6, "Weekly")
+    build_db_cell(0, 1, "30M")
+    build_db_cell(0, 2, "1H")
+    build_db_cell(0, 3, "4H")
+    build_db_cell(0, 4, "8H")
+    build_db_cell(0, 5, "12H")
+    build_db_cell(0, 6, "Daily")
+    // build_db_cell(0, 7, "Weekly")
     string bullish_icon = "🟢"
     string bearish_icon = "🔴"
     build_db_cell(1, 0, "Bias")
-    build_db_cell(1, 1, is_tf_1h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 2, is_tf_4h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 3, is_tf_8h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 4, is_tf_12h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 5, is_tf_daily_bullish ? bullish_icon: bearish_icon)
-    build_db_cell(1, 6, is_tf_weekly_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 1, is_tf_30m_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 2, is_tf_1h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 3, is_tf_4h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 4, is_tf_8h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 5, is_tf_12h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 6, is_tf_daily_bullish ? bullish_icon: bearish_icon)
+    // build_db_cell(1, 7, is_tf_weekly_bullish ? bullish_icon : bearish_icon)
     string weak_strength_icon = "🚀"
     string strong_strength_icon = "🚀🚀"
     build_db_cell(2, 0, "Strength")
-    build_db_cell(2, 1, tf_60_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 2, tf_240_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 3, tf_480_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 4, tf_720_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 5, tf_daily_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 6, tf_weekly_strength == 1 ? weak_strength_icon : strong_strength_icon)
-
-
-
+    build_db_cell(2, 1, tf_30m_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 2, tf_1h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 3, tf_4h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 4, tf_8h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 5, tf_12h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 6, tf_daily_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    // build_db_cell(2, 7, tf_weekly_strength == 1 ? weak_strength_icon : strong_strength_icon)
 
 
 //** Golden Pocket **//
@@ -723,8 +723,9 @@ int gp_prd = input.int(70, "Period", group = gp_grp)
 color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
 int gp_rb = 10
-float gp_ph = ta.pivothigh(gp_rb, gp_rb)
-float gp_pl = ta.pivotlow(gp_rb, gp_rb)
+float gp_ph = ta.pivothigh(high, gp_rb, gp_rb)
+float gp_pl = ta.pivotlow(low, gp_rb, gp_rb)
+
 float gp_highest_ph = 0.0, gp_highest_ph := gp_highest_ph[1]
 float gp_lowest_pl = 0.0, gp_lowest_pl := gp_lowest_pl[1]
 float gp_highest_val = ta.highest(gp_prd)
@@ -777,7 +778,7 @@ if gp_showed
 // Inputs
 string ichimoku_grp = "Ichimoku Kinko Hyo"
 bool ichimoku_showed = input.bool(true, "Show", group = ichimoku_grp)
-string ichimoku_strategy = input.string("Scalping", "Strategy", ["Scalping", "Default"], group = ichimoku_grp)
+string ichimoku_strategy = input.string("Scalping", "Strategy", ["Scalping", "Swing"], group = ichimoku_grp)
 
 string tenkan_sen_txt = "Tenkan-sen"
 string kijun_sen_txt = "Kijun-sen"
@@ -818,19 +819,19 @@ method get_middle_point(int timeframes) => math.avg(ta.lowest(timeframes), ta.hi
 
 
 // Plots
-bool is_ichimoku_default = ichimoku_strategy == "Default"
 bool is_ichimoku_scalping = ichimoku_strategy == "Scalping"
+bool is_ichimoku_swing = ichimoku_strategy == "Swing"
 
 float tenkan_sen = get_middle_point(tenkan_sen_prd)
 float kijun_sen = get_middle_point(kijun_sen_prd)
 float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
 float senkou_span_b = get_middle_point(senkou_span_b_prd)
-plot(is_ichimoku_default and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = aqua_color, title = chikou_span_txt, linewidth = 1, display = display.pane)
-var senkou_span_a_plot = plot(is_ichimoku_default and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = senkou_span_a_txt, display = display.pane)
-var senkou_span_b_plot = plot(is_ichimoku_default and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = senkou_span_b_txt, display = display.pane)
+plot(is_ichimoku_swing and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = aqua_color, title = chikou_span_txt, linewidth = 1, display = display.pane)
+var senkou_span_a_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = color.new(green_color, 20), linewidth = 1, title = senkou_span_a_txt, display = display.pane)
+var senkou_span_b_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = color.new(red_color, 20), linewidth = 1, title = senkou_span_b_txt, display = display.pane)
 fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 90) : color.new(red_color, 90), title = kumo_cloud_txt)
-plot(is_ichimoku_default and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
-plot(is_ichimoku_default and ichimoku_showed ? tenkan_sen : na, color = blue_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
+plot(is_ichimoku_swing and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
+plot(is_ichimoku_swing and ichimoku_showed ? tenkan_sen : na, color = blue_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
 
 float thunder_tenkan_sen = get_middle_point(thunder_tenkan_sen_prd)
 float thunder_kijun_sen = get_middle_point(thunder_kijun_sen_prd)
