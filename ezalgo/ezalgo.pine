@@ -404,7 +404,7 @@ bool ribbon_showed = input.bool(false, title = "Show", group = trend_ribbon_grp)
 int ribbon_leading_smoothing = input.int(5, title = "Leading Smoothing", minval = 1, group = trend_ribbon_grp)
 int ribbon_lagging_smoothing = input.int(8, title = "Lagging Smoothing", minval = 1, group = trend_ribbon_grp)
 string reversal_bands_grp = "Reversal Bands"
-bool rev_bands_showed = input.bool(false, "Show", group = reversal_bands_grp)
+bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
 string custom_bar_colors_grp = "Custom Bar Colors"
 bool custom_bar_colors_used = input.bool(true, "Use", group = custom_bar_colors_grp)
@@ -452,9 +452,16 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 [upper_rev_xl_band, lower_rev_xl_band] = get_rev_bands(close, rev_bands_prd, 6)
 
 
-// Plots
-barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
+// Custom bars' color
+float ha_open = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, open)
+float ha_high = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, high)
+float ha_low = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, low)
+float ha_close = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
+barcolor(custom_bar_colors_used ? (ha_open < ha_close ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
+// barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
 
+
+// Plots
 bool has_mild_buy_signal = ta.crossover(leading_wt, lagging_wt) and lagging_wt <= -53
 bool has_mild_sell_signal = ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53
 bool consistent_buy_signal = is_bullish and has_mild_buy_signal
@@ -785,8 +792,8 @@ if gp_showed
 
 // Inputs
 string ichimoku_grp = "Ichimoku Kinko Hyo"
-bool ichimoku_showed = input.bool(true, "Show", group = ichimoku_grp)
-string ichimoku_strategy = input.string("Swing", "Strategy", ["Scalping", "Swing"], group = ichimoku_grp)
+bool ichimoku_showed = input.bool(false, "Show", group = ichimoku_grp)
+string ichimoku_strategy = input.string("Auto", "Strategy", ["Auto", "Default", "Lightning Thunder"], group = ichimoku_grp)
 
 string tenkan_sen_txt = "Tenkan-sen"
 string kijun_sen_txt = "Kijun-sen"
@@ -827,7 +834,7 @@ method get_middle_point(int timeframes) => math.avg(ta.lowest(timeframes), ta.hi
 
 
 // Plots
-bool scalping_strategy_used = is_equal_tf("5") or is_higher_tf("5")
+bool scalping_strategy_used = ichimoku_strategy == "Auto" ? is_equal_tf("5") or is_higher_tf("5") : ichimoku_strategy == "Lightning Thunder"
 float tenkan_sen = get_middle_point(tenkan_sen_prd)
 float kijun_sen = get_middle_point(kijun_sen_prd)
 float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
