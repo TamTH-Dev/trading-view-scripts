@@ -786,7 +786,7 @@ if gp_showed
 // Inputs
 string ichimoku_grp = "Ichimoku Kinko Hyo"
 bool ichimoku_showed = input.bool(true, "Show", group = ichimoku_grp)
-string ichimoku_strategy = input.string("Scalping", "Strategy", ["Scalping", "Swing"], group = ichimoku_grp)
+string ichimoku_strategy = input.string("Swing", "Strategy", ["Scalping", "Swing"], group = ichimoku_grp)
 
 string tenkan_sen_txt = "Tenkan-sen"
 string kijun_sen_txt = "Kijun-sen"
@@ -827,32 +827,30 @@ method get_middle_point(int timeframes) => math.avg(ta.lowest(timeframes), ta.hi
 
 
 // Plots
-bool is_ichimoku_scalping = ichimoku_strategy == "Scalping"
-bool is_ichimoku_swing = ichimoku_strategy == "Swing"
-
+bool scalping_strategy_used = is_equal_tf("5") or is_higher_tf("5")
 float tenkan_sen = get_middle_point(tenkan_sen_prd)
 float kijun_sen = get_middle_point(kijun_sen_prd)
 float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
 float senkou_span_b = get_middle_point(senkou_span_b_prd)
-plot(is_ichimoku_swing and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = color.new(#FAA448, 0), title = chikou_span_txt, linewidth = 1, display = display.pane)
-var senkou_span_b_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = red_color, linewidth = 1, title = senkou_span_b_txt, display = display.pane)
-var senkou_span_a_plot = plot(is_ichimoku_swing and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = green_color, linewidth = 1, title = senkou_span_a_txt, display = display.pane)
+plot(not scalping_strategy_used and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = #FAA448, title = chikou_span_txt, linewidth = 1, display = display.pane)
+var senkou_span_b_plot = plot(not scalping_strategy_used and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = red_color, linewidth = 1, title = senkou_span_b_txt, display = display.pane)
+var senkou_span_a_plot = plot(not scalping_strategy_used and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = green_color, linewidth = 1, title = senkou_span_a_txt, display = display.pane)
 fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = kumo_cloud_txt)
-plot(is_ichimoku_swing and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
-plot(is_ichimoku_swing and ichimoku_showed ? tenkan_sen : na, color = aqua_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
+plot(not scalping_strategy_used and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
+plot(not scalping_strategy_used and ichimoku_showed ? tenkan_sen : na, color = aqua_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
 
 float thunder_tenkan_sen = get_middle_point(thunder_tenkan_sen_prd)
 float thunder_kijun_sen = get_middle_point(thunder_kijun_sen_prd)
 float thunder_senkou_span_a = math.avg(thunder_tenkan_sen, thunder_kijun_sen)
 float thunder_senkou_span_b = get_middle_point(thunder_senkou_span_b_prd)
-var thunder_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = red_color, linewidth = 1, title = thunder_senkou_span_b_txt, display = display.pane)
-var thunder_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = green_color, linewidth = 1, title = thunder_senkou_span_a_txt, display = display.pane)
+var thunder_senkou_span_b_plot = plot(scalping_strategy_used and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = red_color, linewidth = 1, title = thunder_senkou_span_b_txt, display = display.pane)
+var thunder_senkou_span_a_plot = plot(scalping_strategy_used and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = green_color, linewidth = 1, title = thunder_senkou_span_a_txt, display = display.pane)
 fill(thunder_senkou_span_a_plot, thunder_senkou_span_b_plot, color = thunder_senkou_span_a > thunder_senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = thunder_kumo_cloud_txt)
 
 float lightning_tenkan_sen = get_middle_point(lightning_tenkan_sen_prd)
 float lightning_kijun_sen = get_middle_point(lightning_kijun_sen_prd)
 float lightning_senkou_span_a = math.avg(lightning_tenkan_sen, lightning_kijun_sen)
 float lightning_senkou_span_b = get_middle_point(lightning_senkou_span_b_prd)
-var lightning_senkou_span_b_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = purple_color, linewidth = 1, title = lightning_senkou_span_b_txt, display = display.pane)
-var lightning_senkou_span_a_plot = plot(is_ichimoku_scalping and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = aqua_color, linewidth = 1, title = lightning_senkou_span_a_txt, display = display.pane)
+var lightning_senkou_span_b_plot = plot(scalping_strategy_used and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = purple_color, linewidth = 1, title = lightning_senkou_span_b_txt, display = display.pane)
+var lightning_senkou_span_a_plot = plot(scalping_strategy_used and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = aqua_color, linewidth = 1, title = lightning_senkou_span_a_txt, display = display.pane)
 fill(lightning_senkou_span_a_plot, lightning_senkou_span_b_plot, color = lightning_senkou_span_a > lightning_senkou_span_b ? color.new(aqua_color, 95) : color.new(purple_color, 95), title = lightning_kumo_cloud_txt)
