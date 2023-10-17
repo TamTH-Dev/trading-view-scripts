@@ -258,7 +258,7 @@ color sr_support_color = input.color(green_color, title = "Support Color", group
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(1, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(90, title = "Transparent", group = sr_grp)
+int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
 color sr_val_color = input.color(#888888, title = "Value Color", group = sr_grp)
 
 
@@ -477,16 +477,16 @@ var upper_rev_sm_band_plot = plot(rev_bands_showed ? upper_rev_sm_band : na, tit
 var upper_rev_md_band_plot = plot(rev_bands_showed ? upper_rev_md_band : na, title = "Upper Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
 var upper_rev_lg_band_plot = plot(rev_bands_showed ? upper_rev_lg_band : na, title = "Upper Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
 var upper_rev_xl_band_plot = plot(rev_bands_showed ? upper_rev_xl_band : na, title = "Upper Reversal Xl Band", color = transparent_color, display = display.pane)
-fill(upper_rev_sm_band_plot, upper_rev_md_band_plot, color.new(purple_color, 80))
-fill(upper_rev_md_band_plot, upper_rev_lg_band_plot, color.new(purple_color, 75))
-fill(upper_rev_lg_band_plot, upper_rev_xl_band_plot, color.new(purple_color, 70))
+fill(upper_rev_sm_band_plot, upper_rev_md_band_plot, color.new(purple_color, 85))
+fill(upper_rev_md_band_plot, upper_rev_lg_band_plot, color.new(purple_color, 80))
+fill(upper_rev_lg_band_plot, upper_rev_xl_band_plot, color.new(purple_color, 75))
 var lower_rev_xl_band_plot = plot(rev_bands_showed ? lower_rev_xl_band : na, title = "Lower Reversal Xl Band", color = transparent_color, display = display.pane)
 var lower_rev_lg_band_plot = plot(rev_bands_showed ? lower_rev_lg_band : na, title = "Lower Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
 var lower_rev_md_band_plot = plot(rev_bands_showed ? lower_rev_md_band : na, title = "Lower Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
 var lower_rev_sm_band_plot = plot(rev_bands_showed ? lower_rev_sm_band : na, title = "Lower Reversal Sm Band", color = transparent_color, display = display.pane)
-fill(lower_rev_sm_band_plot, lower_rev_md_band_plot, color.new(aqua_color, 80))
-fill(lower_rev_md_band_plot, lower_rev_lg_band_plot, color.new(aqua_color, 75))
-fill(lower_rev_lg_band_plot, lower_rev_xl_band_plot, color.new(aqua_color, 70))
+fill(lower_rev_sm_band_plot, lower_rev_md_band_plot, color.new(aqua_color, 85))
+fill(lower_rev_md_band_plot, lower_rev_lg_band_plot, color.new(aqua_color, 80))
+fill(lower_rev_lg_band_plot, lower_rev_xl_band_plot, color.new(aqua_color, 75))
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
@@ -639,8 +639,6 @@ var db_instance = db_showed ? table.new(_db_location, 3, 7, db_bg_color, #0A0A0A
 build_db_cell(col, row, txt) => table.cell(db_instance, col, row, txt, 0, 0, db_txt_color, text_size = _db_size)
 build_db_cell_bg(col, row, color) => table.cell_set_bgcolor(db_instance, col, row, color)
 
-
-
 get_status_and_strength(price, ema_21, ema_144) =>
     if price > ema_144
         int strength = price > ema_21 and ema_21 > ema_144 ? 2 : 1
@@ -682,45 +680,41 @@ get_status_and_strength_by_tf(res) =>
         get_status_and_strength(l_price, l_ema_21, l_ema_144)
 
 [is_tf_cur_bullish, tf_cur_strength] = get_status_and_strength(close, ta.ema(close, 21), ta.ema(close, 144))
-[is_tf_30m_bullish, tf_30m_strength] = get_status_and_strength_by_tf("30")
 [is_tf_1h_bullish, tf_1h_strength] = get_status_and_strength_by_tf("60")
 [is_tf_4h_bullish, tf_4h_strength] = get_status_and_strength_by_tf("240")
 [is_tf_8h_bullish, tf_8h_strength] = get_status_and_strength_by_tf("480")
 [is_tf_12h_bullish, tf_12h_strength] = get_status_and_strength_by_tf("720")
 [is_tf_daily_bullish, tf_daily_strength] = get_status_and_strength_by_tf("D")
-// [is_tf_weekly_bullish, tf_weekly_strength] = get_status_and_strength_by_tf("W")
+[is_tf_weekly_bullish, tf_weekly_strength] = get_status_and_strength_by_tf("W")
 
 
 // Plots
 if barstate.islast and db_showed
     build_db_cell(0, 0, "Timeframe")
-    build_db_cell(0, 1, "30M")
-    build_db_cell(0, 2, "1H")
-    build_db_cell(0, 3, "4H")
-    build_db_cell(0, 4, "8H")
-    build_db_cell(0, 5, "12H")
-    build_db_cell(0, 6, "Daily")
-    // build_db_cell(0, 7, "Weekly")
+    build_db_cell(0, 1, "1H")
+    build_db_cell(0, 2, "4H")
+    build_db_cell(0, 3, "8H")
+    build_db_cell(0, 4, "12H")
+    build_db_cell(0, 5, "Daily")
+    build_db_cell(0, 6, "Weekly")
     string bullish_icon = "🟢"
     string bearish_icon = "🔴"
     build_db_cell(1, 0, "Bias")
-    build_db_cell(1, 1, is_tf_30m_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 2, is_tf_1h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 3, is_tf_4h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 4, is_tf_8h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 5, is_tf_12h_bullish ? bullish_icon : bearish_icon)
-    build_db_cell(1, 6, is_tf_daily_bullish ? bullish_icon: bearish_icon)
-    // build_db_cell(1, 7, is_tf_weekly_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 1, is_tf_1h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 2, is_tf_4h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 3, is_tf_8h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 4, is_tf_12h_bullish ? bullish_icon : bearish_icon)
+    build_db_cell(1, 5, is_tf_daily_bullish ? bullish_icon: bearish_icon)
+    build_db_cell(1, 6, is_tf_weekly_bullish ? bullish_icon : bearish_icon)
     string weak_strength_icon = "🚀"
     string strong_strength_icon = "🚀🚀"
     build_db_cell(2, 0, "Strength")
-    build_db_cell(2, 1, tf_30m_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 2, tf_1h_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 3, tf_4h_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 4, tf_8h_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 5, tf_12h_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    build_db_cell(2, 6, tf_daily_strength == 1 ? weak_strength_icon : strong_strength_icon)
-    // build_db_cell(2, 7, tf_weekly_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 1, tf_1h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 2, tf_4h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 3, tf_8h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 4, tf_12h_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 5, tf_daily_strength == 1 ? weak_strength_icon : strong_strength_icon)
+    build_db_cell(2, 6, tf_weekly_strength == 1 ? weak_strength_icon : strong_strength_icon)
 
 
 //** Golden Pocket **//
