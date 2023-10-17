@@ -453,12 +453,7 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 
 
 // Custom bars' color
-float ha_open = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, open)
-float ha_high = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, high)
-float ha_low = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, low)
-float ha_close = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
-barcolor(custom_bar_colors_used ? (ha_open < ha_close ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
-// barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
+barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
 
 
 // Plots
