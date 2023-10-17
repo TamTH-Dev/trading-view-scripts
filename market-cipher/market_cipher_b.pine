@@ -26,7 +26,7 @@ int wt_chl_prd = input.int(9, title = "Channel Period", group = wt_grp)
 int wt_avg_prd = input.int(12, title = "Average Period", group = wt_grp)
 float wt_ma_src = input.source(hlc3, title = "MA Source", group = wt_grp)
 int wt_ma_len = input.int(3, title = "MA Length", group = wt_grp)
-bool wt_div_showed = input.bool(true, title = "Show Divergence", group = wt_grp)
+bool wt_div_showed = input.bool(false, title = "Show Divergence", group = wt_grp)
 int wt_long_bearish_div_level = input.int(45, title = "Long Bearish Divergence Level", group = wt_grp)
 int wt_long_bullish_div_level = input.int(-65, title = "Long Bullish Divergence Level", group = wt_grp)
 int wt_short_brearish_div_level = input.int(15, title = "Short Bearish Divergence Level", group = wt_grp)
@@ -42,24 +42,16 @@ int rsi_prd = input.int(40, title = "Period", group = rsi_grp)
 string stoch_rsi_grp = "Stochastic RSI"
 bool stoch_rsi_showed = input.bool(true, title = "Show", group = stoch_rsi_grp)
 int stoch_rsi_prd = input.int(81, title = "Period", group = stoch_rsi_grp)
-string wr_grp = "Williams %R"
-bool wr_showed = input.bool(true, title = "Show", group = wr_grp)
-int wr_prd = input.int(14, title = "Period", group = wr_grp)
 string vwap_grp = "VWAP"
 bool vwap_showed = input.bool(true, title = "Show", group = vwap_grp)
 
 
 // Methods
-method get_wr(int prd) =>
-	float max = ta.highest(prd)
-	float min = ta.lowest(prd)
-	100 * (close - max) / (max - min)
-
 get_top_fractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
 get_bot_fractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
-method fractalize(float src) => get_top_fractal(src) ? 1 : get_bot_fractal(src) ? -1 : 0
+fractalize(src) => get_top_fractal(src) ? 1 : get_bot_fractal(src) ? -1 : 0
 
-method get_div_points(float src, int top_limit, int bot_limit) =>
+get_div_points(src, top_limit, bot_limit) =>
     float top_fractal = fractalize(src) > 0 and src[2] >= top_limit ? src[2] : na
     float bot_fractal = fractalize(src) < 0 and src[2] <= bot_limit ? src[2] : na
     float high_prev = ta.valuewhen(top_fractal, src[2], 0)[2]
@@ -96,8 +88,6 @@ get_indicators() =>
 [wt_long_top_fractal, wt_long_bot_fractal, wt_long_low_prev, is_wt_long_bearish_div, is_wt_long_bullish_div] = get_div_points(lagging_wt, wt_long_bearish_div_level, wt_long_bullish_div_level)
 [wt_short_top_fractal, wt_short_bot_fractal, wt_short_low_prev, is_wt_short_bearish_div, is_wt_short_bullish_div] =  get_div_points(lagging_wt, wt_short_brearish_div_level, wt_short_bullish_div_level)
 
-float williams_r = get_wr(wr_prd)
-
 // Plots
 plot(threshold_showed ? overbought_threshold : na, title = "Overbought Threshold", color = color.new(white_color, 90), display = display.pane)
 plot(threshold_showed ? oversold_threshold : na, title = "Oversold Threshold", color = color.new(white_color, 90), display = display.pane)
@@ -127,8 +117,6 @@ plot(series = wt_long_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Long
 plot(series = wt_short_top_fractal ? lagging_wt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wt_short_bearish_div_color, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wt_short_bot_fractal ? lagging_wt[2] : na, title = "Wave Trend Short Bullish Divergence", color = wt_short_bullish_div_color, linewidth = 2, offset = -2, display = display.pane)
 
-plot(rsi_showed ? rsi : na, title = "RSI", color = purple_color)
+plot(rsi_showed ? rsi : na, title = "RSI", color = purple_color, linewidth = 2)
 
-plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = aqua_color)
-
-plot(wr_showed ? williams_r : na, title = "Williams %R", color = orange_color)
+plot(stoch_rsi_showed ? stoch_rsi : na, title = "Stochastic RSI", color = rsi > stoch_rsi ? green_color : red_color, linewidth = 2)
