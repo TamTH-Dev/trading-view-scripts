@@ -621,7 +621,7 @@ fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display
 // Inputs
 string db_grp = "Dashboard"
 bool db_showed = input.bool(true, "Show Dashboard", group = db_grp)
-string db_location = input.string("Bottom Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
+string db_location = input.string("Top Right", "Table Location", ["Top Right", "Middle Right", "Bottom Right", "Top Center", "Middle Center", "Bottom Center", "Top Left", "Middle Left", "Bottom Left"], group = db_grp)
 color db_txt_color = input.color(#EEEEEE, "Table Text Color", group = db_grp)
 color db_bg_color = input.color(#1A1A1A, "Table Background Color", group = db_grp)
 string db_size = input.string("Small", "Table Size", ["Large", "Normal", "Small", "Tiny"], group = db_grp)
