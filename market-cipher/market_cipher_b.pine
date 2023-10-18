@@ -33,8 +33,8 @@ int wt_short_brearish_div_level = input.int(15, title = "Short Bearish Divergenc
 int wt_short_bullish_div_level = input.int(-40, title = "Short Bullish Divergence Level", group = wt_grp)
 string mfo_grp = "MFO"
 bool mfo_showed = input.bool(true, title = "Show", group = mfo_grp)
-int mfo_prd = input.int(60, title = "Period", group = mfo_grp)
-int mfo_mult = input.int(150, title = "Area Multiplier", group = mfo_grp)
+int mfo_prd = input.int(21, title = "Period", group = mfo_grp)
+int mfo_mult = input.int(100, title = "Area Multiplier", group = mfo_grp)
 string rsi_grp = "RSI"
 bool rsi_showed = input.bool(true, title = "Show", group = rsi_grp)
 int rsi_prd = input.int(40, title = "Period", group = rsi_grp)
