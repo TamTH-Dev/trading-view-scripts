@@ -768,8 +768,8 @@ process_fib_level(val, color) =>
 
 // Plots
 if gp_showed
-    float level_618 = process_fib_level(0.618, color.yellow)
-    float level_65 = process_fib_level(0.65, color.yellow)
+    float level_618 = process_fib_level(0.618, gp_color)
+    float level_65 = process_fib_level(0.65, gp_color)
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
     float gp_top_offset = gp_height > 0 ? level_65 : level_618
