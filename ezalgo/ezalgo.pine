@@ -674,7 +674,6 @@ get_status_and_strength_by_tf(res) =>
     else
         get_status_and_strength(l_price, l_ema_21, l_ema_144)
 
-[is_tf_cur_bullish, tf_cur_strength] = get_status_and_strength(close, ta.ema(close, 21), ta.ema(close, 144))
 [is_tf_1h_bullish, tf_1h_strength] = get_status_and_strength_by_tf("60")
 [is_tf_4h_bullish, tf_4h_strength] = get_status_and_strength_by_tf("240")
 [is_tf_8h_bullish, tf_8h_strength] = get_status_and_strength_by_tf("480")
@@ -717,136 +716,61 @@ if barstate.islast and db_showed
 // Inputs
 string gp_grp = "Golden Pocket"
 bool gp_showed = input.bool(true, "Show", group = gp_grp)
-int gp_prd = input.int(70, "Period", group = gp_grp)
 color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
 
-int gp_rb = 10
-float gp_ph = ta.pivothigh(high, gp_rb, gp_rb)
-float gp_pl = ta.pivotlow(low, gp_rb, gp_rb)
 
-float gp_highest_ph = 0.0, gp_highest_ph := gp_highest_ph[1]
-float gp_lowest_pl = 0.0, gp_lowest_pl := gp_lowest_pl[1]
-float gp_highest_val = ta.highest(gp_prd)
-float gp_lowest_val = ta.lowest(gp_prd)
+// Methods
+import TradingView/ZigZag/6 as zigzag
+
+get_gp_vals()=>
+    int depth = 10
+    float threshold_multiplier = 3
+    var settings = zigzag.Settings.new(threshold_multiplier, depth, color(na), false, false, false, false, "Absolute", true)
+    var zigzag.ZigZag zz_instance = zigzag.newInstance(settings)
+    var zigzag.Pivot last_pivot = na
+    var float gp_start_price = na
+    var float gp_height = na
+    settings.devThreshold := ta.atr(10) / close * 100 * threshold_multiplier
+
+    if zz_instance.update()
+        last_pivot := zz_instance.lastPivot()
+
+        if not na(last_pivot)
+            var line last_line = na
+
+            if na(last_line)
+                last_line := line.new(last_pivot.start.tm, last_pivot.start.price, last_pivot.end.tm, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(color.white, 60), width = 1, style = line.style_dashed)
+            else
+                line.set_xy1(last_line, last_pivot.start.tm, last_pivot.start.price)
+                line.set_xy2(last_line, last_pivot.end.tm, last_pivot.end.price)
+
+            gp_start_price := last_pivot.end.price
+            end_price = last_pivot.start.price
+            gp_height := (gp_start_price > end_price ? -1 : 1) * math.abs(gp_start_price - end_price)
+
+    [last_pivot, gp_start_price, gp_height]
+
+[last_pivot, gp_start_price, gp_height] = get_gp_vals()
+
+draw_fib_level(level, color) =>
+    var box fib_line = na, box.delete(fib_line)
+    fib_line := box.new(last_pivot.start.tm, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+
+process_fib_level(val, color) =>
+	float level = gp_start_price + gp_height * val
+
+    if not na(last_pivot)
+		draw_fib_level(level, color)
+        level
+    else
+        na
 
 
 // Plots
 if gp_showed
-    gp_highest_ph := gp_lowest_val
-    gp_lowest_pl := gp_highest_val
-
-    for i = 0 to gp_prd
-        if na(close[i])
-            break
-
-        if not na(gp_ph[i]) or not na(gp_pl[i])
-            gp_highest_ph := math.max(gp_highest_ph, nz(gp_ph[i], gp_lowest_val), nz(gp_pl[i], gp_lowest_val))
-            gp_lowest_pl := math.min(gp_lowest_pl, nz(gp_ph[i], gp_highest_val), nz(gp_pl[i], gp_highest_val))
-
-    float gp_max = is_tf_cur_bullish ? math.max(gp_highest_ph, gp_highest_val) : gp_highest_ph
-    float gp_min = not is_tf_cur_bullish ? math.min(gp_lowest_pl, gp_lowest_val) : gp_lowest_pl
-    float gp_diff = gp_max - gp_min
-    float gp_st_val = gp_diff * 35 / 100
-    float gp_nd_val = gp_diff * 38.2 / 100
-    float gp_top = na
-    float gp_bot = na
-
-    if is_tf_cur_bullish
-        gp_top := gp_diff * 38.2 / 100 + gp_lowest_pl
-        gp_bot := gp_diff * 35 / 100 + gp_lowest_pl
-    else
-        gp_top := gp_highest_ph - gp_diff * 35 / 100
-        gp_bot:= gp_highest_ph - gp_diff * 38.2 / 100
-
-    // // Prevent gp_top and go_bot are too close to the other
-    // if (gp_top - gp_bot < 1)
-    //     float extra_space = (1 - (gp_top - gp_bot)) / 2
-    //     gp_top := gp_top + extra_space
-    //     gp_bot := gp_bot - extra_space
-
-    var box gp_top_line = na, box.delete(gp_top_line)
-    var box gp_bot_line = na, box.delete(gp_bot_line)
-    gp_top_line := box.new(bar_index - gp_prd , gp_top, bar_index, gp_top, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
-    gp_bot_line := box.new(bar_index - gp_prd , gp_bot, bar_index, gp_bot, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
-
+    float level_618 = process_fib_level(0.618, color.yellow)
+    float level_65 = process_fib_level(0.65, color.yellow)
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
-    gp_val_box := box.new(gp_val_offset, gp_top + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
-
-
-
-
-
-//** Ichimoku **//
-
-// Inputs
-string ichimoku_grp = "Ichimoku Kinko Hyo"
-bool ichimoku_showed = input.bool(false, "Show", group = ichimoku_grp)
-string ichimoku_strategy = input.string("Auto", "Strategy", ["Auto", "Default", "Lightning Thunder"], group = ichimoku_grp)
-
-string tenkan_sen_txt = "Tenkan-sen"
-string kijun_sen_txt = "Kijun-sen"
-string chikou_span_txt = "Chikou-span"
-string senkou_span_a_txt = "Senkou-span A"
-string senkou_span_b_txt = "Senkou-span B"
-string kumo_cloud_txt = "Kumo Cloud"
-string kumo_offset_txt = "Kumo Offset"
-int tenkan_sen_prd = 9
-int kijun_sen_prd = 26
-int chikou_span_offset = 25
-int senkou_span_b_prd = 52
-int kumo_offset = 25
-string thunder_tenkan_sen_txt = "Thunder Tenkan-sen"
-string thunder_kijun_sen_txt = "Thunder Kijun-sen"
-string thunder_senkou_span_a_txt = "Thunder Senkou-span A"
-string thunder_senkou_span_b_txt = "Thunder Senkou-span B"
-string thunder_kumo_cloud_txt = "Thunder Kumo Cloud"
-string thunder_kumo_offset_txt = "Thunder Kumo Offset"
-int thunder_tenkan_sen_prd = 7
-int thunder_kijun_sen_prd = 21
-int thunder_senkou_span_b_prd = 48
-int thunder_kumo_offset = 20
-string lightning_tenkan_sen_txt = "Lightning Tenkan-sen"
-string lightning_kijun_sen_txt = "Lightning Kijun-sen"
-string lightning_senkou_span_a_txt = "Lightning Senkou-span A"
-string lightning_senkou_span_b_txt = "Lightning Senkou-span B"
-string lightning_kumo_cloud_txt = "Lightning Kumo Cloud"
-string lightning_kumo_offset_txt = "Lightning Kumo Offset"
-int lightning_tenkan_sen_prd = 7
-int lightning_kijun_sen_prd = 12
-int lightning_senkou_span_b_prd = 15
-int lightning_kumo_offset = 5
-
-
-// Methods
-method get_middle_point(int timeframes) => math.avg(ta.lowest(timeframes), ta.highest(timeframes))
-
-
-// Plots
-bool scalping_strategy_used = ichimoku_strategy == "Auto" ? is_equal_tf("5") or is_higher_tf("5") : ichimoku_strategy == "Lightning Thunder"
-float tenkan_sen = get_middle_point(tenkan_sen_prd)
-float kijun_sen = get_middle_point(kijun_sen_prd)
-float senkou_span_a = math.avg(tenkan_sen, kijun_sen)
-float senkou_span_b = get_middle_point(senkou_span_b_prd)
-plot(not scalping_strategy_used and ichimoku_showed ? close : na, offset = -chikou_span_offset, color = #FAA448, title = chikou_span_txt, linewidth = 1, display = display.pane)
-var senkou_span_b_plot = plot(not scalping_strategy_used and ichimoku_showed ? senkou_span_b : na, offset = kumo_offset, color = red_color, linewidth = 1, title = senkou_span_b_txt, display = display.pane)
-var senkou_span_a_plot = plot(not scalping_strategy_used and ichimoku_showed ? senkou_span_a : na, offset = kumo_offset, color = green_color, linewidth = 1, title = senkou_span_a_txt, display = display.pane)
-fill(senkou_span_a_plot, senkou_span_b_plot, color = senkou_span_a > senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = kumo_cloud_txt)
-plot(not scalping_strategy_used and ichimoku_showed ? kijun_sen : na, color = purple_color, title = kijun_sen_txt, linewidth = 1, display = display.pane)
-plot(not scalping_strategy_used and ichimoku_showed ? tenkan_sen : na, color = aqua_color, title = tenkan_sen_txt, linewidth = 1, display = display.pane)
-
-float thunder_tenkan_sen = get_middle_point(thunder_tenkan_sen_prd)
-float thunder_kijun_sen = get_middle_point(thunder_kijun_sen_prd)
-float thunder_senkou_span_a = math.avg(thunder_tenkan_sen, thunder_kijun_sen)
-float thunder_senkou_span_b = get_middle_point(thunder_senkou_span_b_prd)
-var thunder_senkou_span_b_plot = plot(scalping_strategy_used and ichimoku_showed ? thunder_senkou_span_b : na, offset = thunder_kumo_offset, color = red_color, linewidth = 1, title = thunder_senkou_span_b_txt, display = display.pane)
-var thunder_senkou_span_a_plot = plot(scalping_strategy_used and ichimoku_showed ? thunder_senkou_span_a : na, offset = thunder_kumo_offset, color = green_color, linewidth = 1, title = thunder_senkou_span_a_txt, display = display.pane)
-fill(thunder_senkou_span_a_plot, thunder_senkou_span_b_plot, color = thunder_senkou_span_a > thunder_senkou_span_b ? color.new(green_color, 95) : color.new(red_color, 95), title = thunder_kumo_cloud_txt)
-
-float lightning_tenkan_sen = get_middle_point(lightning_tenkan_sen_prd)
-float lightning_kijun_sen = get_middle_point(lightning_kijun_sen_prd)
-float lightning_senkou_span_a = math.avg(lightning_tenkan_sen, lightning_kijun_sen)
-float lightning_senkou_span_b = get_middle_point(lightning_senkou_span_b_prd)
-var lightning_senkou_span_b_plot = plot(scalping_strategy_used and ichimoku_showed ? lightning_senkou_span_b : na, offset = lightning_kumo_offset, color = purple_color, linewidth = 1, title = lightning_senkou_span_b_txt, display = display.pane)
-var lightning_senkou_span_a_plot = plot(scalping_strategy_used and ichimoku_showed ? lightning_senkou_span_a : na, offset = lightning_kumo_offset, color = aqua_color, linewidth = 1, title = lightning_senkou_span_a_txt, display = display.pane)
-fill(lightning_senkou_span_a_plot, lightning_senkou_span_b_plot, color = lightning_senkou_span_a > lightning_senkou_span_b ? color.new(aqua_color, 95) : color.new(purple_color, 95), title = lightning_kumo_cloud_txt)
+    float gp_top_offset = gp_height > 0 ? level_65 : level_618
+    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
