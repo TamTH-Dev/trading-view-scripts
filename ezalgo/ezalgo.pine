@@ -258,8 +258,8 @@ color sr_support_color = input.color(green_color, title = "Support Color", group
 color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(1, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(88, title = "Transparent", group = sr_grp)
-color sr_val_color = input.color(#999999, title = "Value Color", group = sr_grp)
+int sr_trans = input.int(85, title = "Transparent", group = sr_grp)
+color sr_val_color = input.color(#aaaaaa, title = "Value Color", group = sr_grp)
 
 
 // Methods
@@ -270,7 +270,7 @@ method get_sr_val_txt(float val) =>
 
 method build_sr_val_box(float top, float bot, float val, float v_padding) =>
     int sr_txt_offset = bar_index + 24
-    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 200, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
+    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 150, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 
 // Plots
@@ -716,7 +716,7 @@ if barstate.islast and db_showed
 // Inputs
 string gp_grp = "Golden Pocket"
 bool gp_showed = input.bool(true, "Show", group = gp_grp)
-color gp_color = input.color(color.new(yellow_color, 30), "Color", group = gp_grp)
+color gp_color = input.color(color.new(yellow_color, 40), "Color", group = gp_grp)
 
 
 // Methods
@@ -739,7 +739,7 @@ get_gp_vals()=>
             var line last_line = na
 
             if na(last_line)
-                last_line := line.new(last_pivot.start.tm, last_pivot.start.price, last_pivot.end.tm, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(color.white, 60), width = 1, style = line.style_dashed)
+                last_line := line.new(last_pivot.start.tm, last_pivot.start.price, last_pivot.end.tm, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(gp_color, 40), width = 1, style = line.style_dashed)
             else
                 line.set_xy1(last_line, last_pivot.start.tm, last_pivot.start.price)
                 line.set_xy2(last_line, last_pivot.end.tm, last_pivot.end.price)
