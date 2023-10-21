@@ -18,7 +18,7 @@ color dark_gray_color = #212d40
 
 
 // General Methods
-method get_prd_width_by_perc(int prd, int perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+get_prd_width_by_perc(int prd, int perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
 get_tf_txt() =>
     string prd = timeframe.period
@@ -99,12 +99,12 @@ is_tf_higher(simple string res) =>
 
 
 // Debugger
-f_print(_text) =>
+f_print(simple string txt) =>
     // Create label on the first bar.
-    var _label = label.new(bar_index, na, _text, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
     // On next bars, update the label"s x and y position, and the text it displays.
-    label.set_xy(_label, bar_index, ta.highest(10)[1])
-    label.set_text(_label, _text)
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
 
 
 
@@ -127,13 +127,13 @@ int vp_compaction_factor = input.int(3, "Compaction Factor", tooltip = "Compact 
 
 
 // Methods
-method get_sin(int src, int bandwidth) =>
+get_sin(int src, int bandwidth) =>
     if src == 0
         1
     else
         math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
 
-method get_multi_kernel_regression(float[] src, int prd) =>
+get_multi_kernel_regression(float[] src, int prd) =>
     int size = array.size(src)
     float[] estimated_arr = array.new<float>(size)
     float cur_price = na
@@ -162,7 +162,7 @@ float[] vp_levels = array.new_float(vp_cnum + 1)
 for x = 0 to vp_cnum by 1
     array.set(vp_levels, x, vp_bot + vp_step * x)
 
-method get_vol(float a, float b, float x, float y, float vol) =>
+get_vol(float a, float b, float x, float y, float vol) =>
     // Bar is completely below or above the range
     if y < a or x > b
         0
@@ -263,12 +263,12 @@ color sr_val_color = input.color(#aaaaaa, title = "Value Color", group = sr_grp)
 
 
 // Methods
-method get_sr_val_txt(float val) =>
+get_sr_val_txt(float val) =>
     string tf = get_tf_txt()
 
     str.format("{0} | {1}", tf, val)
 
-method build_sr_val_box(float top, float bot, float val, float v_padding) =>
+build_sr_val_box(float top, float bot, float val, float v_padding) =>
     int sr_txt_offset = bar_index + 24
     box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 150, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
@@ -411,15 +411,15 @@ bool custom_bar_colors_used = input.bool(true, "Use", group = custom_bar_colors_
 
 
 // Methods
-method smooth_rng(float src, int prd, float mult) =>
+smooth_rng(float src, int prd, float mult) =>
     float rng_avg = ta.ema(math.abs(src - src[1]), prd)
     ta.ema(rng_avg, prd * 2 - 1) * mult
 
-method filter_rng(float src, float rng) =>
+filter_rng(float src, float rng) =>
     float rng_src = src
     rng_src := src > nz(rng_src[1]) ? src - rng < nz(rng_src[1]) ? nz(rng_src[1]) : src - rng : src + rng > nz(rng_src[1]) ? nz(rng_src[1]) : src + rng
 
-method get_wt(float src, int chl_prd, int avg_prd) =>
+get_wt(float src, int chl_prd, int avg_prd) =>
     float esa = ta.ema(src, chl_prd)
     float d = ta.ema(math.abs(src - esa), chl_prd)
     float ci = (src - esa) / (0.015 * d)
@@ -427,7 +427,7 @@ method get_wt(float src, int chl_prd, int avg_prd) =>
     float lagging_wt = ta.sma(leading_wt, 3)
     [leading_wt, lagging_wt]
 
-method get_rev_bands(float src, int prd, float sensitivity) =>
+get_rev_bands(float src, int prd, float sensitivity) =>
     basis = ta.sma(src, prd)
     span = ta.atr(prd)
     [basis + span * sensitivity, basis - span * sensitivity]
@@ -631,10 +631,9 @@ var db_instance = db_showed ? table.new(_db_location, 3, 7, db_bg_color, #0A0A0A
 
 
 // Methods
-build_db_cell(col, row, txt) => table.cell(db_instance, col, row, txt, 0, 0, db_txt_color, text_size = _db_size)
-build_db_cell_bg(col, row, color) => table.cell_set_bgcolor(db_instance, col, row, color)
+build_db_cell(int col, int row, string txt) => table.cell(db_instance, col, row, txt, 0, 0, db_txt_color, text_size = _db_size)
 
-get_status_and_strength(price, ema_21, ema_144) =>
+get_status_and_strength(float price, series float ema_21, series float ema_144) =>
     if price > ema_144
         int strength = price > ema_21 and ema_21 > ema_144 ? 2 : 1
         [true, strength]
@@ -728,20 +727,12 @@ type Point
     int unix_time
     float price
 
-// @field is_high       A condition to determine if the pivot is a pivot high.
-// @field vol           Volume for the pivot segment.
-// @field start         The coordinate of the previous Point.
-// @field end           The coordinate of the current Point.
 type Pivot
     bool is_high 
     float vol
     Point start
     Point end
 
-// @field settings      Settings object to provide calculation and display attributes.
-// @field pivots        An array of Pivot objects.
-// @field vol_total     The volume sum for the pivot segment.
-// @field extend        Pivot object used to project a line from the last pivot to the last bar.
 type ZigZag
     Settings settings
     array<Pivot> pivots
