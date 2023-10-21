@@ -68,9 +68,9 @@ extract_tf(prd) =>
     else
         [str.tonumber(prd), ""]
 
-is_tf_equal(res) => res == timeframe.period
+is_equal_tf(res) => res == timeframe.period
 
-is_tf_higher(res) =>
+is_higher_tf(res) =>
     [cur_prd, cur_unit] = extract_tf(timeframe.period)
     [res_prd, res_unit] = extract_tf(res)
 
@@ -652,9 +652,9 @@ get_status_and_strength_by_tf(res) =>
     float l_price = na
     float l_ema_21 = na
     float l_ema_144 = na
-    float[] l_prices = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, close)
-    float[] l_emas_21 = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, ta.ema(close, 21))
-    float[] l_emas_144 = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, ta.ema(close, 144))
+    float[] l_prices = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, close)
+    float[] l_emas_21 = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, ta.ema(close, 21))
+    float[] l_emas_144 = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, ta.ema(close, 144))
 
     if array.size(l_prices) > 0
         l_price := array.get(l_prices, array.size(l_prices) - 1)
@@ -669,7 +669,7 @@ get_status_and_strength_by_tf(res) =>
     array.clear(l_emas_21)
     array.clear(l_emas_144)
 
-    if is_tf_equal(res) or is_tf_higher(res)
+    if is_equal_tf(res) or is_higher_tf(res)
         get_status_and_strength(eh_price, eh_ema_21, eh_ema_144)
     else
         get_status_and_strength(l_price, l_ema_21, l_ema_144)
@@ -720,29 +720,168 @@ color gp_color = input.color(color.new(yellow_color, 40), "Color", group = gp_gr
 
 
 // Methods
-import TradingView/ZigZag/6 as zigzag
+type Settings
+    float dev_threshold = 5.0
+    int depth = 10
+
+type Point
+    int unix_time
+    float price
+
+// @field is_high       A condition to determine if the pivot is a pivot high.
+// @field vol           Volume for the pivot segment.
+// @field start         The coordinate of the previous Point.
+// @field end           The coordinate of the current Point.
+type Pivot
+    bool is_high 
+    float vol
+    Point start
+    Point end
+
+// @field settings      Settings object to provide calculation and display attributes.
+// @field pivots        An array of Pivot objects.
+// @field vol_total     The volume sum for the pivot segment.
+// @field extend        Pivot object used to project a line from the last pivot to the last bar.
+type ZigZag
+    Settings settings
+    array<Pivot> pivots
+    float vol_total = 0
+    Pivot extend = na
+
+  
+// @function            Finds a pivot point if the `src` has not been exceeded over the `length` of bars. Finds pivot highs when `is_high` is true, and pivot lows otherwise.
+find_pivot_point(series float src, series float len, simple bool is_high) =>
+    float pivot = nz(src[len])
+
+    if len == 0
+        Point.new(time, pivot)
+    else if len * 2 <= bar_index
+        bool found = true
+
+        for i = 0 to math.abs(len - 1)
+            if (is_high and src[i] > pivot) or (not is_high and src[i] < pivot)
+                found := false
+                break
+
+        for i = len + 1 to 2 * len
+            if (is_high and src[i] >= pivot) or (not is_high and src[i] <= pivot)
+                found := false
+                break
+
+        if found
+            Point.new(time[len], pivot)
+
+// @function            Calculates the deviation percentage between the `price` and the `base_price`. 
+calc_dev(series float base_price, series float price) =>
+    float result = 100 * (price - base_price) / math.abs(base_price)
+
+// @function            Updates Pivot attributes including Point objects, volume, label text, and label and line object locations.
+method update_pivot(Pivot this, Point end, float vol, Settings settings) =>
+    this.end := end
+    this.vol := vol
+
+// @function            Creates a new Pivot object and assigns a line and label if enabled in the `settings`
+get_new_pivot(series Point start, series Point end, series float vol, series bool is_high, series Settings settings) =>
+    Pivot pivot = Pivot.new(is_high, vol, start, end)
+    pivot.update_pivot(end, vol, settings)
+    pivot
+
+// @function            Determines if price of the `point` Point is greater than the end price of `this` Pivot
+method is_price_higher(series Pivot this, series Point point) => 
+    int mult = this.is_high ? 1 : -1
+    point.price * mult > this.end.price * mult
+
+// @function            Returns the last Pivot of `this` ZigZag if there is at least one Pivot to return, and `na` otherwise.
+method get_last_pivot(series ZigZag this) =>
+    int size = this.pivots.size()
+    size > 0 ? this.pivots.get(size - 1) : na
+
+// @function            Updates the last Pivot of `this` ZigZag to the `point` Point and sets the volume to 0.
+method update_last_pivot(series ZigZag this, series Point point) =>
+    Pivot last_pivot = this.get_last_pivot()
+
+    if this.pivots.size() == 1
+        last_pivot.start := point
+
+    last_pivot.update_pivot(point, last_pivot.vol + this.vol_total, this.settings)
+    this.vol_total := 0
+
+// @function            Pushes a `new` Pivot into the array within `this` ZigZag.
+method add_new_pivot(series ZigZag this, series Pivot pivot) =>
+    this.pivots.push(pivot)
+    this.vol_total := 0
+
+// @function            Determines if a new ZigZag line has been found or the existing line needs updating by comparing new pivots to the existing ZigZag Point. Updates `this` ZigZag and returns true if either condition occurs.
+method has_new_pivot_point_found(series ZigZag this, simple bool is_high, series Point point) =>
+    bool found = false
+    Pivot last_pivot = this.get_last_pivot()
+
+    if not na(last_pivot)
+        if last_pivot.is_high == is_high 
+            if last_pivot.is_price_higher(point)
+                this.update_last_pivot(point)
+                found := true
+        else
+            float dev = calc_dev(last_pivot.end.price, point.price)
+
+            if (not last_pivot.is_high and dev >= this.settings.dev_threshold) or (last_pivot.is_high and dev <= -1 * this.settings.dev_threshold)
+                this.add_new_pivot(get_new_pivot(last_pivot.end, point, this.vol_total, is_high, this.settings))
+                found := true
+    else
+        this.add_new_pivot(get_new_pivot(point, point, this.vol_total, is_high, this.settings))
+        found := true
+
+    found
+
+// @function            Determines if a new ZigZag Point has been found.
+method find_pivot(series ZigZag this, series float src, simple bool is_high, series int depth, series bool pivot_registered = true) =>
+    Point point = find_pivot_point(src, depth, is_high)
+    not na(point) and pivot_registered ? this.has_new_pivot_point_found(is_high, point) : false
+
+method update_zigzag(series ZigZag this, series float vols, series float high_val, series float low_val, series int time_val) =>
+    int depth = math.max(2, math.floor(this.settings.depth / 2))
+    this.vol_total += nz(vols[depth])
+    bool updated = this.find_pivot(high_val, true, depth)
+    updated := this.find_pivot(low_val, false, depth, not updated) or updated
+    Pivot last_pivot = this.get_last_pivot()
+    float rem_vol = math.sum(vols, math.max(depth, 1))
+
+    if barstate.islast and not na(last_pivot)
+        bool is_high = not last_pivot.is_high
+        float cur_series = is_high ? high_val : low_val
+        Point end = Point.new(time_val, cur_series)
+
+        if na(this.extend) or updated
+            this.extend := get_new_pivot(last_pivot.end, end, this.vol_total, is_high, this.settings)
+
+        this.extend.update_pivot(end, this.vol_total + rem_vol, this.settings)
+
+    updated
+
+init_zigzag(series Settings settings = na) =>
+    ZigZag result = ZigZag.new(na(settings) ? Settings.new() : settings, array.new<Pivot>())
 
 get_gp_vals()=>
     int depth = 10
     float threshold_multiplier = 3
-    var settings = zigzag.Settings.new(threshold_multiplier, depth, color(na), false, false, false, false, "Absolute", true)
-    var zigzag.ZigZag zz_instance = zigzag.newInstance(settings)
-    var zigzag.Pivot last_pivot = na
+    var settings = Settings.new(threshold_multiplier, depth)
+    var ZigZag zigzag_instance = init_zigzag(settings)
+    var Pivot last_pivot = na
     var float gp_start_price = na
     var float gp_height = na
-    settings.devThreshold := ta.atr(10) / close * 100 * threshold_multiplier
+    settings.dev_threshold := ta.atr(10) / close * 100 * threshold_multiplier
 
-    if zz_instance.update()
-        last_pivot := zz_instance.lastPivot()
+    if zigzag_instance.update_zigzag(volume, high, low, time)
+        last_pivot := zigzag_instance.get_last_pivot()
 
         if not na(last_pivot)
             var line last_line = na
 
             if na(last_line)
-                last_line := line.new(last_pivot.start.tm, last_pivot.start.price, last_pivot.end.tm, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(gp_color, 40), width = 1, style = line.style_dashed)
+                last_line := line.new(last_pivot.start.unix_time, last_pivot.start.price, last_pivot.end.unix_time, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(gp_color, 40), width = 1, style = line.style_dashed)
             else
-                line.set_xy1(last_line, last_pivot.start.tm, last_pivot.start.price)
-                line.set_xy2(last_line, last_pivot.end.tm, last_pivot.end.price)
+                line.set_xy1(last_line, last_pivot.start.unix_time, last_pivot.start.price)
+                line.set_xy2(last_line, last_pivot.end.unix_time, last_pivot.end.price)
 
             gp_start_price := last_pivot.end.price
             end_price = last_pivot.start.price
@@ -754,7 +893,7 @@ get_gp_vals()=>
 
 draw_fib_level(level, color) =>
     var box fib_line = na, box.delete(fib_line)
-    fib_line := box.new(last_pivot.start.tm, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+    fib_line := box.new(last_pivot.start.unix_time, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
 
 process_fib_level(val, color) =>
 	float level = gp_start_price + gp_height * val
