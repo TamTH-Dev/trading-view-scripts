@@ -852,7 +852,7 @@ method update_zigzag(series ZigZag this, series float vols, series float high_va
 init_zigzag(series Settings settings = na) =>
     ZigZag result = ZigZag.new(na(settings) ? Settings.new() : settings, array.new<Pivot>())
 
-get_gp_vals() =>
+get_gp_vals(series float close_val, series float vol_val, series float high_val, series float low_val, series int time_val) =>
     int depth = 10
     float threshold_multiplier = 3
     var settings = Settings.new(threshold_multiplier, depth)
@@ -860,9 +860,9 @@ get_gp_vals() =>
     var Pivot last_pivot = na
     var float start_price = na
     var float height = na
-    settings.dev_threshold := ta.atr(10) / close * 100 * threshold_multiplier
+    settings.dev_threshold := ta.atr(10) / close_val * 100 * threshold_multiplier
 
-    if zigzag_instance.update_zigzag(volume, high, low, time)
+    if zigzag_instance.update_zigzag(vol_val, high_val, low_val, time_val)
         last_pivot := zigzag_instance.get_last_pivot()
 
         if not na(last_pivot)
@@ -880,7 +880,7 @@ get_gp_vals() =>
 
     [last_pivot, start_price, height]
 
-[gp_last_pivot, gp_start_price, gp_height] = get_gp_vals()
+[gp_last_pivot, gp_start_price, gp_height] = get_gp_vals(close, volume, high, low, time)
 
 draw_fib_level(Pivot pivot, float level, color color) =>
     var box fib_line = na, box.delete(fib_line)
