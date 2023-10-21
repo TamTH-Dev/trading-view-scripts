@@ -867,8 +867,8 @@ get_gp_vals() =>
     var settings = Settings.new(threshold_multiplier, depth)
     var ZigZag zigzag_instance = init_zigzag(settings)
     var Pivot last_pivot = na
-    var float gp_start_price = na
-    var float gp_height = na
+    var float start_price = na
+    var float height = na
     settings.dev_threshold := ta.atr(10) / close * 100 * threshold_multiplier
 
     if zigzag_instance.update_zigzag(volume, high, low, time)
@@ -883,23 +883,23 @@ get_gp_vals() =>
                 line.set_xy1(last_line, last_pivot.start.unix_time, last_pivot.start.price)
                 line.set_xy2(last_line, last_pivot.end.unix_time, last_pivot.end.price)
 
-            gp_start_price := last_pivot.end.price
+            start_price := last_pivot.end.price
             end_price = last_pivot.start.price
-            gp_height := (gp_start_price > end_price ? -1 : 1) * math.abs(gp_start_price - end_price)
+            height := (start_price > end_price ? -1 : 1) * math.abs(start_price - end_price)
 
-    [last_pivot, gp_start_price, gp_height]
+    [last_pivot, start_price, height]
 
-[last_pivot, gp_start_price, gp_height] = get_gp_vals()
+[gp_last_pivot, gp_start_price, gp_height] = get_gp_vals()
 
-draw_fib_level(level, color) =>
+draw_fib_level(Pivot pivot, float level, color color) =>
     var box fib_line = na, box.delete(fib_line)
-    fib_line := box.new(last_pivot.start.unix_time, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+    fib_line := box.new(pivot.start.unix_time, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
 
-process_fib_level(val, color) =>
-	float level = gp_start_price + gp_height * val
+process_fib_level(Pivot pivot, float start_price, float height, float val, color color) =>
+	float level = start_price + height * val
 
-    if not na(last_pivot)
-		draw_fib_level(level, color)
+    if not na(gp_last_pivot)
+		draw_fib_level(pivot, level, color)
         level
     else
         na
@@ -907,9 +907,9 @@ process_fib_level(val, color) =>
 
 // Plots
 if gp_showed
-    float level_618 = process_fib_level(0.618, gp_color)
-    float level_65 = process_fib_level(0.65, gp_color)
+    float level_618 = process_fib_level(gp_last_pivot, gp_start_price, gp_height, 0.618, gp_color)
+    float level_65 = process_fib_level(gp_last_pivot, gp_start_price, gp_height, 0.65, gp_color)
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
     float gp_top_offset = gp_height > 0 ? level_65 : level_618
-    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)   gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
