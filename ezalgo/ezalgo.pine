@@ -912,4 +912,4 @@ if gp_showed
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
     float gp_top_offset = gp_height > 0 ? level_65 : level_618
-    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)   gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
