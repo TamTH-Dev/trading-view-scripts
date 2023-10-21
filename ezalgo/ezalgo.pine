@@ -133,7 +133,7 @@ method get_sin(int src, int bandwidth) =>
     else
         math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)
 
-method get_multi_kernel_regression(float[] src, int prd)=>
+method get_multi_kernel_regression(float[] src, int prd) =>
     int size = array.size(src)
     float[] estimated_arr = array.new<float>(size)
     float cur_price = na
@@ -861,7 +861,7 @@ method update_zigzag(series ZigZag this, series float vols, series float high_va
 init_zigzag(series Settings settings = na) =>
     ZigZag result = ZigZag.new(na(settings) ? Settings.new() : settings, array.new<Pivot>())
 
-get_gp_vals()=>
+get_gp_vals() =>
     int depth = 10
     float threshold_multiplier = 3
     var settings = Settings.new(threshold_multiplier, depth)
