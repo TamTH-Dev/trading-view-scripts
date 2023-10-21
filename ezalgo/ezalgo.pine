@@ -42,7 +42,7 @@ get_tf_txt() =>
 
     tf
 
-extract_tf(prd) =>
+extract_tf(simple string prd) =>
     int len = str.length(prd)
 
     if str.contains(prd, "M")
@@ -68,9 +68,9 @@ extract_tf(prd) =>
     else
         [str.tonumber(prd), ""]
 
-is_equal_tf(res) => res == timeframe.period
+is_tf_equal(simple string res) => res == timeframe.period
 
-is_higher_tf(res) =>
+is_tf_higher(simple string res) =>
     [cur_prd, cur_unit] = extract_tf(timeframe.period)
     [res_prd, res_unit] = extract_tf(res)
 
@@ -644,7 +644,7 @@ get_status_and_strength(price, ema_21, ema_144) =>
     else
         [false, 1]
 
-get_status_and_strength_by_tf(res) =>
+get_status_and_strength_by_tf(simple string res) =>
     float eh_price = request.security(syminfo.tickerid, res, close, barmerge.gaps_off, barmerge.lookahead_on)
     float eh_ema_21 = request.security(syminfo.tickerid, res, ta.ema(close, 21), barmerge.gaps_off, barmerge.lookahead_on)
     float eh_ema_144 = request.security(syminfo.tickerid, res, ta.ema(close, 144), barmerge.gaps_off, barmerge.lookahead_on)
@@ -652,9 +652,9 @@ get_status_and_strength_by_tf(res) =>
     float l_price = na
     float l_ema_21 = na
     float l_ema_144 = na
-    float[] l_prices = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, close)
-    float[] l_emas_21 = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, ta.ema(close, 21))
-    float[] l_emas_144 = request.security_lower_tf(syminfo.tickerid, not is_equal_tf(res) and not is_higher_tf(res) ? res : timeframe.period, ta.ema(close, 144))
+    float[] l_prices = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, close)
+    float[] l_emas_21 = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, ta.ema(close, 21))
+    float[] l_emas_144 = request.security_lower_tf(syminfo.tickerid, not is_tf_equal(res) and not is_tf_higher(res) ? res : timeframe.period, ta.ema(close, 144))
 
     if array.size(l_prices) > 0
         l_price := array.get(l_prices, array.size(l_prices) - 1)
@@ -669,7 +669,7 @@ get_status_and_strength_by_tf(res) =>
     array.clear(l_emas_21)
     array.clear(l_emas_144)
 
-    if is_equal_tf(res) or is_higher_tf(res)
+    if is_tf_equal(res) or is_tf_higher(res)
         get_status_and_strength(eh_price, eh_ema_21, eh_ema_144)
     else
         get_status_and_strength(l_price, l_ema_21, l_ema_144)
@@ -898,7 +898,7 @@ draw_fib_level(Pivot pivot, float level, color color) =>
 process_fib_level(Pivot pivot, float start_price, float height, float val, color color) =>
 	float level = start_price + height * val
 
-    if not na(gp_last_pivot)
+    if not na(pivot)
 		draw_fib_level(pivot, level, color)
         level
     else
