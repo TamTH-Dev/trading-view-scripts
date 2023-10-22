@@ -724,7 +724,7 @@ color gp_color = input.color(color.new(yellow_color, 40), "Color", group = gp_gr
 
 // Methods
 type Settings
-    float dev_threshold = 5.0
+    float dev_threshold = 3
     int depth = 10
 
 type Point
