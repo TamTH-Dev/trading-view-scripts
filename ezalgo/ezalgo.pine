@@ -9,8 +9,8 @@ color white_color = color.white
 color yellow_color = #f2E40a
 color orange_color = #f2643a
 color green_color = #16f9ba
-color red_color = #f23a64
-color aqua_color = #21baf3
+color red_color = #e91e62
+color aqua_color = #00bbf9
 color purple_color = #5932e6
 color pink_color = #dd16fa
 color light_gray_color = #364156
@@ -254,12 +254,11 @@ if barstate.islast and vp_showed
 string sr_grp = "S/R"
 bool sr_showed = input.bool(true, title = "Show", group = sr_grp)
 int sr_prd = input.int(284, title = "Period", group = sr_grp)
-color sr_support_color = input.color(green_color, title = "Support Color", group = sr_grp)
-color sr_resistance_color = input.color(red_color, title = "Resistance Color", group = sr_grp)
+color sr_support_color = input.color(#00bbf94d, title = "Support Color", group = sr_grp)
+color sr_resistance_color = input.color(#e91e624d, title = "Resistance Color", group = sr_grp)
 int sr_strength = input.int(2, title = "Strength", minval = 1, group = sr_grp)
 int sr_zone_width_percent = input.int(1, title = "Zone Width In %", minval = 0, group = sr_grp)
-int sr_trans = input.int(85, title = "Transparent", group = sr_grp)
-color sr_val_color = input.color(#aaaaaa, title = "Value Color", group = sr_grp)
+color sr_val_color = input.color(#ffffff, title = "Value Color", group = sr_grp)
 
 
 // Methods
@@ -270,7 +269,7 @@ get_sr_val_txt(float val) =>
 
 build_sr_val_box(float top, float bot, float val, float v_padding) =>
     int sr_txt_offset = bar_index + 24
-    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 150, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.auto, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
+    box.new(sr_txt_offset, top - v_padding / 5, sr_txt_offset + 150, bot + v_padding / 5, bgcolor = transparent_color, border_width = 0, text = get_sr_val_txt(val), text_color = sr_val_color, text_size = size.small, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 
 // Plots
@@ -364,8 +363,8 @@ if sr_showed
     float sr_highest_bot = sr_highest_ph - sr_zone_width
     float sr_lowest_top = sr_lowest_pl + sr_zone_width
     float sr_lowest_bot = sr_lowest_pl - sr_zone_width
-    sr_highest_area_box := box.new(bar_index, sr_highest_top, bar_index, sr_highest_bot, extend = extend.both, bgcolor = color.new(sr_highest_color, sr_trans), border_width = 0)
-    sr_lowest_area_box := box.new(bar_index, sr_lowest_top, bar_index, sr_lowest_bot, extend = extend.both, bgcolor = color.new(sr_lowest_color, sr_trans), border_width = 0)
+    sr_highest_area_box := box.new(bar_index, sr_highest_top, bar_index, sr_highest_bot, extend = extend.both, bgcolor = sr_highest_color, border_width = 0)
+    sr_lowest_area_box := box.new(bar_index, sr_lowest_top, bar_index, sr_lowest_bot, extend = extend.both, bgcolor = sr_lowest_color, border_width = 0)
     sr_highest_val_box := build_sr_val_box(sr_highest_top, sr_highest_bot, sr_highest_ph, sr_zone_width)
     sr_lowest_val_box := build_sr_val_box(sr_lowest_top, sr_lowest_bot, sr_lowest_pl, sr_zone_width)
 
@@ -386,7 +385,7 @@ if sr_showed
             bool bot_existed = math.abs(level - sr_lowest_pl) < sr_zone_width
 
             if (not top_existed and not bot_existed)
-                array.set(sr_area_boxes, i, box.new(bar_index, top, bar_index, bot, extend = extend.both, bgcolor = color.new(line_color, sr_trans), border_width = 0))
+                array.set(sr_area_boxes, i, box.new(bar_index, top, bar_index, bot, extend = extend.both, bgcolor = line_color, border_width = 0))
                 array.set(sr_val_boxes, i, build_sr_val_box(top, bot, level, sr_zone_width))
 
 
@@ -407,7 +406,7 @@ string reversal_bands_grp = "Reversal Bands"
 bool rev_bands_showed = input.bool(true, "Show", group = reversal_bands_grp)
 int rev_bands_prd = input.int(30, "Period", group = reversal_bands_grp)
 string custom_bar_colors_grp = "Custom Bar Colors"
-bool custom_bar_colors_used = input.bool(true, "Use", group = custom_bar_colors_grp)
+bool custom_bar_colors_used = input.bool(false, "Use", group = custom_bar_colors_grp)
 
 
 // Methods
@@ -453,7 +452,7 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 
 
 // Custom bars' color
-barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : purple_color) : na, title = "Custom Bar Colors", editable = false)
+barcolor(custom_bar_colors_used ? (up_signal > dn_signal ? aqua_color : red_color) : na, title = "Custom Bar Colors", editable = false)
 
 
 // Plots
@@ -461,19 +460,19 @@ bool has_mild_buy_signal = ta.crossover(leading_wt, lagging_wt) and lagging_wt <
 bool has_mild_sell_signal = ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53
 bool consistent_buy_signal = is_bullish and has_mild_buy_signal
 bool consistent_sell_signal = is_bearish and has_mild_sell_signal
-plotshape(buy_sell_signals_showed and is_bullish and not consistent_buy_signal, title = "Bullish Buy Signal" , style = shape.triangleup, location = location.belowbar, color = aqua_color, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and is_bearish and not consistent_sell_signal, title = "Bearish Sell Signal", style = shape.triangledown, location = location.abovebar, color = purple_color, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and has_mild_buy_signal and not consistent_buy_signal, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = green_color, size = size.tiny, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bullish and not consistent_buy_signal, title = "Bullish Buy Signal" , style = shape.diamond, location = location.belowbar, color = aqua_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish and not consistent_sell_signal, title = "Bearish Sell Signal", style = shape.diamond, location = location.abovebar, color = red_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and has_mild_buy_signal and not consistent_buy_signal, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = aqua_color, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and has_mild_sell_signal and not consistent_sell_signal, title = "Mild Sell Signal", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
-plotshape(buy_sell_signals_showed and consistent_buy_signal, title = "Consistent Buy Signal" , style = shape.diamond, location = location.belowbar, color = yellow_color, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and consistent_sell_signal, title = "Consistent Sell Signal", style = shape.diamond, location = location.abovebar, color = orange_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and consistent_buy_signal, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = yellow_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and consistent_sell_signal, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = orange_color, size = size.small, display = display.pane)
 
 var upper_rev_sm_band_plot = plot(rev_bands_showed ? upper_rev_sm_band : na, title = "Upper Reversal Sm Band", color = transparent_color, display = display.pane)
 var upper_rev_md_band_plot = plot(rev_bands_showed ? upper_rev_md_band : na, title = "Upper Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
 var upper_rev_lg_band_plot = plot(rev_bands_showed ? upper_rev_lg_band : na, title = "Upper Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
 // var upper_rev_xl_band_plot = plot(rev_bands_showed ? upper_rev_xl_band : na, title = "Upper Reversal Xl Band", color = transparent_color, display = display.pane)
-fill(upper_rev_sm_band_plot, upper_rev_md_band_plot, color.new(purple_color, 85))
-fill(upper_rev_md_band_plot, upper_rev_lg_band_plot, color.new(purple_color, 80))
+fill(upper_rev_sm_band_plot, upper_rev_md_band_plot, color.new(red_color, 85))
+fill(upper_rev_md_band_plot, upper_rev_lg_band_plot, color.new(red_color, 80))
 // fill(upper_rev_lg_band_plot, upper_rev_xl_band_plot, color.new(purple_color, 75))
 // var lower_rev_xl_band_plot = plot(rev_bands_showed ? lower_rev_xl_band : na, title = "Lower Reversal Xl Band", color = transparent_color, display = display.pane)
 var lower_rev_lg_band_plot = plot(rev_bands_showed ? lower_rev_lg_band : na, title = "Lower Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
@@ -485,7 +484,7 @@ fill(lower_rev_md_band_plot, lower_rev_lg_band_plot, color.new(aqua_color, 80))
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
-fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? color.new(aqua_color, 70) : color.new(purple_color, 70), title = "Ribbon Fill Color")
+fill(plot(ribbon_showed ? leading_ribbon : na, "", na, editable = false, display = display.pane), plot(ribbon_showed ? lagging_ribbon : na, "", na, editable = false, display = display.pane), color = leading_ribbon > lagging_ribbon ? color.new(aqua_color, 70) : color.new(red_color, 70), title = "Ribbon Fill Color")
 
 
 
@@ -719,7 +718,7 @@ string gp_depth_tooltip = "The minimum number of bars that will be taken into ac
 int gp_depth = input.int(10, "Depth", group = gp_grp, tooltip = gp_depth_tooltip)
 string gp_dev_tooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
 float gp_threshold_multiplier = input.float(3, "Deviation", group = gp_grp, tooltip = gp_dev_tooltip)
-color gp_color = input.color(color.new(yellow_color, 40), "Color", group = gp_grp)
+color gp_color = input.color(yellow_color, "Color", group = gp_grp)
 
 
 // Methods
@@ -861,7 +860,7 @@ get_gp_vals(series float close_val, series float vol_val, series float high_val,
             var line last_line = na
 
             if na(last_line)
-                last_line := line.new(last_pivot.start.unix_time, last_pivot.start.price, last_pivot.end.unix_time, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(gp_color, 40), width = 1, style = line.style_dashed)
+                last_line := line.new(last_pivot.start.unix_time, last_pivot.start.price, last_pivot.end.unix_time, last_pivot.end.price, xloc = xloc.bar_time, color = color.new(gp_color, 20), width = 1, style = line.style_dashed)
             else
                 line.set_xy1(last_line, last_pivot.start.unix_time, last_pivot.start.price)
                 line.set_xy2(last_line, last_pivot.end.unix_time, last_pivot.end.price)
@@ -874,15 +873,15 @@ get_gp_vals(series float close_val, series float vol_val, series float high_val,
 
 [gp_last_pivot, gp_start_price, gp_height] = get_gp_vals(close, volume, high, low, time)
 
-draw_fib_level(Pivot pivot, float level, color color) =>
+draw_fib_level(Pivot pivot, float level, color color, float line_width) =>
     var box fib_line = na, box.delete(fib_line)
-    fib_line := box.new(pivot.start.unix_time, level, time, level, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 1, extend = extend.right)
+    fib_line := box.new(pivot.start.unix_time, level + line_width / 2, time, level - line_width / 2, xloc = xloc.bar_time, bgcolor = gp_color, border_color = gp_color, border_width = 0, extend = extend.right)
 
-process_fib_level(Pivot pivot, float start_price, float height, float val, color color) =>
+process_fib_level(Pivot pivot, series float start_price, series float height, simple float val, color color) =>
 	float level = start_price + height * val
 
     if not na(pivot)
-		draw_fib_level(pivot, level, color)
+		draw_fib_level(pivot, level, color, height / 200)
         level
     else
         na
@@ -895,4 +894,4 @@ if gp_showed
     var box gp_val_box = na, box.delete(gp_val_box)
     int gp_val_offset = bar_index + 8
     float gp_top_offset = gp_height > 0 ? level_65 : level_618
-    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 2), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.auto, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+    gp_val_box := box.new(gp_val_offset, gp_top_offset + get_prd_width_by_perc(300, 1), gp_val_offset + 200, gp_top_offset, bgcolor = transparent_color, border_width = 0, text = get_tf_txt(), text_color = gp_color, text_size = size.small, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
