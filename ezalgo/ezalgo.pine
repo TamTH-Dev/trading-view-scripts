@@ -7,7 +7,7 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_lines_count = 500,
 color transparent_color = color.new(#000000, 100)
 color white_color = color.white
 color yellow_color = #f2E40a
-color orange_color = #f2643a
+color orange_color = #f2aa0a
 color green_color = #16f9ba
 color red_color = #e91e62
 color aqua_color = #00bbf9
@@ -460,8 +460,8 @@ bool has_mild_buy_signal = ta.crossover(leading_wt, lagging_wt) and lagging_wt <
 bool has_mild_sell_signal = ta.crossunder(leading_wt, lagging_wt) and lagging_wt >= 53
 bool consistent_buy_signal = is_bullish and has_mild_buy_signal
 bool consistent_sell_signal = is_bearish and has_mild_sell_signal
-plotshape(buy_sell_signals_showed and is_bullish and not consistent_buy_signal, title = "Bullish Buy Signal" , style = shape.diamond, location = location.belowbar, color = aqua_color, size = size.small, display = display.pane)
-plotshape(buy_sell_signals_showed and is_bearish and not consistent_sell_signal, title = "Bearish Sell Signal", style = shape.diamond, location = location.abovebar, color = red_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bullish and not consistent_buy_signal, title = "Bullish Buy Signal" , style = shape.labelup, location = location.belowbar, color = aqua_color, size = size.small, display = display.pane)
+plotshape(buy_sell_signals_showed and is_bearish and not consistent_sell_signal, title = "Bearish Sell Signal", style = shape.labeldown, location = location.abovebar, color = red_color, size = size.small, display = display.pane)
 plotshape(buy_sell_signals_showed and has_mild_buy_signal and not consistent_buy_signal, title = "Mild Buy Signal" , style = shape.xcross, location = location.belowbar, color = aqua_color, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and has_mild_sell_signal and not consistent_sell_signal, title = "Mild Sell Signal", style = shape.xcross, location = location.abovebar, color = red_color, size = size.tiny, display = display.pane)
 plotshape(buy_sell_signals_showed and consistent_buy_signal, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = yellow_color, size = size.small, display = display.pane)
