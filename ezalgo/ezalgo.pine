@@ -5,16 +5,14 @@ indicator("EzAlgo", overlay = true, max_bars_back = 5000, max_lines_count = 500,
 
 // Colors
 color transparent_color = color.new(#000000, 100)
-color white_color = color.white
-color yellow_color = #f2E40a
+color white_color = #ffffff
+color yellow_color = #f2e40a
 color orange_color = #f2aa0a
-color green_color = #16f9ba
 color red_color = #e91e62
 color aqua_color = #00bbf9
-color purple_color = #5932e6
-color pink_color = #dd16fa
 color light_gray_color = #364156
 color dark_gray_color = #212d40
+color purple_color = #764af1
 
 
 // General Methods
@@ -448,7 +446,6 @@ bool is_bearish = bearish_cond and final_cond[1] == 1
 [upper_rev_sm_band, lower_rev_sm_band] = get_rev_bands(close, rev_bands_prd, 3)
 [upper_rev_md_band, lower_rev_md_band] = get_rev_bands(close, rev_bands_prd, 4)
 [upper_rev_lg_band, lower_rev_lg_band] = get_rev_bands(close, rev_bands_prd, 5)
-// [upper_rev_xl_band, lower_rev_xl_band] = get_rev_bands(close, rev_bands_prd, 6)
 
 
 // Custom bars' color
@@ -470,17 +467,13 @@ plotshape(buy_sell_signals_showed and consistent_sell_signal, title = "Consisten
 var upper_rev_sm_band_plot = plot(rev_bands_showed ? upper_rev_sm_band : na, title = "Upper Reversal Sm Band", color = transparent_color, display = display.pane)
 var upper_rev_md_band_plot = plot(rev_bands_showed ? upper_rev_md_band : na, title = "Upper Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
 var upper_rev_lg_band_plot = plot(rev_bands_showed ? upper_rev_lg_band : na, title = "Upper Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
-// var upper_rev_xl_band_plot = plot(rev_bands_showed ? upper_rev_xl_band : na, title = "Upper Reversal Xl Band", color = transparent_color, display = display.pane)
 fill(upper_rev_sm_band_plot, upper_rev_md_band_plot, color.new(red_color, 85))
 fill(upper_rev_md_band_plot, upper_rev_lg_band_plot, color.new(red_color, 80))
-// fill(upper_rev_lg_band_plot, upper_rev_xl_band_plot, color.new(purple_color, 75))
-// var lower_rev_xl_band_plot = plot(rev_bands_showed ? lower_rev_xl_band : na, title = "Lower Reversal Xl Band", color = transparent_color, display = display.pane)
 var lower_rev_lg_band_plot = plot(rev_bands_showed ? lower_rev_lg_band : na, title = "Lower Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
 var lower_rev_md_band_plot = plot(rev_bands_showed ? lower_rev_md_band : na, title = "Lower Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
 var lower_rev_sm_band_plot = plot(rev_bands_showed ? lower_rev_sm_band : na, title = "Lower Reversal Sm Band", color = transparent_color, display = display.pane)
 fill(lower_rev_sm_band_plot, lower_rev_md_band_plot, color.new(aqua_color, 85))
 fill(lower_rev_md_band_plot, lower_rev_lg_band_plot, color.new(aqua_color, 80))
-// fill(lower_rev_lg_band_plot, lower_rev_xl_band_plot, color.new(aqua_color, 75))
 
 float leading_ribbon = ta.sma(close, ribbon_leading_smoothing)
 float lagging_ribbon = ta.sma(close, ribbon_lagging_smoothing)
