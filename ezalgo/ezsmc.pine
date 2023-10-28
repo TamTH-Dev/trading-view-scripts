@@ -7,121 +7,116 @@ indicator("EzSMC", overlay = true, max_bars_back = 5000, max_lines_count = 500, 
 //---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 //----------------------------------------}
-//Order Blocks
+// Order Blocks
 //----------------------------------------{
 
-show_order_blocks=input.bool(true,"Order Blocks",group = 'Order Blocks', inline = "ob1")
-ibull_ob_css = input.color(#5d606b19, '', inline = 'ob1', group = 'Order Blocks')
-ibear_ob_css = input.color(#5d606b19, '', inline = 'ob1', group = 'Order Blocks')
-ob_type__= input.string('All', '',options = ['All','Internal','External'], group = 'Order Blocks',inline = 'ob1')
-i_tf_ob = input.timeframe("", "Timeframe", group = 'Order Blocks', inline = "ob2")
-mittigation_filt= input.string('Wicks', "Mitigation Method",options = ['Touch','Wicks','Close','Average'], group = 'Order Blocks',inline = 'ob3')
-overlapping_filt= input(true, 'Hide Overlap', inline = 'ob3', group = 'Order Blocks')
-max_obs = input.int(4, 'Max OBs', minval = 3, group = 'Order Blocks', inline = 'ob4')
-length_extend_ob = input.int(defval = 20,title = "Length", minval = 0, maxval = 500 ,group = 'Order Blocks', inline = "ob4")
-ob_extend = input.bool(false,"Extend",group = 'Order Blocks', inline = "ob4")
+bool show_order_blocks = input.bool(true, "Order Blocks", group = 'Order Blocks', inline = "ob1")
+color ibull_ob_css = input.color(#5d606b19, '', inline = 'ob1', group = 'Order Blocks')
+color ibear_ob_css = input.color(#5d606b19, '', inline = 'ob1', group = 'Order Blocks')
+string ob_type__ = input.string('All', '', options = ['All', 'Internal', 'External'], group = 'Order Blocks', inline = 'ob1')
+var i_tf_ob = input.timeframe("", "Timeframe", group = 'Order Blocks', inline = "ob2")
+string mittigation_filt = input.string('Wicks', "Mitigation Method", options = ['Touch', 'Wicks', 'Close', 'Average'], group = 'Order Blocks', inline = 'ob3')
+bool overlapping_filt = input.bool(true, 'Hide Overlap', inline = 'ob3', group = 'Order Blocks')
+int max_obs = input.int(4, 'Max OBs', minval = 3, group = 'Order Blocks', inline = 'ob4')
+int length_extend_ob = input.int(20, title = "Length", minval = 0, maxval = 500, group = 'Order Blocks', inline = "ob4")
+bool ob_extend = input.bool(false, "Extend", group = 'Order Blocks', inline = "ob4")
 
-text_size_ob =input.string("Large", options=["Small", "Medium","Large"], title="Text Size",inline="ob1_t", group="Order Blocks")
-text_size_ob_ = text_size_ob == "Small" ? size.tiny : text_size_ob == "Medium" ? size.small : text_size_ob == "Large" ? size.normal : text_size_ob == "Medium2" ? size.normal : text_size_ob == "Large2" ? size.large : size.huge
-ob_text_color_1 = input.color(#787b86 , '', inline = 'ob1_t', group = 'Order Blocks')
-volume_text = input.bool(true, 'Volume', group='Order Blocks',inline = 'ob1_t')
-percent_text = input.bool(true, 'Percentage', group='Order Blocks',inline = 'ob1_t')
+string text_size_ob = input.string("Large", options = ["Small", "Medium", "Large"], title = "Text Size", inline = "ob1_t", group = "Order Blocks")
+string text_size_ob_ = text_size_ob == "Small" ? size.tiny : text_size_ob == "Medium" ? size.small : text_size_ob == "Large" ? size.normal : text_size_ob == "Medium2" ? size.normal : text_size_ob == "Large2" ? size.large : size.huge
+color ob_text_color_1 = input.color(#787b86, '', inline = 'ob1_t', group = 'Order Blocks')
+bool volume_text = input.bool(true, 'Volume', group = 'Order Blocks', inline = 'ob1_t')
+bool percent_text = input.bool(true, 'Percentage', group = 'Order Blocks', inline = 'ob1_t')
 
-show_line_ob  = input.string("On", title = "Mid Line", options=["On", "Off"], group='Order Blocks',inline='ob1_l')
-show_line_ob_1=show_line_ob=="On"?true:false
-line_style_ob  = input.string("Solid", title = "Line Style", options=["Solid", "Dashed", "Dotted"], group='Order Blocks',inline='ob1_l')
-line_style_ob_1 = line_style_ob=="Solid" ? line.style_solid : line_style_ob=="Dashed" ? line.style_dashed : line.style_dotted
+string show_line_ob = input.string("On", title = "Mid Line", options = ["On", "Off"], group = 'Order Blocks', inline = 'ob1_l')
+bool show_line_ob_1 = show_line_ob == "On"
+string line_style_ob = input.string("Solid", title = "Line Style", options = ["Solid", "Dashed", "Dotted"], group = 'Order Blocks', inline = 'ob1_l')
+string line_style_ob_1 = line_style_ob == "Solid" ? line.style_solid : line_style_ob == "Dashed" ? line.style_dashed : line.style_dotted
 
 
-show_order_blocks_mtf=input.bool(false,"MTF Order Blocks",group = 'Order Blocks', inline = "m_ob1")
-ibull_ob_css_2 = input.color(#5d606b19, '', inline = 'm_ob1', group = 'Order Blocks')
-ibear_ob_css_2 = input.color(#5d606b19, '', inline = 'm_ob1', group = 'Order Blocks')
-ob_type__mtf= input.string('All', '',options = ['All','Internal','External'], group = 'Order Blocks',inline = 'm_ob1')
-i_tf_ob_mtf = input.timeframe("240", "Timeframe", group = 'Order Blocks', inline = "mob2")
-mittigation_filt_mtf= input.string('Wicks', "Mitigation Method",options = ['Touch','Wicks','Close','Average'], group = 'Order Blocks',inline = 'mob3')
-overlapping_filt_mtf= input(true, 'Hide Overlap', inline = 'mob3', group = 'Order Blocks')
-max_obs_mtf = input.int(4, 'Max OBs', minval = 3, group = 'Order Blocks', inline = "mob4")
-length_extend_ob_mtf = input.int(defval = 20,title = "Length", minval = 0, maxval = 500 ,group = 'Order Blocks', inline = "mob4")
-ob_extend_mtf = input.bool(false,"Extend",group = 'Order Blocks', inline = "mob4")
+bool show_order_blocks_mtf = input.bool(false, "MTF Order Blocks", group = 'Order Blocks', inline = "m_ob1")
+color ibull_ob_css_2 = input.color(#5d606b19, '', inline = 'm_ob1', group = 'Order Blocks')
+color ibear_ob_css_2 = input.color(#5d606b19, '', inline = 'm_ob1', group = 'Order Blocks')
+string ob_type__mtf = input.string('All', '', options = ['All', 'Internal', 'External'], group = 'Order Blocks', inline = 'm_ob1')
+var i_tf_ob_mtf = input.timeframe("240", "Timeframe", group = 'Order Blocks', inline = "mob2")
+string mittigation_filt_mtf = input.string('Wicks', "Mitigation Method", options = ['Touch', 'Wicks', 'Close', 'Average'], group = 'Order Blocks', inline = 'mob3')
+bool overlapping_filt_mtf = input.bool(true, 'Hide Overlap', inline = 'mob3', group = 'Order Blocks')
+int max_obs_mtf = input.int(4, 'Max OBs', minval = 3, group = 'Order Blocks', inline = "mob4")
+int length_extend_ob_mtf = input.int(20, title = "Length", minval = 0, maxval = 500, group = 'Order Blocks', inline = "mob4")
+bool ob_extend_mtf = input.bool(false, "Extend", group = 'Order Blocks', inline = "mob4")
 
-//v_filter = input.bool(true, 'Internal Bull/Bear Activity', group='Order Blocks',inline = 'volume')
-text_size_ob2 =input.string("Medium", options=["Small", "Medium","Large"], title="Text Size",inline="ob2_t", group="Order Blocks")
-text_size_ob_2 = text_size_ob2 == "Small" ? size.tiny : text_size_ob2 == "Medium" ? size.small : text_size_ob2== "Large" ? size.normal : text_size_ob2 == "Medium2" ? size.normal : text_size_ob2 == "Large2" ? size.large : size.huge
-ob_text_color_2 = input.color(#787b86 , '', inline = 'ob2_t', group = 'Order Blocks')
-volume_text_2 = input.bool(true, 'Volume', group='Order Blocks',inline = 'ob2_t')
-percent_text_2 = input.bool(true, 'Percentage', group='Order Blocks',inline = 'ob2_t')
+//v_filter = input.bool(true, 'Internal Bull/Bear Activity', group = 'Order Blocks', inline = 'volume')
+string text_size_ob2 = input.string("Medium", options = ["Small", "Medium", "Large"], title = "Text Size", inline = "ob2_t", group = "Order Blocks")
+string text_size_ob_2 = text_size_ob2 == "Small" ? size.tiny : text_size_ob2 == "Medium" ? size.small : text_size_ob2 == "Large" ? size.normal : text_size_ob2 == "Medium2" ? size.normal : text_size_ob2 == "Large2" ? size.large : size.huge
+color ob_text_color_2 = input.color(#787b86, '', inline = 'ob2_t', group = 'Order Blocks')
+bool volume_text_2 = input.bool(true, 'Volume', group = 'Order Blocks', inline = 'ob2_t')
+bool percent_text_2 = input.bool(true, 'Percentage', group = 'Order Blocks', inline = 'ob2_t')
 
-show_line_ob2  = input.string("On", title = "Mid Line", options=["On", "Off"], group='Order Blocks',inline='ob2_l')
-show_line_ob_2=show_line_ob2=="On"?true:false
-line_style_ob2  = input.string("Solid", title = "Line Style", options=["Solid", "Dashed", "Dotted"], group='Order Blocks',inline='ob2_l')
-line_style_ob_2 = line_style_ob2=="Solid" ? line.style_solid : line_style_ob2=="Dashed" ? line.style_dashed : line.style_dotted
+string show_line_ob2 = input.string("On", title = "Mid Line", options = ["On", "Off"], group = 'Order Blocks', inline = 'ob2_l')
+bool show_line_ob_2 = show_line_ob2 == "On"
+string line_style_ob2 = input.string("Solid", title = "Line Style", options = ["Solid", "Dashed", "Dotted"], group = 'Order Blocks', inline = 'ob2_l')
+string line_style_ob_2 = line_style_ob2 == "Solid" ? line.style_solid : line_style_ob2 == "Dashed" ? line.style_dashed : line.style_dotted
 
-v_buy = #00dbff4d
-v_sell = #e91e634d
+color v_buy = #00dbff4d
+color v_sell = #e91e634d
 
-tf_s1=i_tf_ob_mtf==''?timeframe.period:i_tf_ob_mtf
-timeframe_st=not(str.contains(tf_s1,'S')) and not(str.contains(tf_s1,'D')) and not(str.contains(tf_s1,'W')) and not(str.contains(tf_s1,'M')) ? str.tonumber(tf_s1)>=60? str.tostring(str.tonumber(tf_s1)/60) +"H": tf_s1 +"M" : tf_s1
+string tf_s1 = i_tf_ob_mtf == '' ? timeframe.period : i_tf_ob_mtf
+string timeframe_st = not(str.contains(tf_s1, 'S')) and not(str.contains(tf_s1, 'D')) and not(str.contains(tf_s1, 'W')) and not(str.contains(tf_s1, 'M')) ? str.tonumber(tf_s1) >= 60? str.tostring(str.tonumber(tf_s1) / 60) + "H" : tf_s1 + "M" : tf_s1
 
-timeframe1=timeframe_st + ' : '
-show_iob = ob_type__=='All' or ob_type__=='Internal' //input(true, 'Internal', inline = 'ob', group = 'Order Blocks')
-show_ob = ob_type__=='All' or ob_type__=='External' //input(false, 'External', inline = 'ob', group = 'Order Blocks')
-show_iob_mtf = ob_type__mtf=='All' or ob_type__mtf=='Internal' //input(true, 'Internal', inline = 'ob', group = 'Order Blocks')
-show_ob_mtf = ob_type__mtf=='All' or ob_type__mtf=='External' //input(false, 'External', inline = 'ob', group = 'Order Blocks')
-ob_showlast = 5//input.int(10, 'LookBack', minval = 1, inline = 'ob', group = 'Order Blocks')
-iob_showlast = 5//input.int(5, 'LookBack', minval = 1, inline = 'iob', group = 'Order Blocks')
-max_width_ob = 3//input.float(3, 'Max OB Width', minval = 0.1,maxval = 3, inline = 'close', group = 'Order Blocks')
-max_width_ob:=max_width_ob==3?20:max_width_ob
+string timeframe1 = timeframe_st + ' : '
+bool show_iob = ob_type__ == 'All' or ob_type__ == 'Internal'
+bool show_ob = ob_type__ == 'All' or ob_type__ == 'External'
+bool show_iob_mtf = ob_type__mtf == 'All' or ob_type__mtf == 'Internal'
+bool show_ob_mtf = ob_type__mtf == 'All' or ob_type__mtf == 'External'
+var int max_width_ob = 3
+max_width_ob := max_width_ob == 3 ? 20 : max_width_ob
 
-style = 'Colored'
-v_lookback= 10
-ob_loockback=10
-timediff=(time[1]-time[101])/100
+series int timediff = (time[1] - time[101]) / 100
 
 //----------------------------------------}
-//BOS and MSS
+// BOS and MSS
 //----------------------------------------{
 
 // Constants
 color CLEAR = color.rgb(0,0,0,100)
 
 // Inputs
-showms=input(true,title="Market Structure ",inline="0",group = "Market Structure")
-bosColor1 = input.color(#787b86 , '', group="Market Structure",inline="0")
-bosColor2 = input.color(#787b86 , '', group="Market Structure",inline="0")
-ms_type =input.string("All", options=["All", "External","Internal"], title="", group="Market Structure",inline="0")
-show_equal_highlow = input(false, 'Equal Highs & Lows', group = 'Market Structure',inline = 'equilibrium_zone')
-eq_bear_color = input.color(#787b86 , '', group="Market Structure",inline="equilibrium_zone")
-eq_bull_color = input.color(#787b86 , '', group="Market Structure",inline="equilibrium_zone")
-eq_threshold = input.float(0.3, '', minval = 0, maxval = 0.5, step = 0.1, group = 'Market Structure',inline = 'equilibrium_zone')
-showSwing = input.bool(false, 'Swing Points', group="Market Structure",inline="3")
-swingSize_swing = input.int(10, "Swing Point Period",inline="4", group="Market Structure")
-label_sizes_s =input.string("Medium", options=["Small", "Medium","Large"], title="Label Size",inline="4", group="Market Structure")
-label_size_buysell_s = label_sizes_s == "Small" ? size.tiny : label_sizes_s == "Medium" ? size.small : label_sizes_s == "Large" ? size.normal : label_sizes_s == "Medium2" ? size.normal : label_sizes_s == "Large2" ? size.large : size.huge
-label_size_buysell = label_sizes_s == "Small" ? size.tiny : label_sizes_s == "Medium" ? size.small : label_sizes_s == "Large" ? size.normal : label_sizes_s == "Medium2" ? size.normal : label_sizes_s == "Large2" ? size.large : size.huge
-swingColor = input.color(#787b86 , '', group="Market Structure",inline="3")
+bool showms= input.bool(true, title = "Market Structure ", inline = "0", group = "Market Structure")
+color bosColor1 = input.color(#787b86 , '', group = "Market Structure", inline = "0")
+color bosColor2 = input.color(#787b86 , '', group = "Market Structure", inline = "0")
+string ms_type = input.string("All", options = ["All", "External", "Internal"], title = "", group = "Market Structure", inline = "0")
+bool show_equal_highlow = input.bool(false, 'Equal Highs & Lows', group = 'Market Structure', inline = 'equilibrium_zone')
+color eq_bear_color = input.color(#787b86 , '', group = "Market Structure", inline = "equilibrium_zone")
+color eq_bull_color = input.color(#787b86 , '', group = "Market Structure", inline = "equilibrium_zone")
+float eq_threshold = input.float(0.3, '', minval = 0, maxval = 0.5, step = 0.1, group = 'Market Structure', inline = 'equilibrium_zone')
+bool showSwing = input.bool(false, 'Swing Points', group = "Market Structure", inline = "3")
+int swingSize_swing = input.int(10, "Swing Point Period", inline = "4", group = "Market Structure")
+string label_sizes_s = input.string("Medium", options = ["Small", "Medium", "Large"], title = "Label Size", inline = "4", group = "Market Structure")
+string label_size_buysell_s = label_sizes_s == "Small" ? size.tiny : label_sizes_s == "Medium" ? size.small : label_sizes_s == "Large" ? size.normal : label_sizes_s == "Medium2" ? size.normal : label_sizes_s == "Large2" ? size.large : size.huge
+string label_size_buysell = label_sizes_s == "Small" ? size.tiny : label_sizes_s == "Medium" ? size.small : label_sizes_s == "Large" ? size.normal : label_sizes_s == "Medium2" ? size.normal : label_sizes_s == "Large2" ? size.large : size.huge
+color swingColor = input.color(#787b86 , '', group = "Market Structure", inline = "3")
 
-swingSize = 3
-length_eqh = 3
+int swingSize = 3
+int length_eqh = 3
 
 //----------------------------------------}
-//Fair Value Gaps (FVG
+// Fair Value Gaps (FVG)
 //----------------------------------------{
 
 show_fvg = input(true, 'Fair Value Gaps (FVG)', group = 'Fair Value Gaps', inline = 'fvg_css')
-i_tf = input.timeframe("", "Timeframe", group = 'Fair Value Gaps',inline = 'tf')
-max_width_fvg = input.float(1.5, 'Max Width', minval = 0, maxval = 5.0, step = 0.1, group = 'Fair Value Gaps',inline = 'width')
-remove_small = input.bool(true,"Filter FVG",group = 'Fair Value Gaps', inline = "width")
-mittigation_filt_fvg= input.string('Touch', 'Mitigation Method',options = ['Touch','Wicks','Close','Average'], group = 'Fair Value Gaps', inline = "mt")
-fvg_color_fill = input.bool(true,"Fill",group = 'Fair Value Gaps', inline = "mt")
-fvg_shade_fill = input.bool(false,"Shade",group = 'Fair Value Gaps', inline = "mt")
-max_fvg = input.int(defval = 4,title = "Max FVG", minval = 0, maxval = 50 ,group = 'Fair Value Gaps', inline = "OS")
-length_extend = input.int(defval = 20,title = "Length", minval = 0, maxval = 100 ,group = 'Fair Value Gaps', inline = "OS")
-fvg_extend = input.bool(false,"Extend",group = 'Fair Value Gaps', inline = "OS")
+i_tf = input.timeframe("", "Timeframe", group = 'Fair Value Gaps', inline = 'tf')
+max_width_fvg = input.float(1.5, 'Max Width', minval = 0, maxval = 5.0, step = 0.1, group = 'Fair Value Gaps', inline = 'width')
+remove_small = input.bool(true, "Filter FVG", group = 'Fair Value Gaps', inline = "width")
+mittigation_filt_fvg= input.string('Touch', 'Mitigation Method', options = ['Touch', 'Wicks', 'Close', 'Average'], group = 'Fair Value Gaps', inline = "mt")
+fvg_color_fill = input.bool(true, "Fill", group = 'Fair Value Gaps', inline = "mt")
+fvg_shade_fill = input.bool(false, "Shade", group = 'Fair Value Gaps', inline = "mt")
+max_fvg = input.int(4, title = "Max FVG", minval = 0, maxval = 50 , group = 'Fair Value Gaps', inline = "OS")
+length_extend = input.int(20, title = "Length", minval = 0, maxval = 100 , group = 'Fair Value Gaps', inline = "OS")
+fvg_extend = input.bool(false, "Extend", group = 'Fair Value Gaps', inline = "OS")
 i_mtfbearishfvgcolor = input.color(#2962ff , "", group = 'Fair Value Gaps', inline = "fvg_css")
 i_mtfbullishfvgcolor = input.color(#c2185b, "", group = 'Fair Value Gaps', inline = "fvg_css")
-mid_style = input.string('Solid', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Fair Value Gaps",inline="mid")
-i_midPointColor = input.color(#787b86, "", group = 'Fair Value Gaps',inline="mid")
-fvg_extend_B = input.bool(true,"Extend (Current)",group = 'Fair Value Gaps', inline = "mid")
+mid_style = input.string('Solid', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Fair Value Gaps", inline = "mid")
+i_midPointColor = input.color(#787b86, "", group = 'Fair Value Gaps', inline = "mid")
+fvg_extend_B = input.bool(true, "Extend (Current)", group = 'Fair Value Gaps', inline = "mid")
 
 i_bullishfvgcolor = color.new(color.green,100)
 i_bearishfvgcolor = color.new(color.green,90)
@@ -131,70 +126,71 @@ i_textColor = color.white
 i_mtf = "HTF"
 i_tfos = 10
 i_mtfos = 50
-//----------------------------------------}
-//Liquidity Levels
-//----------------------------------------{
-
-liquidity_level_group = "Liquidity Levels"
-
-currentTF  = input.bool(true, title = "Liquidity Levels", group=liquidity_level_group, inline="1")
-htfTF  = input.timeframe("", title = "Timeframe", inline="1_",group=liquidity_level_group)
-leftBars  = input.int(8, title = "Pivot Length", group=liquidity_level_group, inline="2")
-mitiOptions  = input.string("Remove", title = "Mitigated",  inline="3", options=["Remove", "Show"], group=liquidity_level_group)
-_candleType  = input.string("Close", title = "Method", options=["Close", "Wick"], group=liquidity_level_group,inline = '3')
-displayLimit  = input.int(6, title = "Max Levels", group=liquidity_level_group, inline="4")
-length_extend_liq = input.int(defval = 20,title = "Length", minval = 0, maxval = 500 ,group = liquidity_level_group, inline = "4")
-extentionMax = input.bool(false, title = "Extend", group=liquidity_level_group, inline="4")
-_highLineStyleHTF  = "Solid"//input.string("Solid", title = "Line Style", options=["Solid", "Dashed", "Dotted"], group=liquidity_level_group,inline='5')
-highLineStyleHTF = _highLineStyleHTF=="Solid" ? line.style_solid : _highLineStyleHTF=="Dashed" ? line.style_dashed : line.style_dotted
-box_width  = 2.5//input.float(3.0, title = "Width", group=liquidity_level_group,inline='5', minval = 1, maxval = 10, step = 0.5)
-lineWidthHTF=2
-lowLineColorHTF = input.color(#00bbf94d, "", group = liquidity_level_group, inline = "1")
-highLineColorHTF = input.color(#e91e624d, "", group = liquidity_level_group, inline = "1")
-liquidity_text_color = input.color(#ffffff , 'Text Color', inline = '5', group = liquidity_level_group)
-highBoxBorderColorHTF = color.new(highLineColorHTF,90)
-lowBoxBorderColorHTF = color.new(lowLineColorHTF,90)
-displayStyle_liq  = "Boxes"//'Lines'
 
 //----------------------------------------}
-//Key Levels
+// Liquidity Levels
 //----------------------------------------{
-var Show_4H_Levels = input.bool(defval=false, title='4H', group='Key Levels', inline='4H')
-Color_4H_Levels = input.color(title='', defval=color.orange, group='Key Levels', inline='4H')
-Style_4H_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="4H")
-Text_4H_Levels = input.bool(defval=false, title='Shorten', group='Key Levels', inline='4H')
 
-var Show_Daily_Levels = input.bool(defval=false, title='Daily', group='Key Levels', inline='Daily')
-Color_Daily_Levels = input.color(title='', defval=#08bcd4, group='Key Levels', inline='Daily')
-Style_Daily_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Daily")
-Text_Daily_Levels = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Daily')
+string liquidity_level_group = "Liquidity Levels"
 
-var Show_Monday_Levels = input.bool(defval=false, title='Monday', group='Key Levels', inline='Monday')
-Color_Monday_Levels = input.color(title='', defval=color.white, group='Key Levels', inline='Monday')
-Style_Monday_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Monday")
-Text_Monday_Levels = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Monday')
+bool currentTF = input.bool(true, title = "Liquidity Levels", group = liquidity_level_group, inline = "1")
+htfTF = input.timeframe("", title = "Timeframe", inline = "1_", group = liquidity_level_group)
+int leftBars = input.int(8, title = "Pivot Length", group = liquidity_level_group, inline = "2")
+string mitiOptions = input.string("Remove", title = "Mitigated",  inline = "3", options = ["Remove", "Show"], group = liquidity_level_group)
+string _candleType = input.string("Close", title = "Method", options = ["Close", "Wick"], group = liquidity_level_group, inline = '3')
+int displayLimit = input.int(6, title = "Max Levels", group = liquidity_level_group, inline = "4")
+int length_extend_liq = input.int(20, title = "Length", minval = 0, maxval = 500, group = liquidity_level_group, inline = "4")
+bool extentionMax = input.bool(false, title = "Extend", group = liquidity_level_group, inline = "4")
+string _highLineStyleHTF = "Solid" // input.string("Solid", title = "Line Style", options = ["Solid", "Dashed", "Dotted"], group = liquidity_level_group, inline = '5')
+highLineStyleHTF = _highLineStyleHTF == "Solid" ? line.style_solid : _highLineStyleHTF == "Dashed" ? line.style_dashed : line.style_dotted
+float box_width = 2.5 // input.float(3.0, title = "Width", group = liquidity_level_group, inline = '5', minval = 1, maxval = 10, step = 0.5)
+lineWidthHTF = 2
+color lowLineColorHTF = input.color(#00bbf94d, "", group = liquidity_level_group, inline = "1")
+color highLineColorHTF = input.color(#e91e624d, "", group = liquidity_level_group, inline = "1")
+color liquidity_text_color = input.color(#ffffff, 'Text Color', inline = '5', group = liquidity_level_group)
+color highBoxBorderColorHTF = color.new(highLineColorHTF, 90)
+color lowBoxBorderColorHTF = color.new(lowLineColorHTF, 90)
+string displayStyle_liq = "Boxes" // 'Lines'
 
-var Show_Weekly_Levels = input.bool(defval=false, title='Weekly', group='Key Levels', inline='Weekly')
-WeeklyColor = input.color(title='', defval=#fffcbc, group='Key Levels', inline='Weekly')
-Weekly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Weekly")
-WeeklyTextType = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Weekly')
+//----------------------------------------}
+// Key Levels
+//----------------------------------------{
+bool Show_4H_Levels = input.bool(false, title = '4H', group = 'Key Levels', inline = '4H')
+color Color_4H_Levels = input.color(color.orange, title = '', group = 'Key Levels', inline = '4H')
+string Style_4H_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "4H")
+bool Text_4H_Levels = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = '4H')
 
-var Show_Monthly_Levels = input.bool(defval=false, title='Monthly', group='Key Levels', inline='Monthly')
-MonthlyColor = input.color(title='', defval=#098c30, group='Key Levels', inline='Monthly')
-Monthly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Monthly")
-MonthlyTextType = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Monthly')
+bool Show_Daily_Levels = input.bool(false, title = 'Daily', group = 'Key Levels', inline = 'Daily')
+color Color_Daily_Levels = input.color(#08bcd4, title = '', group = 'Key Levels', inline = 'Daily')
+string Style_Daily_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Daily")
+bool Text_Daily_Levels = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Daily')
 
-var Show_Quaterly_Levels = input.bool(defval=false, title='Quarterly', group='Key Levels', inline='Quarterly')
-quarterlyColor = input.color(title='', defval=#bcffd0, group='Key Levels', inline='Quarterly')
-Quaterly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Quarterly")
-QuarterlyTextType = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Quarterly')
+bool Show_Monday_Levels = input.bool(false, title = 'Monday', group = 'Key Levels', inline = 'Monday')
+color Color_Monday_Levels = input.color(color.white, title = '', group = 'Key Levels', inline = 'Monday')
+string Style_Monday_Levels = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Monday")
+bool Text_Monday_Levels = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Monday')
 
-var Show_Yearly_Levels = input.bool(defval=false, title='Yearly', group='Key Levels', inline='Yearly')
-YearlyColor = input.color(title='', defval=#ffbcdb, group='Key Levels', inline='Yearly')
-Yearly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group="Key Levels",inline="Yearly")
-YearlyTextType = input.bool(defval=false, title='Shorten', group='Key Levels', inline='Yearly')
+bool Show_Weekly_Levels = input.bool(false, title = 'Weekly', group = 'Key Levels', inline = 'Weekly')
+color WeeklyColor = input.color(#fffcbc, title = '', group = 'Key Levels', inline = 'Weekly')
+string Weekly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Weekly")
+bool WeeklyTextType = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Weekly')
 
-labelsize = input.string(defval='Medium', title='Text Size', options=['Small', 'Medium', 'Large'],group = "Key Levels", inline='H')
+bool Show_Monthly_Levels = input.bool(false, title = 'Monthly', group = 'Key Levels', inline = 'Monthly')
+color MonthlyColor = input.color(#098c30, title = '', group = 'Key Levels', inline = 'Monthly')
+string Monthly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Monthly")
+bool MonthlyTextType = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Monthly')
+
+bool Show_Quaterly_Levels = input.bool(false, title = 'Quarterly', group = 'Key Levels', inline = 'Quarterly')
+color quarterlyColor = input.color(#bcffd0, title = '', group = 'Key Levels', inline = 'Quarterly')
+string Quaterly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Quarterly")
+bool QuarterlyTextType = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Quarterly')
+
+bool Show_Yearly_Levels = input.bool(false, title = 'Yearly', group = 'Key Levels', inline = 'Yearly')
+color YearlyColor = input.color(#ffbcdb, title = '', group = 'Key Levels', inline = 'Yearly')
+string Yearly_style = input.string('Dotted', '  Style', ['Solid', 'Dashed', 'Dotted'], group = "Key Levels", inline = "Yearly")
+bool YearlyTextType = input.bool(false, title = 'Shorten', group = 'Key Levels', inline = 'Yearly')
+
+string labelsize = input.string('Medium', title = 'Text Size', options = ['Small', 'Medium', 'Large'], group = "Key Levels", inline = 'H')
 
 var pdhtext = Text_Daily_Levels ? 'PDH' : 'Prev Day High'
 var pdltext = Text_Daily_Levels ? 'PDL' : 'Prev Day Low'
@@ -232,44 +228,44 @@ linestyle = 'Solid'
 var untested_monday = false
 
 //----------------------------------------}
-//Session Levels
+// Session Levels
 //----------------------------------------{
 
 
-var is_londonrange_enabled = input.bool(defval=false, title='London', group='Session Levels', inline='london')
-var london_OC = input.bool(defval=true, title='O/C', group='Session Levels', inline='london')
-var london_HL = input.bool(defval=true, title='H/L', group='Session Levels', inline='london')
-var is_usrange_enabled = input.bool(defval=false, title='New York', group='Session Levels', inline='US')
-var us_OC = input.bool(defval=true, title='O/C', group='Session Levels', inline='US')
-var us_HL = input.bool(defval=true, title='H/L', group='Session Levels', inline='US')
-var is_tokyorange_enabled = input.bool(defval=false, title='Tokyo', group='Session Levels', inline='asia')
-var asia_OC = input.bool(defval=true, title='O/C', group='Session Levels', inline='asia')
-var asia_HL = input.bool(defval=true, title='H/L', group='Session Levels', inline='asia')
-SessionTextType = false//input.bool(defval=false, title='ShortHand', group='Sessions', inline='FXColor')
+bool is_londonrange_enabled = input.bool(false, title = 'London', group = 'Session Levels', inline = 'london')
+bool london_OC = input.bool(true, title = 'O/C', group = 'Session Levels', inline = 'london')
+bool london_HL = input.bool(true, title = 'H/L', group = 'Session Levels', inline = 'london')
+bool is_usrange_enabled = input.bool(false, title = 'New York', group = 'Session Levels', inline = 'US')
+bool us_OC = input.bool(true, title = 'O/C', group = 'Session Levels', inline = 'US')
+bool us_HL = input.bool(true, title = 'H/L', group = 'Session Levels', inline = 'US')
+bool is_tokyorange_enabled = input.bool(false, title = 'Tokyo', group = 'Session Levels', inline = 'asia')
+bool asia_OC = input.bool(true, title = 'O/C', group = 'Session Levels', inline = 'asia')
+bool asia_HL = input.bool(true, title = 'H/L', group = 'Session Levels', inline = 'asia')
+bool SessionTextType = false // input.bool(false, title = 'ShortHand', group = 'Sessions', inline = 'FXColor')
 
 Londont = "0800-1600"
 USt = "1400-2100"
 Asiat = "0000-0900"
 
-LondonColor = input.color(title='', defval=color.white, group='Session Levels', inline='london')
-USColor = input.color(title='', defval=color.white, group='Session Levels', inline='US')
-AsiaColor = input.color(title='', defval=color.white, group='Session Levels', inline='asia')
+color LondonColor = input.color(color.white, title = '', group = 'Session Levels', inline = 'london')
+color USColor = input.color(color.white, title = '', group = 'Session Levels', inline = 'US')
+color AsiaColor = input.color(color.white, title = '', group = 'Session Levels', inline = 'asia')
 
-Short_text_London = input.bool(defval=false, title='Shorten', group='Session Levels', inline='london')
-Short_text_NY = input.bool(defval=false, title='Shorten', group='Session Levels', inline='US')
-Short_text_TKY = input.bool(defval=false, title='Shorten', group='Session Levels', inline='asia')
+bool Short_text_London = input.bool(false, title = 'Shorten', group = 'Session Levels', inline = 'london')
+bool Short_text_NY = input.bool(false, title = 'Shorten', group = 'Session Levels', inline = 'US')
+bool Short_text_TKY = input.bool(false, title = 'Shorten', group = 'Session Levels', inline = 'asia')
 
-var London_high_text = Short_text_London ? 'Lon-H' : 'London High'
-var London_low_text = Short_text_London ? 'Lon-L' : 'London Low'
-var London_open_text = Short_text_London ? 'Lon-O' : 'London Open'
+string London_high_text = Short_text_London ? 'Lon-H' : 'London High'
+string London_low_text = Short_text_London ? 'Lon-L' : 'London Low'
+string London_open_text = Short_text_London ? 'Lon-O' : 'London Open'
 
-var NY_high_text = Short_text_NY ? 'NY-H' : 'New York High'
-var NY_low_text = Short_text_NY ? 'NY-L' : 'New York Low'
-var NY_open_text = Short_text_NY ? 'NY-O' : 'New York Open'
+string NY_high_text = Short_text_NY ? 'NY-H' : 'New York High'
+string NY_low_text = Short_text_NY ? 'NY-L' : 'New York Low'
+string NY_open_text = Short_text_NY ? 'NY-O' : 'New York Open'
 
-var Tokyo_high_text = Short_text_TKY ? 'TK-H' : 'Tokyo High'
-var Tokyo_low_text = Short_text_TKY ? 'TK-L' : 'Tokyo Low'
-var Tokyo_open_text = Short_text_TKY ? 'TK-O' : 'Tokyo Open'
+string Tokyo_high_text = Short_text_TKY ? 'TK-H' : 'Tokyo High'
+string Tokyo_low_text = Short_text_TKY ? 'TK-L' : 'Tokyo Low'
+string Tokyo_open_text = Short_text_TKY ? 'TK-O' : 'Tokyo Open'
 
 
 //-----------------------------------------------------------------------------}
@@ -512,7 +508,7 @@ validate_fvg_func(_high,_low)=>
                 box.set_right(currentgap_fill,timenow+(timediff)*length_extend)
                 box.set_right(currentgap,timenow+(timediff)*length_extend)
 
-            if mittigation_filt_fvg=='Touch'
+            if mittigation_filt_fvg == 'Touch'
                 currentgap_fill = array.get(bullishgapholder_fill,i)
                 currentgap = array.get(bullishgapholder,i)
                 currentmid = array.get(bullishmidholder,i)
@@ -524,7 +520,7 @@ validate_fvg_func(_high,_low)=>
                     fvg_removed:=1
                     delete_fvg_func(currentgap,currentgap_fill,i,bullishgapholder,bullishgapholder_fill,bullishmidholder,bullish_high_holder,bullish_low_holder,bullishlabelholder)
             
-            if mittigation_filt_fvg=='Wicks'
+            if mittigation_filt_fvg == 'Wicks'
                 currentgap_fill = array.get(bullishgapholder_fill,i)
                 currentgap = array.get(bullishgapholder,i)
                 currentmid = array.get(bullishmidholder,i)
@@ -547,7 +543,7 @@ validate_fvg_func(_high,_low)=>
                     fvg_removed:=1
                     delete_fvg_func(currentgap,currentgap_fill,i,bullishgapholder,bullishgapholder_fill,bullishmidholder,bullish_high_holder,bullish_low_holder,bullishlabelholder)
             
-            if mittigation_filt_fvg=='Close'
+            if mittigation_filt_fvg == 'Close'
                 currentgap_fill = array.get(bullishgapholder_fill,i)
                 currentgap = array.get(bullishgapholder,i)
                 currentmid = array.get(bullishmidholder,i)
@@ -569,7 +565,7 @@ validate_fvg_func(_high,_low)=>
                     fvg_removed:=1
                     delete_fvg_func(currentgap,currentgap_fill,i,bullishgapholder,bullishgapholder_fill,bullishmidholder,bullish_high_holder,bullish_low_holder,bullishlabelholder)
 
-            if mittigation_filt_fvg=='Average'
+            if mittigation_filt_fvg == 'Average'
                 currentgap_fill = array.get(bullishgapholder_fill,i)
                 currentgap = array.get(bullishgapholder,i)
                 currentmid = array.get(bullishmidholder,i)
@@ -608,7 +604,7 @@ validate_fvg_func(_high,_low)=>
                 box.set_right(currentgap_fill,timenow+(timediff)*length_extend)
                 box.set_right(currentgap,timenow+(timediff)*length_extend)
 
-            if mittigation_filt_fvg=='Touch'
+            if mittigation_filt_fvg == 'Touch'
                 currentgap_fill = array.get(bearishgapholder_fill,i)
                 currentgap = array.get(bearishgapholder,i)
                 currenttop = box.get_top(currentgap)
@@ -619,7 +615,7 @@ validate_fvg_func(_high,_low)=>
                 if low < currenttop
                     fvg_removed:=-1
                     delete_fvg_func(currentgap,currentgap_fill,i,bearishgapholder,bearishgapholder_fill,bearishmidholder,bearish_high_holder,bearish_low_holder,bearishlabelholder)
-            if mittigation_filt_fvg=='Wicks'
+            if mittigation_filt_fvg == 'Wicks'
                 currentgap_fill = array.get(bearishgapholder_fill,i)
                 currentgap = array.get(bearishgapholder,i)
                 currenttop = box.get_bottom(currentgap)
@@ -641,7 +637,7 @@ validate_fvg_func(_high,_low)=>
                 if low < currenttop
                     fvg_removed:=-1
                     delete_fvg_func(currentgap,currentgap_fill,i,bearishgapholder,bearishgapholder_fill,bearishmidholder,bearish_high_holder,bearish_low_holder,bearishlabelholder)
-            if mittigation_filt_fvg=='Close'
+            if mittigation_filt_fvg == 'Close'
                 currentgap_fill = array.get(bearishgapholder_fill,i)
                 currentgap = array.get(bearishgapholder,i)
                 currenttop = box.get_bottom(currentgap)
@@ -663,7 +659,7 @@ validate_fvg_func(_high,_low)=>
                 if close < currenttop
                     fvg_removed:=-1
                     delete_fvg_func(currentgap,currentgap_fill,i,bearishgapholder,bearishgapholder_fill,bearishmidholder,bearish_high_holder,bearish_low_holder,bearishlabelholder)
-            if mittigation_filt_fvg=='Average'
+            if mittigation_filt_fvg == 'Average'
                 currentgap_fill = array.get(bearishgapholder_fill,i)
                 currentgap = array.get(bearishgapholder,i)
                 currentmid = array.get(bearishmidholder,i)
@@ -703,14 +699,14 @@ if is_newbar(i_tf) and (i_mtf == "Current + HTF" or i_mtf == "HTF") and show_fvg
     fvg_gap:=check_fvg_func(sClose,htfH,sHighP2,htfL,sLowP2,sOpen,time[2],true)
     
 
-alertcondition(fvg_gap==1,"Bullish FVG","Bullish FVG Found Ez-SMC")
-alertcondition(fvg_gap==-1,"Bearish FVG","Bearish FVG Found Ez-SMC")
+alertcondition(fvg_gap==1, "Bullish FVG", "Bullish FVG Found Ez-SMC")
+alertcondition(fvg_gap==-1, "Bearish FVG", "Bearish FVG Found Ez-SMC")
 
 
 fvg_removed=validate_fvg_func(high,low)
 
-alertcondition(fvg_removed==1,"Bullish FVG Break","Bullish FVG Broken Ez-SMC")
-alertcondition(fvg_removed==-1,"Bearish FVG Break","Bearish FVG Broken Ez-SMC")
+alertcondition(fvg_removed==1, "Bullish FVG Break", "Bullish FVG Broken Ez-SMC")
+alertcondition(fvg_removed==-1, "Bearish FVG Break", "Bearish FVG Broken Ez-SMC")
 
 if array.size(bullishgapholder) > max_fvg
     d_box=array.shift(bullishgapholder)
@@ -1484,7 +1480,7 @@ if ta.crossover(close, internal_y_up) and internal_up_broke and y_up != internal
     int_t_MS := 1
     bull_mss:=MSS?true:false
     bull_bos:=MSS?false:true
-    if showms and (ms_type=='All' or ms_type=='Internal')
+    if showms and (ms_type == 'All' or ms_type == 'Internal')
         Show_MS(internal_x_up, internal_y_up, MSS ? 'MSS' : 'BOS', internal_bullish_col_MSS, true, true, internal_structure_lbl_size)
 if ta.crossunder(close, internal_y_dn) and internal_dn_broke and y_dn != internal_y_dn 
     bool MSS = false
@@ -1493,13 +1489,13 @@ if ta.crossunder(close, internal_y_dn) and internal_dn_broke and y_dn != interna
     int_t_MS := -1
     bear_mss:=MSS?true:false
     bear_bos:=MSS?false:true
-    if showms and (ms_type=='All' or ms_type=='Internal')
+    if showms and (ms_type == 'All' or ms_type == 'Internal')
         Show_MS(internal_x_dn, internal_y_dn, MSS ? 'MSS' : 'BOS', internal_bearish_col_MSS, true, false, internal_structure_lbl_size)
 
-alertcondition(bull_mss,"Bullish MSS",'Bullish MSS Found Ez-SMC')
-alertcondition(bear_mss,"Bearish MSS",'Bearish MSS Found Ez-SMC')
-alertcondition(bull_bos,"Bullish BOS",'Bullish BOS Found Ez-SMC')
-alertcondition(bear_bos,"Bearish BOS",'Bearish MSS Found Ez-SMC')
+alertcondition(bull_mss, "Bullish MSS", 'Bullish MSS Found Ez-SMC')
+alertcondition(bear_mss, "Bearish MSS", 'Bearish MSS Found Ez-SMC')
+alertcondition(bull_bos, "Bullish BOS", 'Bullish BOS Found Ez-SMC')
+alertcondition(bear_bos, "Bearish BOS", 'Bearish MSS Found Ez-SMC')
 
 
 
@@ -1510,7 +1506,7 @@ if ta.crossover(close, y_up) and crossed_up
     t_MS := 1
     bull_mss_:=MSS?true:false
     bull_bos_:=MSS?false:true
-    if showms or (ms_type=='All' or ms_type=='External')
+    if showms or (ms_type == 'All' or ms_type == 'External')
         Show_MS(x_up, y_up, MSS ? 'MSS+' : 'BOS+', bullish_col_MSS, false, true, swing_structure_lbl_size)
 if ta.crossunder(close, y_dn) and crossed_down
     bool MSS = na
@@ -1519,13 +1515,13 @@ if ta.crossunder(close, y_dn) and crossed_down
     t_MS := -1
     bear_mss_:=MSS?true:false
     bear_bos_:=MSS?false:true
-    if showms and (ms_type=='All' or ms_type=='External')
+    if showms and (ms_type == 'All' or ms_type == 'External')
         Show_MS(x_dn, y_dn, MSS ? 'MSS+' : 'BOS+', bearish_col_MSS, false, false, swing_structure_lbl_size)
 
-alertcondition(bull_mss_,"Bullish MSS+",'Bullish MSS+ Found Ez-SMC')
-alertcondition(bear_mss_,"Bearish MSS+",'Bearish MSS+ Found Ez-SMC')
-alertcondition(bear_bos_,"Bearish BOS+",'Bearish BOS+ Found Ez-SMC')
-alertcondition(bull_bos_,"Bullish BOS+",'Bullish BOS+ Found Ez-SMC')
+alertcondition(bull_mss_, "Bullish MSS+", 'Bullish MSS+ Found Ez-SMC')
+alertcondition(bear_mss_, "Bearish MSS+", 'Bearish MSS+ Found Ez-SMC')
+alertcondition(bear_bos_, "Bearish BOS+", 'Bearish BOS+ Found Ez-SMC')
+alertcondition(bull_bos_, "Bullish BOS+", 'Bullish BOS+ Found Ez-SMC')
 
 //-----------------------------------------------------------------------------}
 //Order Blocks
@@ -1693,7 +1689,7 @@ show_orderblock(boxes,lines, target_top, target_btm, target_left, target_type, s
         volume_=array.get(vol, i)>100000000 ? array.get(vol, i)/100000000.: array.get(vol, i)>1000000 ? array.get(vol, i)/1000000. : array.get(vol, i)/1000.
         volume_per=(array.get(vol, i)/volume_sum)*100
         unit=array.get(vol, i)>100000000 ?' B': array.get(vol, i)>1000000 ?' M' : ' K'
-        text_vol=vol_text and perct_text ? tf_text +  str.tostring(volume_,'#.##')+ unit + ' ('+ str.tostring(volume_per,'#.##')+'%)' : vol_text and not(perct_text) ? tf_text +  str.tostring(volume_,'#.##')+ unit : not(vol_text) and perct_text ? tf_text +   ' '+ str.tostring(volume_per,'#.##')+'%' : tf_text_2+  ''
+        text_vol=vol_text and perct_text ? tf_text +  str.tostring(volume_, '#.##')+ unit + ' ('+ str.tostring(volume_per, '#.##')+'%)' : vol_text and not(perct_text) ? tf_text +  str.tostring(volume_, '#.##')+ unit : not(vol_text) and perct_text ? tf_text +   ' '+ str.tostring(volume_per, '#.##')+'%' : tf_text_2+  ''
         if true//max_left<array.get(target_left, i)
             box.set_lefttop(get_box, array.get(target_left, i), array.get(target_top, i))
             box.set_rightbottom(get_box,timenow+((timediff)*length_extend_ob) , array.get(target_btm, i))
@@ -1905,10 +1901,10 @@ if valid_ob_mtf and not(valid_ob_mtf[1]) and barstate.isconfirmed
 // if barstate.islast
 //     label.new(bar_index,high,str.tostring(array.size(ob_top)))
 
-alertcondition(_type=="External Bearish",'Bearish External OB','Bearish External OB Found Ez-SMC')
-alertcondition(_type=="External Bullish",'Bullish External OB','Bullish External OB Found Ez-SMC')
-alertcondition(_type=="Internal Bearish",'Bearish Internal OB','Bearish Internal OB Found Ez-SMC')
-alertcondition(_type=="Internal Bullish",'Bullish Internal OB','Bullish Internal OB Found Ez-SMC')
+alertcondition(_type=="External Bearish", 'Bearish External OB', 'Bearish External OB Found Ez-SMC')
+alertcondition(_type=="External Bullish", 'Bullish External OB', 'Bullish External OB Found Ez-SMC')
+alertcondition(_type=="Internal Bearish", 'Bearish Internal OB', 'Bearish Internal OB Found Ez-SMC')
+alertcondition(_type=="Internal Bullish", 'Bullish Internal OB', 'Bullish Internal OB Found Ez-SMC')
 
 //Set order blocks
 var iob_boxes = array.new_box(0)
@@ -1966,10 +1962,10 @@ if array.size(ob_top)>max_obs// or array.get(ob_left,array.size(ob_left)-1)>bar_
 // //Delete internal order blocks box coordinates if high_ms/bottom is broken
 if array.size(ob_top_mtf)>1
     for index=0 to array.size(ob_top_mtf)-1
-        src1=mittigation_filt_mtf=='Wicks' or mittigation_filt_mtf=='Touch'? low : mittigation_filt_mtf=='Close'? close : low
-        src2=mittigation_filt_mtf=='Wicks' or mittigation_filt_mtf=='Touch'? high : mittigation_filt_mtf=='Close'? close : high
-        up= mittigation_filt_mtf=='Touch' ? array.get(ob_top_mtf, index) : mittigation_filt_mtf=='Average'? array.get(ob_top_mtf, index)-(array.get(ob_top_mtf, index) - array.get(ob_btm_mtf, index))/2  : array.get(ob_btm_mtf, index)
-        dn= mittigation_filt_mtf=='Touch' ? array.get(ob_btm_mtf, index) : mittigation_filt_mtf=='Average'? array.get(ob_top_mtf, index)-(array.get(ob_top_mtf, index) - array.get(ob_btm_mtf, index))/2  : array.get(ob_top_mtf, index)
+        src1=mittigation_filt_mtf == 'Wicks' or mittigation_filt_mtf == 'Touch'? low : mittigation_filt_mtf == 'Close'? close : low
+        src2=mittigation_filt_mtf == 'Wicks' or mittigation_filt_mtf == 'Touch'? high : mittigation_filt_mtf == 'Close'? close : high
+        up= mittigation_filt_mtf == 'Touch' ? array.get(ob_top_mtf, index) : mittigation_filt_mtf == 'Average'? array.get(ob_top_mtf, index)-(array.get(ob_top_mtf, index) - array.get(ob_btm_mtf, index))/2  : array.get(ob_btm_mtf, index)
+        dn= mittigation_filt_mtf == 'Touch' ? array.get(ob_btm_mtf, index) : mittigation_filt_mtf == 'Average'? array.get(ob_top_mtf, index)-(array.get(ob_top_mtf, index) - array.get(ob_btm_mtf, index))/2  : array.get(ob_top_mtf, index)
 
         if (src1 < up or src1[1] < up or (mittigation_filt_mtf!='Touch' and src1[1] < up)) and array.get(ob_type_mtf, index) == 1// and bullish_OB_Break==false
             array.remove(ob_top_mtf, index) 
@@ -1996,10 +1992,10 @@ if array.size(ob_top_mtf)>1
 
 if array.size(ob_top)>1
     for index=0 to array.size(ob_top)-1
-        src1=mittigation_filt=='Wicks' or mittigation_filt=='Touch'? low : mittigation_filt=='Close'? close : low
-        src2=mittigation_filt=='Wicks' or mittigation_filt=='Touch'? high : mittigation_filt=='Close'? close : high
-        up= mittigation_filt=='Touch' ? array.get(ob_top, index) : mittigation_filt=='Average'? array.get(ob_top, index)-(array.get(ob_top, index) - array.get(ob_btm, index))/2 : array.get(ob_btm, index)
-        dn= mittigation_filt=='Touch' ? array.get(ob_btm, index) : mittigation_filt=='Average'? array.get(ob_top, index)-(array.get(ob_top, index) - array.get(ob_btm, index))/2 : array.get(ob_top, index)
+        src1=mittigation_filt == 'Wicks' or mittigation_filt == 'Touch'? low : mittigation_filt == 'Close'? close : low
+        src2=mittigation_filt == 'Wicks' or mittigation_filt == 'Touch'? high : mittigation_filt == 'Close'? close : high
+        up= mittigation_filt == 'Touch' ? array.get(ob_top, index) : mittigation_filt == 'Average'? array.get(ob_top, index)-(array.get(ob_top, index) - array.get(ob_btm, index))/2 : array.get(ob_btm, index)
+        dn= mittigation_filt == 'Touch' ? array.get(ob_btm, index) : mittigation_filt == 'Average'? array.get(ob_top, index)-(array.get(ob_top, index) - array.get(ob_btm, index))/2 : array.get(ob_top, index)
 
         if (src1 < up or src1[1] < up or (mittigation_filt!='Touch' and src1[2] < up)) and array.get(ob_type, index) == 1// and bullish_OB_Break==false
             array.remove(ob_top, index) 
@@ -2023,8 +2019,8 @@ if array.size(ob_top)>1
             bearish_OB_Break := true
             break
 
-alertcondition(bullish_OB_Break,'Bullish OB Break','Bullish OB Broken Ez-SMC')
-alertcondition(bearish_OB_Break,'Bearish OB Break','Bearish OB Broken Ez-SMC')
+alertcondition(bullish_OB_Break, 'Bullish OB Break', 'Bullish OB Broken Ez-SMC')
+alertcondition(bearish_OB_Break, 'Bearish OB Break', 'Bearish OB Broken Ez-SMC')
 
 
 ob_size_mtf = array.size(ob_type_mtf)
@@ -2080,7 +2076,7 @@ ob_size := array.size(ob_type)
 
 if ob_size > 0 and barstate.islast
     if show_order_blocks
-        show_orderblock(ob_boxes,ob_volume, ob_top, ob_btm, ob_left, ob_type, max_obs, false, ob_size,ob_vol,ibull_ob_css,ibear_ob_css,length_extend_ob,ob_extend,'','',text_size_ob_,volume_text,percent_text,ob_text_color_1,show_line_ob_1,line_style_ob_1)
+        show_orderblock(ob_boxes,ob_volume, ob_top, ob_btm, ob_left, ob_type, max_obs, false, ob_size,ob_vol,ibull_ob_css,ibear_ob_css,length_extend_ob,ob_extend, '', '',text_size_ob_,volume_text,percent_text,ob_text_color_1,show_line_ob_1,line_style_ob_1)
         // if v_filter
         //     display_sub_ob_buy(ob_boxes_buy, ob_top, ob_btm, ob_left, ob_type, max_obs, false, ob_size,ob_buy_vol,ob_sell_vol)
         //     display_sub_ob_sell(ob_boxes_sell, ob_top, ob_btm, ob_left, ob_type, max_obs, false, ob_size,ob_sell_vol)
