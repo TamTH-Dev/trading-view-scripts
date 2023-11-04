@@ -11,7 +11,7 @@ indicator("Price Action Supporter", "Price Action Supporter"
 
 
 //-----------------------------------------------------------------------------{
-// Constants
+//Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #ffffff
@@ -194,7 +194,7 @@ bear_ob_css = input.color(color.new(RED_COLOR, 85), 'Bearish OB'
 //----------------------------------------}
 // EQH/EQL
 //----------------------------------------{
-show_eq = input(true, 'Equal High/Low'
+show_eq = input(false, 'Equal High/Low'
   , group = 'EQH/EQL'
   , tooltip = SHOW_EQHL)
 
@@ -292,7 +292,7 @@ show_sd = input(true, 'Premium/Discount Zones'
   , group = 'Premium & Discount Zones'
   , tooltip = PED_ZONES)
 
-premium_css = input.color(PURPLE_COLOR, 'Premium Zone'
+premium_css = input.color(ORANGE_COLOR, 'Premium Zone'
   , group = 'Premium & Discount Zones')
 
 eq_css = input.color(color.new(WHITE_COLOR, 60), 'Equilibrium Zone'
@@ -1110,11 +1110,9 @@ showMajor = input(true, 'Show Major Pattern')
 showMinor = input(true, 'Show Minor Pattern')
 
 // Style
-mpBullCss = input.color(AQUA_COLOR, 'Bullish Pattern', inline = 'bull', group = 'Pattern Style')
+mpColor = input.color(PURPLE_COLOR, 'Color', group = 'Pattern Style')
 showBullBox = input(true, 'Area', inline = 'bull', group = 'Pattern Style')
 showBullLvl = input(true, 'Line', inline = 'bull', group = 'Pattern Style')
-
-mpBearCss = input.color(RED_COLOR, 'Bearish Pattern', inline = 'bear', group = 'Pattern Style')
 showBearBox = input(true, 'Area', inline = 'bear', group = 'Pattern Style')
 showBearLvl = input(true, 'Line', inline = 'bear', group = 'Pattern Style')
 
@@ -1168,21 +1166,18 @@ if mpPl
 //-----------------------------------------------------------------------------{
 var mp master = mp.new()
 
-// Detect master pattern
+//Detect master pattern
 mpIsBull = high[mpLen] > mpTop and mpTop > mpBot
 mpIsBear = low[mpLen] < mpBot and mpTop > mpBot
 
 if mpIsBull or mpIsBear
-    css = mpIsBull ? mpBullCss : mpBearCss
-
     master.avg.set_x2(mpBarIdx-mpLen)
-
     val = math.avg(mpTop, mpBot)
 
-    // Create new master pattern object
+    //Create new master pattern object
     master := mp.new(
-      (mpIsBull and showBullBox) or (mpIsBear and showBearBox) ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpLen, mpBot, na, bgcolor = showMinor ? color.new(css, 60) : na) : na
-      , (mpIsBull and showBullLvl) or (mpIsBear and showBearLvl) ? line.new(mpBarIdx-mpLen, val, mpBarIdx, val, color = showMinor ? css : na) : na
+      (mpIsBull and showBullBox) or (mpIsBear and showBearBox) ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpLen, mpBot, na, bgcolor = showMinor ? color.new(mpColor, 75) : na) : na
+      , (mpIsBull and showBullLvl) or (mpIsBear and showBearLvl) ? line.new(mpBarIdx-mpLen, val, mpBarIdx, val, color = showMinor ? mpColor : na) : na
       , mpIsBull
       , mpIsBear)
 
@@ -1196,20 +1191,20 @@ if master.breakup
             master.area.delete()
             master.avg.delete()
         else
-            master.area.set_border_color(mpBullCss)
+            master.area.set_border_color(mpColor)
             if not showMinor
-                master.area.set_bgcolor(color.new(mpBullCss, 50))
-                master.avg.set_color(mpBullCss)
+                master.area.set_bgcolor(color.new(mpColor, 50))
+                master.avg.set_color(mpColor)
 else if master.breakdn
     if high > master.area.get_top()
         if not showMajor
             master.area.delete()
             master.avg.delete()
         else
-            master.area.set_border_color(mpBearCss)
+            master.area.set_border_color(mpColor)
             if not showMinor
-                master.area.set_bgcolor(color.new(mpBearCss, 50))
-                master.avg.set_color(mpBearCss)
+                master.area.set_bgcolor(color.new(mpColor, 50))
+                master.avg.set_color(mpColor)
 
 // Set friction level x2 coordinate to current bar
 if not na(master.avg)
