@@ -11,7 +11,7 @@ indicator("Price Action Supporter", "Price Action Supporter"
 
 
 //-----------------------------------------------------------------------------{
-//Constants
+// Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #ffffff
@@ -1168,7 +1168,7 @@ if mpPl
 //-----------------------------------------------------------------------------{
 var mp master = mp.new()
 
-//Detect master pattern
+// Detect master pattern
 mpIsBull = high[mpLen] > mpTop and mpTop > mpBot
 mpIsBear = low[mpLen] < mpBot and mpTop > mpBot
 
@@ -1179,7 +1179,7 @@ if mpIsBull or mpIsBear
 
     val = math.avg(mpTop, mpBot)
 
-    //Create new master pattern object
+    // Create new master pattern object
     master := mp.new(
       (mpIsBull and showBullBox) or (mpIsBear and showBearBox) ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpLen, mpBot, na, bgcolor = showMinor ? color.new(css, 60) : na) : na
       , (mpIsBull and showBullLvl) or (mpIsBear and showBearLvl) ? line.new(mpBarIdx-mpLen, val, mpBarIdx, val, color = showMinor ? css : na) : na
