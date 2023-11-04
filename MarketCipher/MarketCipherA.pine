@@ -3,22 +3,22 @@
 indicator("Market Cipher A", overlay = true)
 
 
-pivotPeriod   = input.int(1, "H/L Pivot Days Back", 1)
-showPivotHigh = input(false, "Show Pivot High")
-showPivotLow  = input(false, "Show Pivot Low")
-showRibbon1   = input(true, "Show Ribbon 1")
-showRibbon2   = input(true, "Show Ribbon 2")
-showRibbon3   = input(true, "Show Ribbon 3")
-showRibbon4   = input(true, "Show Ribbon 4")
-showRibbon5   = input(true, "Show Ribbon 5")
-showRibbon6   = input(true, "Show Ribbon 6")
-showRibbon7   = input(true, "Show Ribbon 7")
-showRibbon8   = input(true, "Show Ribbon 8")
-showRibbon9   = input(false, "Show Ribbon 9")
-ribbon9Len    = input(21, "Ribbon9")
+int pivotPeriod = input.int(1, "H/L Pivot Days Back", 1)
+bool showPivotHigh = input.bool(false, "Show Pivot High")
+bool showPivotLow = input.bool(false, "Show Pivot Low")
+bool showRibbon1 = input.bool(true, "Show Ribbon 1")
+bool showRibbon2 = input.bool(true, "Show Ribbon 2")
+bool showRibbon3 = input.bool(true, "Show Ribbon 3")
+bool showRibbon4 = input.bool(true, "Show Ribbon 4")
+bool showRibbon5 = input.bool(true, "Show Ribbon 5")
+bool showRibbon6 = input.bool(true, "Show Ribbon 6")
+bool showRibbon7 = input.bool(true, "Show Ribbon 7")
+bool showRibbon8 = input.bool(true, "Show Ribbon 8")
+bool showRibbon9 = input.bool(false, "Show Ribbon 9")
+int ribbon9Len = input.int(21, "Ribbon9")
 
 
-blueWaves_vwap(src, chlLen, avgLen) =>
+getBlueWavesAndVwap(src, chlLen, avgLen) =>
     esa = ta.ema(src, chlLen)
     d = ta.ema(math.abs(src - esa), chlLen)
     ci = (src - esa) / (0.015 * d)
@@ -30,26 +30,26 @@ blueWaves_vwap(src, chlLen, avgLen) =>
     
 pivotHigh = request.security(syminfo.tickerid, "D", ta.highest(high, pivotPeriod), barmerge.gaps_off, barmerge.lookahead_on)
 pivotLow  = request.security(syminfo.tickerid, "D", ta.lowest(low, pivotPeriod),   barmerge.gaps_off, barmerge.lookahead_on)
-ema1 = ta.ema(close, 5)
-ema2 = ta.ema(close, 11)
-ema3 = ta.ema(close, 15)
-ema4 = ta.ema(close, 18)
-ema5 = ta.ema(close, 21)
-ema6 = ta.ema(close, 25)
-ema7 = ta.ema(close, 29)
-ema8 = ta.ema(close, 33)
-sma9 = ta.sma(close, ribbon9Len)
-[bw1, bw2, vwap] = blueWaves_vwap(hlc3, 9, 12)
-stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
+float ema1 = ta.ema(close, 5)
+float ema2 = ta.ema(close, 11)
+float ema3 = ta.ema(close, 15)
+float ema4 = ta.ema(close, 18)
+float ema5 = ta.ema(close, 21)
+float ema6 = ta.ema(close, 25)
+float ema7 = ta.ema(close, 29)
+float ema8 = ta.ema(close, 33)
+float sma9 = ta.sma(close, ribbon9Len)
+[bw1, bw2, vwap] = getBlueWavesAndVwap(hlc3, 9, 12)
+float stcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
 
 
 yellowDiamond = math.max(open, close) > ema1 and ema1 > ema2 and ema1 > ema8 and vwap > 0
-blueTriangle  = ta.crossover(ema1, ema6) and vwap > 0 and (bw1 > - 15 or bw2 > -25) and stcRsiMod < 80 and not ta.crossover(ema2, ema8)
-greenDot      = ta.crossover(ema2, ema8) and yellowDiamond
-redX          = ta.crossunder(ema1, ema2)
-redDiamond    = ta.crossunder(bw1, bw2)
-yellowX       = redDiamond and bw1 < -40 and stcRsiMod < 20
-bloodDiamond  = redX and redDiamond
+blueTriangle = ta.crossover(ema1, ema6) and vwap > 0 and (bw1 > - 15 or bw2 > -25) and stcRsiMod < 80 and not ta.crossover(ema2, ema8)
+greenDot = ta.crossover(ema2, ema8) and yellowDiamond
+redX = ta.crossunder(ema1, ema2)
+redDiamond = ta.crossunder(bw1, bw2)
+yellowX = redDiamond and bw1 < -40 and stcRsiMod < 20
+bloodDiamond = redX and redDiamond
 
 
 plot(showPivotHigh ? pivotHigh : na, "Pivot High", color.new(#4DA6FF, 20))

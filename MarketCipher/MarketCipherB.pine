@@ -1,0 +1,128 @@
+// © tamth_
+// @version=5
+indicator("Market Cipher B", overlay = false)
+
+
+// Colors
+color whiteColor = color.white
+color blueDarkColor = #082EBF
+color blueLightColor = #3DCBFF
+color yellowColor = #F2E40A
+color greenColor = #16F9BA
+color redColor = #F23A64
+color aquaColor = #21BAF3
+color purpleColor = #722FFA
+color orangeColor = #FAA448
+
+
+// Inputs
+string thresholdGrp = "Threshold"
+bool thresholdShowed = input.bool(true, title = "Show", group = thresholdGrp)
+int overboughtThreshold = input.int(60, title = "Overbought Threshold", group = thresholdGrp)
+int oversoldThreshold = input.int(-60, title = "Oversold Threshold", group = thresholdGrp)
+string wtGrp = "Waves Trend"
+bool wtShowed = input.bool(true, title = "Show", group = wtGrp)
+int wtChlPrd = input.int(9, title = "Channel Period", group = wtGrp)
+int wtAvgPrd = input.int(12, title = "Average Period", group = wtGrp)
+float wtMaSrc = input.source(hlc3, title = "MA Source", group = wtGrp)
+int wtMaLen = input.int(3, title = "MA Length", group = wtGrp)
+bool wtDivShowed = input.bool(false, title = "Show Divergence", group = wtGrp)
+int wtLongBearishDivLevel = input.int(45, title = "Long Bearish Divergence Level", group = wtGrp)
+int wtLongBullishDivLevel = input.int(-65, title = "Long Bullish Divergence Level", group = wtGrp)
+int wtShortBrearishDivLevel = input.int(15, title = "Short Bearish Divergence Level", group = wtGrp)
+int wtShortBullishDivLevel = input.int(-40, title = "Short Bullish Divergence Level", group = wtGrp)
+string mfoGrp = "MFO"
+bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
+int mfoPrd = input.int(21, title = "Period", group = mfoGrp)
+int mfoMult = input.int(100, title = "Area Multiplier", group = mfoGrp)
+string rsiGrp = "RSI"
+bool rsiShowed = input.bool(true, title = "Show", group = rsiGrp)
+int rsiPrd = input.int(40, title = "Period", group = rsiGrp)
+string stochRsiGrp = "Stochastic RSI"
+bool stochRsiShowed = input.bool(true, title = "Show", group = stochRsiGrp)
+int stochRsiPrd = input.int(81, title = "Period", group = stochRsiGrp)
+string vwapGrp = "VWAP"
+bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+
+
+// Methods
+getTopFractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+getBotFractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+fractalize(src) => getTopFractal(src) ? 1 : getBotFractal(src) ? -1 : 0
+
+getDivPoints(src, topLimit, botLimit) =>
+    float top_fractal = fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na
+    float bot_fractal = fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na
+    float high_prev = ta.valuewhen(top_fractal, src[2], 0)[2]
+    float high_price = ta.valuewhen(top_fractal, high[2], 0)[2]
+    float low_prev = ta.valuewhen(bot_fractal, src[2], 0)[2]
+    float low_price = ta.valuewhen(bot_fractal, low[2], 0)[2]
+    bool is_bearish = top_fractal and high[2] > high_price and src[2] < high_prev
+    bool is_bullish = bot_fractal and low[2] < low_price and src[2] > low_prev
+    [top_fractal, bot_fractal, low_prev, is_bearish, is_bullish]
+
+getWtAndVwap() =>
+    float src = request.security(syminfo.tickerid, timeframe.period, wtMaSrc)
+    float esa = ta.ema(src, wtChlPrd)
+    float d = ta.ema(math.abs(src - esa), wtChlPrd)
+    float ci = (src - esa) / (0.015 * d)
+    float leadingWt = request.security(syminfo.tickerid, timeframe.period, ta.ema(ci, wtAvgPrd))
+    float laggingWt = request.security(syminfo.tickerid, timeframe.period, ta.sma(leadingWt, wtMaLen))
+    float vwap = leadingWt - laggingWt
+    [leadingWt, laggingWt, vwap]
+
+getMfo() =>
+    var vol = nz(volume)
+
+    if vol == 0
+        ta.sma(((close - open) / (high - low)) * mfoMult, mfoPrd)
+    else
+        ad = close == high and close == low or high == low ? 0 : ((2 * close - low - high) / (high - low)) * volume
+        (math.sum(ad, mfoPrd) / math.sum(volume, mfoPrd)) * mfoMult
+        
+getIndicators() =>
+    int offset = 0
+    [leadingWt, laggingWt, vwap] = getWtAndVwap()
+    float mfo = getMfo()
+    float rsi = ta.sma(ta.stoch(close, high, low, rsiPrd), 2)
+    float stochRsi = ta.sma(ta.stoch(close, high, low, stochRsiPrd), 2)
+    [leadingWt[offset], laggingWt[offset], vwap[offset], mfo[offset], rsi[offset], stochRsi[offset]]
+
+
+[leadingWt, laggingWt, vwap, mfo, rsi, stochRsi] = request.security(syminfo.tickerid, timeframe.period, getIndicators())
+
+[wtLongTopFractal, wtLongBotFractal, wtLongLowPrev, isWtLongBearishDiv, isWtLongBullishDiv] = getDivPoints(laggingWt, wtLongBearishDivLevel, wtLongBullishDivLevel)
+[wtShortTopFractal, wtShortBotFractal, wtShortLowPrev, isWtShortBearishDiv, isWtShortBullishDiv] =  getDivPoints(laggingWt, wtShortBrearishDivLevel, wtShortBullishDivLevel)
+
+// Plots
+plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = color.new(whiteColor, 90), display = display.pane)
+plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = color.new(whiteColor, 90), display = display.pane)
+
+var mfoBarTopLine = plot(mfoShowed ? -100 : na, title = "MFO Bar", color = color.new(whiteColor, 100), editable = false, display = display.pane)
+var mfo_bar_bottom_line = plot(mfoShowed ? -105 : na, title = "MFO Bar", color = color.new(whiteColor, 100), editable = false, display = display.pane)
+fill(mfoBarTopLine, mfo_bar_bottom_line, title = "MFO Bar", color = mfo > 0 ? color.new(greenColor, 25) : color.new(redColor, 25))
+
+plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = blueLightColor, linewidth = 1, style = plot.style_area)
+plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(blueDarkColor, 20), linewidth = 1, style = plot.style_area)
+
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(yellowColor, 55), linewidth = 1, style = plot.style_area)
+
+plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(greenColor, 60) : color.new(redColor, 60), linewidth = 2, style = plot.style_area)
+
+plot(0, title = "Zero Line", color = whiteColor, display = display.pane)
+
+plot(ta.crossover(leadingWt, laggingWt) ? laggingWt : na, title = "Buy Signal", color = color.new(greenColor, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
+plot(ta.crossunder(leadingWt, laggingWt) ? laggingWt : na, title = "Sell Signal", color = color.new(redColor, 10), linewidth = 3, style = plot.style_circles, display = display.pane)
+
+color wtLongBearishDivColor = wtDivShowed and isWtLongBearishDiv ? redColor : na
+color wtLongBullishDivColor = wtDivShowed and isWtLongBullishDiv ? greenColor : na
+color wtShortBearishDivColor = wtDivShowed and isWtShortBearishDiv ? color.new(redColor, 50) : na
+color wtShortBullishDivColor = wtDivShowed and isWtShortBullishDiv ? color.new(greenColor, 50) : na
+plot(series = wtLongTopFractal ? laggingWt[2] : na, title = "Wave Trend Long Bearish Divergence", color = wtLongBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtLongBotFractal ? laggingWt[2] : na, title = "Wave Trend Long Bullish Divergence", color = wtLongBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtShortTopFractal ? laggingWt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wtShortBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtShortBotFractal ? laggingWt[2] : na, title = "Wave Trend Short Bullish Divergence", color = wtShortBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
+
+plot(rsiShowed ? rsi : na, title = "RSI", color = purpleColor, linewidth = 2)
+
+plot(stochRsiShowed ? stochRsi : na, title = "Stochastic RSI", color = rsi > stochRsi ? greenColor : redColor, linewidth = 2)
