@@ -6,7 +6,7 @@ indicator("Price Action Supporter", "Price Action Supporter", overlay = true, ma
 
 
 //-----------------------------------------------------------------------------{
-//Constants
+//  Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #ffffff
@@ -18,307 +18,161 @@ color GREEN_COLOR = #008170
 color PURPLE_COLOR = #764AF1
 color YELLOW_COLOR = #f2e40a
 color ORANGE_COLOR = #f2aa0a
+//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------}
 
 
+//-----------------------------------------------------------------------------{
 // Debugger
-f_print(simple string txt) =>
-    // Create label on the first bar.
-    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, color.gray, size.large, text.align_left)
-    // On next bars, update the label"s x and y position, and the text it displays.
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
     label.set_xy(label, bar_index, ta.highest(10)[1])
     label.set_text(label, txt)
-
 
 
 
 //-----------------------------------------------------------------------------{
 // Volume Profile
 //-----------------------------------------------------------------------------{
-// vpLen = input.int(200, "vpSmoothing", 1, 500)
-// vpSmoothing = input.int(3, "Smoothing", 1, 6)
-// vpPivot = input.int(3, "Peak Sensitivity", 1, 10)
-// vpPeakThresh = input.int(80, "Peak Threshold")
-// vpScoreLen = input.int(20, "vpMean Score vpSmoothing")
-// vpEnableLevels = input.string("POC", "Control Lines", ["POC", "All", "None"])
-// vpHighColor = input.color(color.rgb(235, 170, 252), "Histogram Colors", inline = "hist")
-// vpLowColor = input.color(color.rgb(163, 46, 192), "", inline = "hist")
-// vpTrans = input.int(10, "Transparency", 0, 100)
-// vpPOCColor = input.color(color.red, "POC Color", inline = "POC")
-// vpLevelColor = input.color(color.rgb(255, 134, 65), "Peak Level Color", inline = "POC")
+//-----------------------------------------------------------------------------{
+// Settings
+//-----------------------------------------------------------------------------{
+string vp_grp = "Volume Profile"
+vpLen = input.int(200, "vpSmoothing", 1, 500, group = vp_grp)
+vpSmoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
+vpPivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
+vpHighColor = input.color(LIGHT_GRAY_COLOR, "Histogram Colors", inline = "hist", group = vp_grp)
+vpLowColor = input.color(DARK_GRAY_COLOR, "", inline = "hist", group = vp_grp)
+vpTrans = input.int(20, "Transparency", 0, 100, group = vp_grp)
+int vpOffset = input.int(20, "Offset From Last Bar", group = vp_grp)
+int vpCompactionFactor = input.int(2, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
 
-// vpAlpha = color.new(color.black, 100)
+
+//-----------------------------------------------------------------------------{
+// Methods
+//-----------------------------------------------------------------------------{
+getVpSinc(source, bandwidth) =>
+    if source == 0
+        1
+    else
+        math.sin(math.pi * source / bandwidth) / (math.pi * source / bandwidth)  
+
+getMultiKernelRegression(source, vpSmoothing)=>
+    src_size = array.size(source)
+    estimate_array = array.new<float>(src_size) 
+    float current_price = na
+    for i = 0 to src_size - 1 
+        float sum = 0
+        float sumw = 0
+        for j = 0 to src_size - 1 
+            diff = i - j
+            weight = getVpSinc(diff, vpSmoothing)
+            sum += array.get(source, j) * weight
+            sumw += weight
+        current_price := sum / sumw
+        array.set(estimate_array, i, current_price >= 0 ? current_price : 0)
+    estimate_array
+
+vpCnum = 100
+vpTop = ta.highest(vpLen)
+vpBot = ta.lowest(vpLen)
+vpDist = (vpTop - vpBot) / 500
+vpStep = (vpTop - vpBot) / vpCnum
+vpRange = vpStep * vpPivot
+levels = array.new_float(vpCnum + 1)
+
+for x = 0 to vpCnum by 1
+    array.set(levels, x, vpBot + vpStep * x)
+
+getVpVol(a, b, x, y, vol) =>
+    // Bar is completely below or above the range
+    if y < a or x > b
+        0
+    // Entire bar is inside the range but doesn't span it
+    else if x >= a and y <= b
+        p_range = (y - x) / (b - a)
+        p_range * vol
+    // Bar completely covers the range
+    else if x <= a and y >= b
+        p_bar = (b - a) / (y - x)
+        p_bar * vol
+    // vpTop of the bar is inside the range
+    else if x < a and y <= b
+        p_bar = (y - a) / (y - x)
+        p_bar * vol
+    // Bottom of the bar is inside the range
+    else if x >= a and y > b
+        p_bar = (b - x) / (y - x)
+        p_bar * vol
+    else
+        vol
+
+var vpLines = array.new<line>()
+var vpProbs = array.new<box>()
+var vpVols = array.new<box>()
+
+if array.size(vpLines) > 0
+    for i = array.size(vpLines) - 1 to 0
+        line.delete(array.get(vpLines, i))
+        array.remove(vpLines, i)
+    for i = array.size(vpProbs) - 1 to 0
+        box.delete(array.get(vpProbs, i))
+        array.remove(vpProbs, i)
+    for i = array.size(vpVols) - 1 to 0
+        box.delete(array.get(vpVols, i))
+        array.remove(vpVols, i)
+
+//-----------------------------------------------------------------------------{
+// Render volume profile
+//-----------------------------------------------------------------------------{
+if barstate.islast
+    _volumes = array.new_float(vpCnum, 0.)
+    bullish_volumes = array.new_float(vpCnum, 0.)
+
+    for bars = 0 to vpLen - 1 by 1
+        High = high[bars]
+        Low = low[bars]
+        Volume = volume[bars]
+        state = open[bars] < close[bars]
+
+        for x = 0 to vpCnum - 1 by 1
+            array.set(_volumes, x, array.get(_volumes, x) + getVpVol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
+            if state
+                array.set(bullish_volumes, x, array.get(bullish_volumes, x) + getVpVol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
+                 
+
+    color_array = array.new_float(vpCnum, 0.)
+
+    for i = 0 to vpCnum - 1
+        max_level = array.get(_volumes, i)
+        bullish_level = array.get(bullish_volumes, i)
+        array.set(color_array, i, bullish_level/max_level)
+
+    maxvol = array.max(_volumes)
+    for x = 0 to vpCnum - 1 by 1
+        array.set(_volumes, x, array.get(_volumes, x) * vpLen / (3 * maxvol))
+
+    normal_volumes = getMultiKernelRegression(_volumes, vpSmoothing)
+    int edge = bar_index + math.round(array.max(normal_volumes) / vpCompactionFactor) + vpOffset
+    var vol_bars = array.new_box(vpCnum, na)
+
+    for i = 0 to vpCnum - 1 by 1
+        box.delete(array.get(vol_bars, i))
+        int vol = math.round(array.get(normal_volumes, i) / vpCompactionFactor)
+        array.set(
+         vol_bars, i, 
+         box.new(edge - vol, 
+          array.get(levels, i + 1) - vpDist, 
+          edge, 
+          array.get(levels, i) + vpDist, 
+          border_width = 0, 
+          bgcolor = color.new(color.from_gradient(array.get(color_array, i), 0, 1, vpLowColor, vpHighColor), vpTrans))
+         )
 
 
-// gamma(float src) =>
-//     var float math_LnPi = 1.1447298858494001741434273513530587116472948129153
-//     var float math_LogTwoSqrtEOverPi = 0.6207822376352452223455184457816472122518527279025978
-//     var float math_TwoSqrtEOverPi = 1.8603827342052657173362492472666631120594218414085755
-//     var int GammaN = 10
-//     var float GammaR = 10.900511
-//     var float[] series_GammaDk = array.from(
-//      2.48574089138753565546e-5,
-//      1.05142378581721974210,
-//      -3.45687097222016235469,
-//      4.51227709466894823700,
-//      -2.98285225323576655721, 
-//      1.05639711577126713077, 
-//      -1.95428773191645869583e-1, 
-//      1.70970543404441224307e-2, 
-//      -5.71926117404305781283e-4, 
-//      4.63399473359905636708e-6, 
-//      -2.71994908488607703910e-9)
-
-//     float z = src
-
-//     if z < 0.5
-
-//         float s = array.get(series_GammaDk, 0)
-//         for int i = 1 to GammaN by 1
-//             s += array.get(series_GammaDk, i) / (i - z)
-//             s
-
-//         return_Gamma = math.pi / math.sin(math.pi * z) * s * math_TwoSqrtEOverPi * math.pow((0.5 - z + GammaR) / math.e, 0.5 - z)
-//         return_Gamma
-//     else
-
-//         float s = array.get(series_GammaDk, 0)
-//         for int i = 1 to GammaN by 1
-//             s += array.get(series_GammaDk, i) / (z + i - 1.0)
-//             s
-
-//         return_Gamma = s * math_TwoSqrtEOverPi * math.pow((z - 0.5 + GammaR) / math.e, z - 0.5)
-//         return_Gamma
-
-// t_dist_pdf(float x, int v) =>
-//     gamma((v + 1) / 2) / (math.sqrt(v * math.pi) * gamma(v / 2)) * math.pow(1 + x * x / v, -(v + 1) / 2)
-
-// rising_factorial(float c, int n) =>
-//     float product = 1.0
-//     if n > 0
-//         for i = 0 to n - 1
-//             product *= (c + i)
-//     product
-
-// hypergeometric(float a, float b, float c, float z) =>
-//     float sum = 0.0
-//     for i = 0 to 2
-//         sum += rising_factorial(a, i) * rising_factorial(b, i) * math.pow(z, i) / (rising_factorial(c, i) * rising_factorial(i, i))
-//     sum
-
-// t_dist_cdf(float x, int v) =>
-//     1/2.0 + x * gamma((v+1)/2.0) * (hypergeometric(1/2.0, (v+1)/2.0, 3.0/2, x*x/v) / (math.sqrt(v * math.pi)* gamma(v/2)))
-
-// rounder(number)=>
-//     if number >= 1000000000
-//         str.tostring(math.round(number / 1000000000, 2)) + " B"
-//     else if number >= 1000000
-//         str.tostring(math.round(number / 1000000, 2)) + " M"
-//     else if number >= 1000
-//         str.tostring(math.round(number / 1000, 2)) + " K"
-//     else 
-//         str.tostring(math.round(number, 2))
-
-// vpStdevLen = vpScoreLen
-// vpMean = ta.sma(close, vpScoreLen)
-
-// demo = (1 - 0.99) / 2
-
-// float vpLower = -100
-// float vpUpper = 100
-// float vpMid = (vpLower + vpUpper) / 2
-// while math.abs(t_dist_cdf(vpMid, vpStdevLen - 1) - demo) > 0.000001
-//     if t_dist_cdf(vpMid, vpStdevLen - 1) > demo 
-//         vpUpper := vpMid
-//     else
-//         vpLower := vpMid
-//     vpMid := (vpLower + vpUpper) / 2
-// float t_value = vpMid
-
-// if t_value < 0
-//     t_value := -t_value
-
-// squared_diff = math.pow(open - vpMean, 2)
-// summed_squares = math.sum(squared_diff, vpStdevLen)
-
-// mean_squared_error = summed_squares / (vpStdevLen - 1)
-// rmse = math.sqrt(mean_squared_error)
-// vpRootStandardError = math.sqrt(1 + 1 / vpStdevLen + squared_diff / summed_squares)
-// vpOffset = t_value * rmse * vpRootStandardError
-
-// sq(source) => math.pow(source, 2)
-
-// sinc(source, bandwidth) =>
-//     if source == 0
-//         1
-//     else
-//         math.sin(math.pi * source / bandwidth) / (math.pi * source / bandwidth)  
-
-// window_function(size, n) =>
-//     0.54 - 0.46 * math.cos(2 * math.pi * n / (size - 1))
-
-// multi_kernel_regression(source, vpSmoothing)=>
-//     src_size = array.size(source)
-//     estimate_array = array.new<float>(src_size) 
-//     float current_price = na
-//     for i = 0 to src_size - 1 
-//         float sum = 0
-//         float sumw = 0
-//         for j = 0 to src_size - 1 
-//             diff = i - j
-//             weight = sinc(diff, vpSmoothing)
-//             sum += array.get(source, j) * weight
-//             sumw += weight
-//         current_price := sum / sumw
-//         array.set(estimate_array, i, current_price >= 0 ? current_price : 0)
-//     estimate_array
-
-// cnum = 100
-// vpTop = ta.highest(vpLen)
-// vpBot = ta.lowest(vpLen)
-// vpDist = (vpTop - vpBot) / 500
-// vpStep = (vpTop - vpBot) / cnum
-// RANGE = vpStep * vpPivot
-
-// levels = array.new_float(cnum + 1)
-// for x = 0 to cnum by 1
-//     array.set(levels, x, vpBot + vpStep * x)
-
-// get_vol(a, b, x, y, vol) =>
-//     // Bar is completely below or above the range
-//     if y < a or x > b
-//         0
-//     // Entire bar is inside the range but doesn't span it
-//     else if x >= a and y <= b
-//         p_range = (y - x) / (b - a)
-//         p_range * vol
-//     // Bar completely covers the range
-//     else if x <= a and y >= b
-//         p_bar = (b - a) / (y - x)
-//         p_bar * vol
-//     // vpTop of the bar is inside the range
-//     else if x < a and y <= b
-//         p_bar = (y - a) / (y - x)
-//         p_bar * vol
-//     // Bottom of the bar is inside the range
-//     else if x >= a and y > b
-//         p_bar = (b - x) / (y - x)
-//         p_bar * vol
-//     else
-//         vol
-
-// var lines = array.new<line>()
-// var probs = array.new<box>()
-// var volus = array.new<box>()
-// var float line_float = na
-// if array.size(lines) > 0
-//     for i = array.size(lines) - 1 to 0
-//         line.delete(array.get(lines, i))
-//         array.remove(lines, i)
-//     for i = array.size(probs) - 1 to 0
-//         box.delete(array.get(probs, i))
-//         array.remove(probs, i)
-//     for i = array.size(volus) - 1 to 0
-//         box.delete(array.get(volus, i))
-//         array.remove(volus, i)
- 
-// if barstate.islast
-
-//     _volumes = array.new_float(cnum, 0.)
-//     bullish_volumes = array.new_float(cnum, 0.)
-//     for bars = 0 to vpLen - 1 by 1
-//         High = high[bars]
-//         Low = low[bars]
-//         Volume = volume[bars]
-//         state = open[bars] < close[bars]
-//         for x = 0 to cnum - 1 by 1
-//             array.set(_volumes, x, array.get(_volumes, x) + get_vol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
-//             if state
-//                 array.set(bullish_volumes, x, array.get(bullish_volumes, x) + get_vol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
-
-//     smooth_volume = multi_kernel_regression(_volumes, vpSmoothing) 
-//     int poc = array.indexof(smooth_volume, array.max(smooth_volume))
-//     pocs = array.new<float>()
-//     vpoc = array.new<float>()
-//     var hl = array.new_float(vpPivot, na)
-//     var hr = array.new_float(vpPivot, na)
-//     for i = 0 to array.size(smooth_volume) - 1
-//         max = array.max(smooth_volume, i) 
-//         var previous = 0.
-//         idx = array.indexof(smooth_volume, max)
-//         if max > array.percentile_nearest_rank(smooth_volume, vpPeakThresh)
-//             for j = 0 to array.size(hl) - 1
-//                 array.set(hl, j, array.get(smooth_volume, math.max(0, idx - 1 - j)))
-//                 array.set(hr, j, array.get(smooth_volume, math.min(array.size(smooth_volume) - 1, idx + 1 + j)))
-
-//             is_peak = true
-//             for j = 0 to array.size(hl) - 1
-//                 if (max < array.get(hr, j) or max < array.get(hl, j)) and (array.get(hr, math.min(array.size(hl) - 1, j + 1)) <= array.get(hl, j) or array.get(hl, math.min(array.size(hl) - 1, j + 1)) <= array.get(hl, j))
-//                     is_peak := false
-//                     break
-
-//             // if is_peak
-//             //     poc_i = idx
-//             //     POC = math.avg(array.get(levels, poc_i), array.get(levels, poc_i < array.size(levels) ? poc_i + 1 : poc_i - 1))
-//             //     if i == 0
-//             //         array.push(pocs, POC)
-//             //         array.push(vpoc, max)
-//             //     else
-//             //         for j = 0 to array.size(pocs)
-//             //             if j < array.size(pocs)
-//             //                 if not (POC > array.get(pocs, j) ? POC - RANGE > RANGE + array.get(pocs, j) : POC + RANGE < array.get(pocs, j) - RANGE)
-//             //                     break
-//             //             if j == array.size(pocs)
-//             //                 array.push(pocs, POC)
-//             //                 array.push(vpoc, max)
-                            
-
-//     color_array = array.new_float(cnum, 0.)
-//     for i = 0 to cnum - 1
-//         max_level = array.get(_volumes, i)
-//         bullish_level = array.get(bullish_volumes, i)
-//         array.set(color_array, i, bullish_level/max_level)
-
-//     maxvol = array.max(_volumes)
-//     for x = 0 to cnum - 1 by 1
-//         array.set(_volumes, x, array.get(_volumes, x) * vpLen / (3 * maxvol))
-//     normal_volumes = multi_kernel_regression(_volumes, vpSmoothing)
-//     edge = bar_index - vpLen + 1
-
-//     var vol_bars = array.new_box(cnum, na)
-//     for i = 0 to cnum - 1 by 1
-//         box.delete(array.get(vol_bars, i))
-//         array.set(
-//          vol_bars, i, 
-//          box.new(edge, 
-//           array.get(levels, i + 1) - vpDist, 
-//           edge + math.round(array.get(normal_volumes, i)), 
-//           array.get(levels, i) + vpDist, 
-//           border_width = 0, 
-//           bgcolor = color.new(color.from_gradient(array.get(color_array, i), 0, 1, vpLowColor, vpHighColor), vpTrans))
-//          )
- 
-
-    // size_index = array.size(pocs) - 1
-    // for i = 0 to size_index
-    //     POC = array.get(pocs, i)
-    //     pocv = array.get(vpoc, i)
-    //     colour = color.new(color.rgb((23 * (i + 4)) % 255, (79 * (i + 4)) % 255, (127 * (i + 4)) % 255), 60)
-
-    //     line_a = line.new(edge, POC + RANGE, bar_index + 1, POC + RANGE, color = colour, extend = extend.right)
-    //     line_b = line.new(edge, POC - RANGE, bar_index + 1, POC - RANGE, color = colour, extend = extend.right)
-    //     array.unshift(lines, line_a)
-    //     array.unshift(lines, line_b)
-    //     if i == 0 
-    //         point_of_control = line.new(edge, POC, bar_index + 1, POC, color = vpEnableLevels != "None" ? vpPOCColor : vpAlpha, extend = extend.right)
-    //         array.unshift(lines, point_of_control)
-    //     if i != 0 
-    //         point_of_control = line.new(edge, POC, bar_index + 1, POC, color = vpEnableLevels == "All" ? vpLevelColor : vpAlpha, extend = extend.right)
-    //         array.unshift(lines, point_of_control)
-    //     linefill.new(line_a, line_b, colour)
-    //     zscore = (POC - vpMean)/(vpOffset * 1.5)
-    //     probability = math.round(t_dist_pdf(zscore, vpStdevLen - 1), 2)
-    //     array.unshift(probs, box.new(bar_index + 32, POC + RANGE, bar_index + 48, POC - RANGE, border_color = color.new(color.black, 30), bgcolor = color.new(color.black, 30), text = "vpMean Score" + "\n" + str.tostring(probability * 100 / 40 * 100), text_color = color.white))
-    //     array.unshift(volus, box.new(bar_index + 16, POC + RANGE, bar_index + 32, POC - RANGE, border_color = color.new(color.black, 30), bgcolor = color.new(color.black, 30), text = "Volume" + "\n" + rounder(pocv), text_color = color.white))
 
 
 
@@ -673,43 +527,15 @@ ob_coord(use_max, loc, target_top, target_btm, target_left, target_type)=>
     array.unshift(target_type, use_max ? -1 : 1)
 
 // Set order blocks
-timediff = time[1] - time[2]
+getTfMillis() => math.round(timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : 0)) * 60 * 1000
 
-extract_tf(simple string prd) =>
-    int len = str.length(prd)
-
-    if str.contains(prd, "M")
-        if (str.length(prd) == 1)
-            1
-        else
-            str.tonumber(str.substring(prd, 0, len - 1))
-    else if str.contains(prd, "W")
-        if (str.length(prd) == 1)
-            1
-        else
-            str.tonumber(str.substring(prd, 0, len - 1))
-    else if str.contains(prd, "D")
-        if (str.length(prd) == 1)
-            1
-        else
-            str.tonumber(str.substring(prd, 0, len - 1))
-    else if str.contains(prd, "S")
-        if (str.length(prd) == 1)
-            1
-        else
-            str.tonumber(str.substring(prd, 0, len - 1))
-    else
-        str.tonumber(prd)
-
-getMillisInTf() => math.round(timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : 0)) * 60 * 1000
-
-demo = math.round(extract_tf(timeframe.period))
+timediff = time[1] - time[100]
 
 display_ob(boxes, target_top, target_btm, target_left, target_type, show_last, swing, size)=>
     for i = 0 to math.min(show_last-1, size-1)
         get_box = array.get(boxes, i)
         box.set_lefttop(get_box, array.get(target_left, i), array.get(target_top, i))
-        box.set_rightbottom(get_box, timenow + timediff + getMillisInTf(), array.get(target_btm, i))
+        box.set_rightbottom(get_box, timenow, array.get(target_btm, i))
 
         color css = na
         
@@ -916,9 +742,9 @@ trail_up_x := trail_up == high ? n : trail_up_x
 // Set top extension label/line
 if barstate.islast and show_hl_swings
     line.set_xy1(extend_top, trail_up_x, trail_up)
-    line.set_xy2(extend_top, n + 20, trail_up)
+    line.set_xy2(extend_top, n + 10, trail_up)
 
-    label.set_x(extend_top_lbl, n + 20)
+    label.set_x(extend_top_lbl, n + 10)
     label.set_y(extend_top_lbl, trail_up)
     label.set_text(extend_top_lbl, trend < 0 ? 'Strong High' : 'Weak High')
 
@@ -971,9 +797,9 @@ trail_dn_x := trail_dn == low ? n : trail_dn_x
 // Set btm extension label/line
 if barstate.islast and show_hl_swings
     line.set_xy1(extend_btm, trail_dn_x, trail_dn)
-    line.set_xy2(extend_btm, n + 20, trail_dn)
+    line.set_xy2(extend_btm, n + 10, trail_dn)
 
-    label.set_x(extend_btm_lbl, n + 20)
+    label.set_x(extend_btm_lbl, n + 10)
     label.set_y(extend_btm_lbl, trail_dn)
     label.set_text(extend_btm_lbl, trend > 0 ? 'Strong Low' : 'Weak Low')
 
