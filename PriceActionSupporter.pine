@@ -529,13 +529,11 @@ ob_coord(use_max, loc, target_top, target_btm, target_left, target_type)=>
 // Set order blocks
 getTfMillis() => math.round(timeframe.multiplier * (timeframe.isseconds ? 1 : timeframe.isminutes ? 1. : timeframe.isdaily ? 60. * 24 : timeframe.isweekly ? 60. * 24 * 7 : timeframe.ismonthly ? 60. * 24 * 30.4375 : 0)) * 60 * 1000
 
-timediff = time[1] - time[100]
-
 display_ob(boxes, target_top, target_btm, target_left, target_type, show_last, swing, size)=>
-    for i = 0 to math.min(show_last-1, size-1)
+    for i = 0 to math.min(show_last - 1, size - 1)
         get_box = array.get(boxes, i)
         box.set_lefttop(get_box, array.get(target_left, i), array.get(target_top, i))
-        box.set_rightbottom(get_box, timenow, array.get(target_btm, i))
+        box.set_rightbottom(get_box, time[0], array.get(target_btm, i))
 
         color css = na
         
@@ -742,9 +740,9 @@ trail_up_x := trail_up == high ? n : trail_up_x
 // Set top extension label/line
 if barstate.islast and show_hl_swings
     line.set_xy1(extend_top, trail_up_x, trail_up)
-    line.set_xy2(extend_top, n + 10, trail_up)
+    line.set_xy2(extend_top, n + 12, trail_up)
 
-    label.set_x(extend_top_lbl, n + 10)
+    label.set_x(extend_top_lbl, n + 12)
     label.set_y(extend_top_lbl, trail_up)
     label.set_text(extend_top_lbl, trend < 0 ? 'Strong High' : 'Weak High')
 
@@ -797,9 +795,9 @@ trail_dn_x := trail_dn == low ? n : trail_dn_x
 // Set btm extension label/line
 if barstate.islast and show_hl_swings
     line.set_xy1(extend_btm, trail_dn_x, trail_dn)
-    line.set_xy2(extend_btm, n + 10, trail_dn)
+    line.set_xy2(extend_btm, n + 12, trail_dn)
 
-    label.set_x(extend_btm_lbl, n + 10)
+    label.set_x(extend_btm_lbl, n + 12)
     label.set_y(extend_btm_lbl, trail_dn)
     label.set_text(extend_btm_lbl, trend > 0 ? 'Strong Low' : 'Weak Low')
 
