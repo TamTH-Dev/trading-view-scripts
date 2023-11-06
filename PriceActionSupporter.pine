@@ -1,11 +1,10 @@
-// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
 // © tamth_
 
 // @version=5
 indicator("Price Action Supporter", "Price Action Supporter", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500, max_bars_back = 500)
 
 
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------*
 //  Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
@@ -18,12 +17,12 @@ color GREEN_COLOR = #008170
 color PURPLE_COLOR = #764AF1
 color YELLOW_COLOR = #f2e40a
 color ORANGE_COLOR = #f2aa0a
-//-----------------------------------------------------------------------------}
+
 //-----------------------------------------------------------------------------}
 
 
-//-----------------------------------------------------------------------------{
-// Debugger
+//-----------------------------------------------------------------------------*
+// Common Functions
 //-----------------------------------------------------------------------------{
 debug(simple string txt) =>
     // Create label on the first bar
@@ -32,160 +31,144 @@ debug(simple string txt) =>
     label.set_xy(label, bar_index, ta.highest(10)[1])
     label.set_text(label, txt)
 
+//-----------------------------------------------------------------------------}
 
 
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------*
 // Volume Profile
-//-----------------------------------------------------------------------------{
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-string vp_grp = "Volume Profile"
-vpLen = input.int(200, "vpSmoothing", 1, 500, group = vp_grp)
-vpSmoothing = input.int(3, "Smoothing", 1, 6, group = vp_grp)
-vpPivot = input.int(3, "Peak Sensitivity", 1, 10, group = vp_grp)
-vpHighColor = input.color(LIGHT_GRAY_COLOR, "Histogram Colors", inline = "hist", group = vp_grp)
-vpLowColor = input.color(DARK_GRAY_COLOR, "", inline = "hist", group = vp_grp)
-vpTrans = input.int(20, "Transparency", 0, 100, group = vp_grp)
-int vpOffset = input.int(20, "Offset From Last Bar", group = vp_grp)
-int vpCompactionFactor = input.int(2, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vp_grp)
+string vpGrp = "Volume Profile"
+int vpLen = input.int(200, "Length", 1, 500, group = vpGrp)
+int vpSmooth = input.int(3, "Smooth", 1, 6, group = vpGrp)
+color vpHighColor = input.color(LIGHT_GRAY_COLOR, "Histogram Colors", inline = "hist", group = vpGrp)
+color vpLowColor = input.color(DARK_GRAY_COLOR, "", inline = "hist", group = vpGrp)
+int vpTransparency = input.int(20, "Transparency", 0, 100, group = vpGrp)
+int vpOffset = input.int(20, "Offset From Last Bar", group = vpGrp)
+int vpCompactionFactor = input.int(2, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vpGrp)
 
-
+//-----------------------------------------------------------------------------}
+// Setup Volumes
 //-----------------------------------------------------------------------------{
-// Methods
-//-----------------------------------------------------------------------------{
-getVpSinc(source, bandwidth) =>
-    if source == 0
+getWeight(int src, int bandwidth) =>
+    if src == 0
         1
     else
-        math.sin(math.pi * source / bandwidth) / (math.pi * source / bandwidth)  
+        math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)  
 
-getMultiKernelRegression(source, vpSmoothing)=>
-    src_size = array.size(source)
-    estimate_array = array.new<float>(src_size) 
-    float current_price = na
-    for i = 0 to src_size - 1 
+getMultiKernelRegression(src, smooth)=>
+    series int size = array.size(src)
+    array<float> estimatedVals = array.new<float>(size) 
+    float curPrice = na
+
+    for i = 0 to size - 1 
         float sum = 0
         float sumw = 0
-        for j = 0 to src_size - 1 
-            diff = i - j
-            weight = getVpSinc(diff, vpSmoothing)
-            sum += array.get(source, j) * weight
+
+        for j = 0 to size - 1 
+            int diff = i - j
+            series float weight = getWeight(diff, smooth)
+            sum += array.get(src, j) * weight
             sumw += weight
-        current_price := sum / sumw
-        array.set(estimate_array, i, current_price >= 0 ? current_price : 0)
-    estimate_array
 
-vpCnum = 100
-vpTop = ta.highest(vpLen)
-vpBot = ta.lowest(vpLen)
-vpDist = (vpTop - vpBot) / 500
-vpStep = (vpTop - vpBot) / vpCnum
-vpRange = vpStep * vpPivot
-levels = array.new_float(vpCnum + 1)
+        curPrice := sum / sumw
+        array.set(estimatedVals, i, curPrice >= 0 ? curPrice : 0)
 
-for x = 0 to vpCnum by 1
-    array.set(levels, x, vpBot + vpStep * x)
+    estimatedVals
 
-getVpVol(a, b, x, y, vol) =>
+int vpNumOfBars = 100
+series float vpTop = ta.highest(vpLen)
+series float vpBot = ta.lowest(vpLen)
+series float vpDist = (vpTop - vpBot) / 500
+series float vpStep = (vpTop - vpBot) / vpNumOfBars
+array<float> vpLevels = array.new_float(vpNumOfBars + 1)
+
+for x = 0 to vpNumOfBars by 1
+    array.set(vpLevels, x, vpBot + vpStep * x)
+
+caclLevelVol(float a, float b, float x, float y, float vol) =>
     // Bar is completely below or above the range
     if y < a or x > b
         0
     // Entire bar is inside the range but doesn't span it
     else if x >= a and y <= b
-        p_range = (y - x) / (b - a)
-        p_range * vol
+        pRange = (y - x) / (b - a)
+        pRange * vol
     // Bar completely covers the range
     else if x <= a and y >= b
-        p_bar = (b - a) / (y - x)
-        p_bar * vol
+        pBar = (b - a) / (y - x)
+        pBar * vol
     // vpTop of the bar is inside the range
     else if x < a and y <= b
-        p_bar = (y - a) / (y - x)
-        p_bar * vol
+        pBar = (y - a) / (y - x)
+        pBar * vol
     // Bottom of the bar is inside the range
     else if x >= a and y > b
-        p_bar = (b - x) / (y - x)
-        p_bar * vol
+        pBar = (b - x) / (y - x)
+        pBar * vol
     else
         vol
 
-var vpLines = array.new<line>()
-var vpProbs = array.new<box>()
-var vpVols = array.new<box>()
-
-if array.size(vpLines) > 0
-    for i = array.size(vpLines) - 1 to 0
-        line.delete(array.get(vpLines, i))
-        array.remove(vpLines, i)
-    for i = array.size(vpProbs) - 1 to 0
-        box.delete(array.get(vpProbs, i))
-        array.remove(vpProbs, i)
-    for i = array.size(vpVols) - 1 to 0
-        box.delete(array.get(vpVols, i))
-        array.remove(vpVols, i)
-
-//-----------------------------------------------------------------------------{
-// Render volume profile
+//-----------------------------------------------------------------------------}
+// Render Volume Profile
 //-----------------------------------------------------------------------------{
 if barstate.islast
-    _volumes = array.new_float(vpCnum, 0.)
-    bullish_volumes = array.new_float(vpCnum, 0.)
+    array<float> levelVols = array.new_float(vpNumOfBars, 0.)
+    array<float> bullishVols = array.new_float(vpNumOfBars, 0.)
 
-    for bars = 0 to vpLen - 1 by 1
-        High = high[bars]
-        Low = low[bars]
-        Volume = volume[bars]
-        state = open[bars] < close[bars]
+    for i = 0 to vpLen - 1 by 1
+        float _high = high[i]
+        float _low = low[i]
+        float _vol = volume[i]
+        bool isBullish = open[i] < close[i]
 
-        for x = 0 to vpCnum - 1 by 1
-            array.set(_volumes, x, array.get(_volumes, x) + getVpVol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
-            if state
-                array.set(bullish_volumes, x, array.get(bullish_volumes, x) + getVpVol(array.get(levels, x), array.get(levels, x + 1), Low, High, Volume))
+        for x = 0 to vpNumOfBars - 1 by 1
+            array.set(levelVols, x, array.get(levelVols, x) + caclLevelVol(array.get(vpLevels, x), array.get(vpLevels, x + 1), _low, _high, _vol))
+
+            if isBullish
+                array.set(bullishVols, x, array.get(bullishVols, x) + caclLevelVol(array.get(vpLevels, x), array.get(vpLevels, x + 1), _low, _high, _vol))
                  
+    array<float> volColors = array.new_float(vpNumOfBars, 0.)
 
-    color_array = array.new_float(vpCnum, 0.)
+    for i = 0 to vpNumOfBars - 1
+        float max_level = array.get(levelVols, i)
+        float bullish_level = array.get(bullishVols, i)
+        array.set(volColors, i, bullish_level / max_level)
 
-    for i = 0 to vpCnum - 1
-        max_level = array.get(_volumes, i)
-        bullish_level = array.get(bullish_volumes, i)
-        array.set(color_array, i, bullish_level/max_level)
+    series float maxvol = array.max(levelVols)
 
-    maxvol = array.max(_volumes)
-    for x = 0 to vpCnum - 1 by 1
-        array.set(_volumes, x, array.get(_volumes, x) * vpLen / (3 * maxvol))
+    for x = 0 to vpNumOfBars - 1 by 1
+        array.set(levelVols, x, array.get(levelVols, x) * vpLen / (3 * maxvol))
 
-    normal_volumes = getMultiKernelRegression(_volumes, vpSmoothing)
-    int edge = bar_index + math.round(array.max(normal_volumes) / vpCompactionFactor) + vpOffset
-    var vol_bars = array.new_box(vpCnum, na)
+    array<float> processedVols = getMultiKernelRegression(levelVols, vpSmooth)
+    int edge = bar_index + math.round(array.max(processedVols) / vpCompactionFactor) + vpOffset
+    var volBars = array.new_box(vpNumOfBars, na)
 
-    for i = 0 to vpCnum - 1 by 1
-        box.delete(array.get(vol_bars, i))
-        int vol = math.round(array.get(normal_volumes, i) / vpCompactionFactor)
+    for i = 0 to vpNumOfBars - 1 by 1
+        int vol = math.round(array.get(processedVols, i) / vpCompactionFactor)
+        box.delete(array.get(volBars, i))
         array.set(
-         vol_bars, i, 
+         volBars, i, 
          box.new(edge - vol, 
-          array.get(levels, i + 1) - vpDist, 
+          array.get(vpLevels, i + 1) - vpDist, 
           edge, 
-          array.get(levels, i) + vpDist, 
+          array.get(vpLevels, i) + vpDist, 
           border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(color_array, i), 0, 1, vpLowColor, vpHighColor), vpTrans))
+          bgcolor = color.new(color.from_gradient(array.get(volColors, i), 0, 1, vpLowColor, vpHighColor), vpTransparency))
          )
 
+//-----------------------------------------------------------------------------}
 
 
 
 
 
-
-
-
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------*
 // Smart Money Concepts
-//-----------------------------------------------------------------------------{
-
-
+//-----------------------------------------------------------------------------*
 // Tooltips
+//-----------------------------------------------------------------------------{
 string MODE_TOOLTIP          = 'Allows to display historical Structure or only the recent ones'
 string STYLE_TOOLTIP         = 'Indicator color theme'
 string COLOR_CANDLES_TOOLTIP = 'Display additional candles with a color reflecting the current trend detected by structure'
@@ -206,7 +189,7 @@ string FVG_TF                = 'Fair value gaps timeframe'
 string EXTEND_FVG            = 'Determine how many bars to extend the Fair Value Gap boxes on chart'
 string PED_ZONES             = 'Display premium, discount, and equilibrium zones on chart'
 
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------}
 // Settings
 //-----------------------------------------------------------------------------{
 // General
@@ -241,7 +224,6 @@ swing_ibull_css = input(AQUA_COLOR, ''
   , inline = 'ibull'
   , group = 'Real Time Internal Structure')
 
-// Bear Structure
 show_ibear = input.string('All', 'Bearish Structure'
   , options = ['All', 'BOS', 'CHoCH']
   , inline = 'ibear'
@@ -266,7 +248,6 @@ show_Structure = input(true, 'Show Swing Structure'
   , group = 'Real Time Swing Structure'
   , tooltip = SHOW_SWING)
 
-// Bull Structure
 show_bull = input.string('All', 'Bullish Structure'
   , options = ['All', 'BOS', 'CHoCH']
   , inline = 'bull'
@@ -276,7 +257,6 @@ swing_bull_css = input(AQUA_COLOR, ''
   , inline = 'bull'
   , group = 'Real Time Swing Structure')
 
-// Bear Structure
 show_bear = input.string('All', 'Bearish Structure'
   , options = ['All', 'BOS', 'CHoCH']
   , inline = 'bear'
@@ -290,7 +270,6 @@ swing_structure_size = input.string('Small', 'Swing Label Size'
   , options = ['Tiny', 'Small', 'Normal']
   , group = 'Real Time Swing Structure')
 
-// Swings
 show_swings = input(false, 'Show Swings Points'
   , inline = 'swings'
   , group = 'Real Time Swing Structure'
@@ -1251,83 +1230,77 @@ alertcondition(bearish_fvg_cnd, 'Bearish FVG', 'Bearish FVG formed')
 
 
 
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------*
 // Master Pattern
-//-----------------------------------------------------------------------------{
-
-//------------------------------------------------------------------------------
+//-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
 string mpGrp = 'Master Pattern'
-mpLen = input.int(500, 'Length', minval = 1, maxval = 500, group = mpGrp)
-mpContractionLookback = input.int(3, 'Contraction Detection Lookback', minval = 1, group = mpGrp)
-liqLen = input.int(20, 'Liquidity Levels', minval = 1, group = mpGrp)
-mpColor = input.color(PURPLE_COLOR, 'Pattern Color', group = mpGrp)
-showMinor = input(true, 'Show Minor Pattern', group = mpGrp)
-mpShowLiq = input(true, 'Show Liquidity Levels', group = mpGrp)
-bullLiqColor = input.color(RED_COLOR, 'Upper Liquidity Color', group = mpGrp)
-bearLiqColor = input.color(AQUA_COLOR, 'Lower Liquidity Color', group = mpGrp)
+int mpLen = input.int(500, 'Length', minval = 1, maxval = 500, group = mpGrp)
+int mpContractionLookback = input.int(3, 'Contraction Detection Lookback', minval = 1, group = mpGrp)
+int mpLiqLen = input.int(20, 'Liquidity Levels Length', minval = 1, group = mpGrp)
+color mpColor = input.color(PURPLE_COLOR, 'Box & True Value Line Color', group = mpGrp)
+bool mpMinorShowed = input(true, 'Show Minor Pattern', group = mpGrp)
+bool mpLiqShowed = input(true, 'Show Liquidity Levels', group = mpGrp)
+color mpUpperLiqColor = input.color(RED_COLOR, 'Upper Liquidity Color', group = mpGrp)
+color mpLowerLiqColor = input.color(AQUA_COLOR, 'Lower Liquidity Color', group = mpGrp)
 
 //-----------------------------------------------------------------------------}
 // UDT
 //-----------------------------------------------------------------------------{
-type mp
+type MasterPattern
     box area
     line avg
     bool breakup
     bool breakdn
 
 //-----------------------------------------------------------------------------}
-// Detect contraction
+// Detect contraction & Liquidity Levels
 //-----------------------------------------------------------------------------{
+series float mpPh = ta.pivothigh(mpContractionLookback, mpContractionLookback)
+series float mpPl = ta.pivotlow(mpContractionLookback, mpContractionLookback)
+series float mpLiqPh = ta.pivothigh(mpLiqLen, mpLiqLen)
+series float mpLiqPl = ta.pivotlow(mpLiqLen, mpLiqLen)
+
 if last_bar_index - bar_index < mpLen
     var mpPhy = 0., var mpPhx = 0, var mpPht = 0.
     var mpPly = 0., var mpPlx = 0, var mpPlt = 0.
-
     var float mpTop = na
     var float mpBot = na
+    series int mpBarIdx = bar_index
 
-    mpBarIdx = bar_index
-    mpPh = ta.pivothigh(mpContractionLookback, mpContractionLookback)
-    mpPl = ta.pivotlow(mpContractionLookback, mpContractionLookback)
-
-    if mpPh
+    if not na(mpPh)
         mpPht := math.sign(mpPh - mpPhy)
         mpPhy := mpPh
 
         if mpPht == -1 and mpPlt == 1
             mpTop := mpPh
             mpBot := mpPly
-            mpPhx := mpBarIdx-mpContractionLookback
+            mpPhx := mpBarIdx - mpContractionLookback
 
-    if mpPl
+    if not na(mpPl)
         mpPlt := math.sign(mpPl - mpPly)
         mpPly := mpPl
 
         if mpPht  == -1 and mpPlt == 1
             mpTop := mpPhy
             mpBot := mpPl
-            mpPlx := mpBarIdx-mpContractionLookback
+            mpPlx := mpBarIdx - mpContractionLookback
 
-    //-----------------------------------------------------------------------------}
-    // Set pattern
-    //-----------------------------------------------------------------------------{
-    var mp master = mp.new()
+    var MasterPattern master = MasterPattern.new()
+    bool mpIsBullish = high[mpContractionLookback] > mpTop and mpTop > mpBot
+    bool mpIsBearish = low[mpContractionLookback] < mpBot and mpTop > mpBot
 
-    // Detect master pattern
-    mpIsBull = high[mpContractionLookback] > mpTop and mpTop > mpBot
-    mpIsBear = low[mpContractionLookback] < mpBot and mpTop > mpBot
-
-    if mpIsBull or mpIsBear
+    if mpIsBullish or mpIsBearish
         master.avg.set_x2(mpBarIdx-mpContractionLookback)
-        val = math.avg(mpTop, mpBot)
-
+        float val = math.avg(mpTop, mpBot)
+  
         // Create new master pattern object
-        master := mp.new(
-          mpIsBull or mpIsBear ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpContractionLookback, mpBot, na, bgcolor = showMinor ? color.new(mpColor, 75) : na) : na
-          , mpIsBull or mpIsBear ? line.new(mpBarIdx-mpContractionLookback, val, mpBarIdx, val, color = showMinor ? mpColor : na) : na
-          , mpIsBull
-          , mpIsBear)
+        master := MasterPattern.new(
+          mpIsBullish or mpIsBearish ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpContractionLookback, mpBot, na, bgcolor = mpMinorShowed ? color.new(mpColor, 75) : na) : na
+          , mpIsBullish or mpIsBearish ? line.new(mpBarIdx-mpContractionLookback, val, mpBarIdx, val, color = mpMinorShowed ? mpColor : na) : na
+          , mpIsBullish
+          , mpIsBearish)
 
         mpTop := na
         mpBot := na
@@ -1336,13 +1309,15 @@ if last_bar_index - bar_index < mpLen
     if master.breakup
         if low < master.area.get_bottom()
             master.area.set_border_color(mpColor)
-            if not showMinor
+
+            if not mpMinorShowed
                 master.area.set_bgcolor(color.new(mpColor, 50))
                 master.avg.set_color(mpColor)
     else if master.breakdn
         if high > master.area.get_top()
             master.area.set_border_color(mpColor)
-            if not showMinor
+
+            if not mpMinorShowed
                 master.area.set_bgcolor(color.new(mpColor, 50))
                 master.avg.set_color(mpColor)
 
@@ -1350,39 +1325,33 @@ if last_bar_index - bar_index < mpLen
     if not na(master.avg)
         master.avg.set_x2(n)
 
-    //-----------------------------------------------------------------------------}
-    // Liquidity levels
-    //-----------------------------------------------------------------------------{
-    var line mpLiqUp = na, var liqup_reach = false
-    var line mpLiqDn = na, var liqdn_reach = false
-
-    mpLiqPh = ta.pivothigh(liqLen, liqLen)
-    mpLiqPl = ta.pivotlow(liqLen, liqLen)
+    var line mpLiqUp = na, var liqupReached = false
+    var line mpLiqDn = na, var liqdnReached = false
 
     // Set upper liquidity
-    if mpLiqPh and mpShowLiq
-        if not liqup_reach
-            mpLiqUp.set_x2(mpBarIdx-liqLen)
+    if not na(mpLiqPh) and mpLiqShowed
+        if not liqupReached
+            mpLiqUp.set_x2(mpBarIdx-mpLiqLen)
 
-        mpLiqUp := line.new(mpBarIdx-liqLen, mpLiqPh, mpBarIdx, mpLiqPh, color = bullLiqColor, style = line.style_dotted)
-        liqup_reach := false
-    else if not liqup_reach and mpShowLiq
+        mpLiqUp := line.new(mpBarIdx-mpLiqLen, mpLiqPh, mpBarIdx, mpLiqPh, color = mpUpperLiqColor, style = line.style_dotted)
+        liqupReached := false
+    else if not liqupReached and mpLiqShowed
         mpLiqUp.set_x2(mpBarIdx)
 
         if high > mpLiqUp.get_y1()
-            liqup_reach := true
+            liqupReached := true
 
     // Set lower liquidity
-    if mpLiqPl and mpShowLiq
-        if not liqdn_reach
-            mpLiqDn.set_x2(mpBarIdx-liqLen)
+    if not na(mpLiqPl) and mpLiqShowed
+        if not liqdnReached
+            mpLiqDn.set_x2(mpBarIdx-mpLiqLen)
 
-        mpLiqDn := line.new(mpBarIdx-liqLen, mpLiqPl, mpBarIdx, mpLiqPl, color = bearLiqColor, style = line.style_dotted)
-        liqdn_reach := false
-    else if not liqdn_reach and mpShowLiq
+        mpLiqDn := line.new(mpBarIdx-mpLiqLen, mpLiqPl, mpBarIdx, mpLiqPl, color = mpLowerLiqColor, style = line.style_dotted)
+        liqdnReached := false
+    else if not liqdnReached and mpLiqShowed
         mpLiqDn.set_x2(mpBarIdx)
 
         if low < mpLiqDn.get_y1()
-            liqdn_reach := true
+            liqdnReached := true
 
 //-----------------------------------------------------------------------------}
