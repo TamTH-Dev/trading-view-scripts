@@ -426,14 +426,10 @@ bool pdzShowed = input.bool(true, 'Premium/Discount Zones'
   , group = 'Premium & Discount Zones'
   , tooltip = PED_ZONES)
 
-color premiumColor = input.color(ORANGE_COLOR, 'Premium Zone'
-  , group = 'Premium & Discount Zones')
 
-color eqColor = input.color(color.new(WHITE_COLOR, 60), 'Equilibrium Zone'
-  , group = 'Premium & Discount Zones')
+color pdzBgColor = input.color(#5d606b19, 'Background Color', group = 'Premium & Discount Zones')
 
-color discountColor = input.color(GREEN_COLOR, 'Discount Zone'
-  , group = 'Premium & Discount Zones')
+color pdzTextColor = input.color(#787b86, 'Text Color', group = 'Premium & Discount Zones')
 
 //-----------------------------------------------------------------------------}
 // Functions
@@ -1056,36 +1052,30 @@ if pmhlShowed
 //-----------------------------------------------------------------------------}
 // Premium/Discount/Equilibrium zones
 //-----------------------------------------------------------------------------{
-var premium = box.new(na, na, na, na
-  , bgcolor = color.new(premiumColor, 80)
-  , border_color = na)
+var premium = box.new(na, na, na, na, bgcolor = pdzBgColor, border_color = pdzBgColor, border_width = 2)
 
 var premiumLbl = label.new(na, na
   , text = 'Premium'
   , color = TRANSPARENT_COLOR
-  , textcolor = premiumColor
+  , textcolor = pdzTextColor
   , style = label.style_label_down
   , size = size.small)
 
-var eq = box.new(na, na, na, na
-  , bgcolor = color.new(eqColor, 95)
-  , border_color = na)
+var eq = box.new(na, na, na, na, bgcolor = pdzBgColor, border_color = pdzBgColor, border_width = 2)
 
 var eqLbl = label.new(na, na
   , text = 'Equilibrium'
   , color = TRANSPARENT_COLOR
-  , textcolor = eqColor
+  , textcolor = pdzTextColor
   , style = label.style_label_left
   , size = size.small)
 
-var discount = box.new(na, na, na, na
-  , bgcolor = color.new(discountColor, 80)
-  , border_color = na)
+var discount = box.new(na, na, na, na, bgcolor = pdzBgColor, border_color = pdzBgColor, border_width = 2)
 
 var discountLbl = label.new(na, na
   , text = 'Discount'
   , color = TRANSPARENT_COLOR
-  , textcolor = discountColor
+  , textcolor = pdzTextColor
   , style = label.style_label_up
   , size = size.small)
 
