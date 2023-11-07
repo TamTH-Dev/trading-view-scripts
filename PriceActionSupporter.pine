@@ -1162,8 +1162,8 @@ int mpLiqLen = input.int(20, 'Liquidity Levels Length', minval = 1, group = mpGr
 color mpColor = input.color(PURPLE_COLOR, 'Box & True Value Line Color', group = mpGrp)
 bool mpMinorShowed = input(true, 'Show Minor Pattern', group = mpGrp)
 bool mpLiqShowed = input(true, 'Show Liquidity Levels', group = mpGrp)
-color mpUpperLiqColor = input.color(RED_COLOR, 'Upper Liquidity Color', group = mpGrp)
-color mpLowerLiqColor = input.color(AQUA_COLOR, 'Lower Liquidity Color', group = mpGrp)
+color mpUpperLiqColor = input.color(AQUA_COLOR, 'Upper Liquidity Color', group = mpGrp)
+color mpLowerLiqColor = input.color(RED_COLOR, 'Lower Liquidity Color', group = mpGrp)
 
 //-----------------------------------------------------------------------------}
 // UDT
