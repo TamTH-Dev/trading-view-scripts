@@ -930,19 +930,18 @@ if eqShowed
         min = math.min(eqTop, eqPrevTop)
         
         if max < min + atr * eqThreshold
-            eqh_line = line.new(eqTopX, eqPrevTop, barIdx - eqLen, eqTop
+            eqhLine = line.new(eqTopX, eqPrevTop, barIdx - eqLen, eqTop
               , color = bear_css
               , style = line.style_dotted)
-
-            eqh_lbl = label.new(int(math.avg(barIdx - eqLen, eqTopX)), eqTop, 'EQH'
+            eqhLbl = label.new(int(math.avg(barIdx - eqLen, eqTopX)), eqTop, 'EQH'
               , color = #00000000
               , textcolor = bear_css
               , style = label.style_label_down
               , size = eqhl_lblSize)
 
             if mode == 'Present'
-                line.delete(eqh_line[1])
-                label.delete(eqh_lbl[1])
+                line.delete(eqhLine[1])
+                label.delete(eqhLbl[1])
             
             eqhAlert := true
 
@@ -954,21 +953,19 @@ if eqShowed
         min = math.min(eqBtm, eqPrevBtm)
         
         if min > max - atr * eqThreshold
-            eql_line = line.new(eqBtmX, eqPrevBtm, barIdx - eqLen, eqBtm
+            eqlLine = line.new(eqBtmX, eqPrevBtm, barIdx - eqLen, eqBtm
               , color = bull_css
               , style = line.style_dotted)
-
-            eql_lbl = label.new(int(math.avg(barIdx - eqLen, eqBtmX)), eqBtm, 'EQL'
+            eqlLbl = label.new(int(math.avg(barIdx - eqLen, eqBtmX)), eqBtm, 'EQL'
               , color = #00000000
               , textcolor = bull_css
               , style = label.style_label_up
               , size = eqhl_lblSize)
-
             eqlAlert := true
 
             if mode == 'Present'
-                line.delete(eql_line[1])
-                label.delete(eql_lbl[1])
+                line.delete(eqlLine[1])
+                label.delete(eqlLbl[1])
 
         eqPrevBtm := eqBtm
         eqBtmX := barIdx - eqLen
@@ -976,68 +973,58 @@ if eqShowed
 //-----------------------------------------------------------------------------}
 // Fair Value Gaps
 //-----------------------------------------------------------------------------{
-var bullish_fvg_max = array.new_box(0)
-var bullish_fvg_min = array.new_box(0)
+var bullishFvgMax = array.new_box(0)
+var bullishFvgMin = array.new_box(0)
+var bearishFvgMax = array.new_box(0)
+var bearishFvgMin = array.new_box(0)
+float bullishFvgAvg = na
+float bearishFvgAvg = na
+bool bullishFvgCond = false
+bool bearishFvgCond = false
 
-var bearish_fvg_max = array.new_box(0)
-var bearish_fvg_min = array.new_box(0)
-
-float bullish_fvg_avg = na
-float bearish_fvg_avg = na
-
-bullish_fvg_cnd = false
-bearish_fvg_cnd = false
-
-[src_c1, src_o1, src_h, src_l, src_h2, src_l2] =
-  request.security(syminfo.tickerid, fvgTf, getOHLC())
+[srcC1, srcO1, srcH, srcL, srcH2, srcL2] = request.security(syminfo.tickerid, fvgTf, getOHLC())
 
 if fvgShowed
-    delta_per = (src_c1 - src_o1) / src_o1 * 100
-
-    change_tf = timeframe.change(fvgTf)
-
-    threshold = fvgAuto ? ta.cum(math.abs(change_tf ? delta_per : 0)) / barIdx * 2 
-      : 0
+    series float delta = (srcC1 - srcO1) / srcO1 * 100
+    series bool tfChanged = timeframe.change(fvgTf)
+    series float threshold = fvgAuto ? ta.cum(math.abs(tfChanged ? delta : 0)) / barIdx * 2 : 0
 
     // FVG conditions
-    bullish_fvg_cnd := src_l > src_h2
-      and src_c1 > src_h2 
-      and delta_per > threshold
-      and change_tf
-
-    bearish_fvg_cnd := src_h < src_l2 
-      and src_c1 < src_l2 
-      and -delta_per > threshold
-      and change_tf
+    bullishFvgCond := srcL > srcH2
+      and srcC1 > srcH2 
+      and delta > threshold
+      and tfChanged
+    bearishFvgCond := srcH < srcL2 
+      and srcC1 < srcL2 
+      and -delta > threshold
+      and tfChanged
 
     // FVG Areas
-    if bullish_fvg_cnd
-        array.unshift(bullish_fvg_max, box.new(barIdx - 1, src_l, barIdx + fvgExtend, math.avg(src_l, src_h2)
+    if bullishFvgCond
+        array.unshift(bullishFvgMax, box.new(barIdx - 1, srcL, barIdx + fvgExtend, math.avg(srcL, srcH2)
           , border_color = fvgBullColor
           , bgcolor = fvgBullColor))
-        
-        array.unshift(bullish_fvg_min, box.new(barIdx - 1, math.avg(src_l, src_h2), barIdx + fvgExtend, src_h2
+        array.unshift(bullishFvgMin, box.new(barIdx - 1, math.avg(srcL, srcH2), barIdx + fvgExtend, srcH2
           , border_color = fvgBullColor
           , bgcolor = fvgBullColor))
     
-    if bearish_fvg_cnd
-        array.unshift(bearish_fvg_max, box.new(barIdx - 1, src_h, barIdx + fvgExtend, math.avg(src_h, src_l2)
+    if bearishFvgCond
+        array.unshift(bearishFvgMax, box.new(barIdx - 1, srcH, barIdx + fvgExtend, math.avg(srcH, srcL2)
           , border_color = fvgBearColor
           , bgcolor = fvgBearColor))
-        
-        array.unshift(bearish_fvg_min, box.new(barIdx - 1, math.avg(src_h, src_l2), barIdx + fvgExtend, src_l2
+        array.unshift(bearishFvgMin, box.new(barIdx - 1, math.avg(srcH, srcL2), barIdx + fvgExtend, srcL2
           , border_color = fvgBearColor
           , bgcolor = fvgBearColor))
 
-    for bx in bullish_fvg_min
+    for bx in bullishFvgMin
         if low < box.get_bottom(bx)
             box.delete(bx)
-            box.delete(array.get(bullish_fvg_max, array.indexof(bullish_fvg_min, bx)))
+            box.delete(array.get(bullishFvgMax, array.indexof(bullishFvgMin, bx)))
     
-    for bx in bearish_fvg_max
+    for bx in bearishFvgMax
         if high > box.get_top(bx)
             box.delete(bx)
-            box.delete(array.get(bearish_fvg_min, array.indexof(bearish_fvg_max, bx)))
+            box.delete(array.get(bearishFvgMin, array.indexof(bearishFvgMax, bx)))
 
 //-----------------------------------------------------------------------------}
 // Previous day/week high/lows
@@ -1073,7 +1060,7 @@ var premium = box.new(na, na, na, na
   , bgcolor = color.new(premiumColor, 80)
   , border_color = na)
 
-var premium_lbl = label.new(na, na
+var premiumLbl = label.new(na, na
   , text = 'Premium'
   , color = TRANSPARENT_COLOR
   , textcolor = premiumColor
@@ -1084,7 +1071,7 @@ var eq = box.new(na, na, na, na
   , bgcolor = color.new(eqColor, 95)
   , border_color = na)
 
-var eq_lbl = label.new(na, na
+var eqLbl = label.new(na, na
   , text = 'Equilibrium'
   , color = TRANSPARENT_COLOR
   , textcolor = eqColor
@@ -1095,7 +1082,7 @@ var discount = box.new(na, na, na, na
   , bgcolor = color.new(discountColor, 80)
   , border_color = na)
 
-var discount_lbl = label.new(na, na
+var discountLbl = label.new(na, na
   , text = 'Discount'
   , color = TRANSPARENT_COLOR
   , textcolor = discountColor
@@ -1104,38 +1091,29 @@ var discount_lbl = label.new(na, na
 
 // Show Premium/Discount Areas
 if barstate.islast and pdzShowed
-    avg = math.avg(trailUp, trailDn)
-
+    series float avg = math.avg(trailUp, trailDn)
     box.set_lefttop(premium, math.max(topX, btmX), trailUp)
     box.set_rightbottom(premium, barIdx, .95 * trailUp + .05 * trailDn)
-
-    label.set_xy(premium_lbl, int(math.avg(math.max(topX, btmX), barIdx)), trailUp)
-
+    label.set_xy(premiumLbl, int(math.avg(math.max(topX, btmX), barIdx)), trailUp)
     box.set_lefttop(eq, math.max(topX, btmX), .525 * trailUp + .475*trailDn)
     box.set_rightbottom(eq, barIdx, .525 * trailDn + .475 * trailUp)
-
-    label.set_xy(eq_lbl, barIdx, avg)
-    
+    label.set_xy(eqLbl, barIdx, avg)
     box.set_lefttop(discount, math.max(topX, btmX), .95 * trailDn + .05 * trailUp)
     box.set_rightbottom(discount, barIdx, trailDn)
-    label.set_xy(discount_lbl, int(math.avg(math.max(topX, btmX), barIdx)), trailDn)
+    label.set_xy(discountLbl, int(math.avg(math.max(topX, btmX), barIdx)), trailDn)
 
 //-----------------------------------------------------------------------------}
 // Trend
 //-----------------------------------------------------------------------------{
-var color trend_css = na
+var color trendColor = na
 
 if trendShowed
     if style == 'Colored'
-        trend_css := itrend == 1 ? bull_css : bear_css
+        trendColor := itrend == 1 ? bull_css : bear_css
     else if style == 'Monochrome'
-        trend_css := itrend == 1 ? #b2b5be : #5d606b
+        trendColor := itrend == 1 ? #b2b5be : #5d606b
 
-plotcandle(open, high, low, close
-  , color = trend_css
-  , wickcolor = trend_css
-  , bordercolor = trend_css
-  , editable = false)
+plotcandle(open, high, low, close, color = trendColor, wickcolor = trendColor, bordercolor = trendColor, editable = false)
 
 //-----------------------------------------------------------------------------}
 // Alerts
@@ -1143,21 +1121,18 @@ plotcandle(open, high, low, close
 // Internal Structure
 alertcondition(bullIBosAlert, 'Internal Bullish BOS', 'Internal Bullish BOS formed')
 alertcondition(bullIChochAlert, 'Internal Bullish CHoCH', 'Internal Bullish CHoCH formed')
-
 alertcondition(bearIBosAlert, 'Internal Bearish BOS', 'Internal Bearish BOS formed')
 alertcondition(bearIChochAlert, 'Internal Bearish CHoCH', 'Internal Bearish CHoCH formed')
 
 // Swing Structure
 alertcondition(bullBosAlert, 'Bullish BOS', 'Internal Bullish BOS formed')
 alertcondition(bullChochAlert, 'Bullish CHoCH', 'Internal Bullish CHoCH formed')
-
 alertcondition(bearBosAlert, 'Bearish BOS', 'Bearish BOS formed')
 alertcondition(bearChochAlert, 'Bearish CHoCH', 'Bearish CHoCH formed')
 
 // Order Blocks
 alertcondition(bullIObBreak, 'Bullish Internal OB Breakout', 'Price broke bullish internal OB')
 alertcondition(bearIObBreak, 'Bearish Internal OB Breakout', 'Price broke bearish internal OB')
-
 alertcondition(bullObBreak, 'Bullish Swing OB Breakout', 'Price broke bullish swing OB')
 alertcondition(bearObBreak, 'Bearish Swing OB Breakout', 'Price broke bearish swing OB')
 
@@ -1166,8 +1141,8 @@ alertcondition(eqhAlert, 'Equal Highs', 'Equal highs detected')
 alertcondition(eqlAlert, 'Equal Lows', 'Equal lows detected')
 
 // FVG
-alertcondition(bullish_fvg_cnd, 'Bullish FVG', 'Bullish FVG formed')
-alertcondition(bearish_fvg_cnd, 'Bearish FVG', 'Bearish FVG formed')
+alertcondition(bullishFvgCond, 'Bullish FVG', 'Bullish FVG formed')
+alertcondition(bearishFvgCond, 'Bearish FVG', 'Bearish FVG formed')
 
 //-----------------------------------------------------------------------------}
 
