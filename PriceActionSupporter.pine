@@ -59,10 +59,10 @@ bool shouldDisplay = last_bar_index - bar_index < generalLen
 // Settings
 //-----------------------------------------------------------------------------{
 string vpGrp = "Volume Profile"
-int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars to use for the calculation of the volume profile", group = vpGrp)
-int vpRowSize = input.int(200, "Row Size", minval = 1, maxval = 200, tooltip = "Determines the number of rows used for the calculation of the volume profile", group = vpGrp)
-int vpBoxWidth = input.int(20, "Width (% of the box)", minval = 1, maxval = 100, tooltip = "Determines the length of the bars relative to the Lookback value", group = vpGrp)
-int vpBarWidth = input.int(2, "Bar Width", tooltip = "Width of each bar", group = vpGrp)
+int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars", group = vpGrp)
+int vpLevelsSize = input.int(400, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
+int vpWidth = input.int(20, "Profile's Width", minval = 1, maxval = 100, tooltip = "The length of the bars relative to the Lookback value", group = vpGrp)
+int vpBarWidth = input.int(2, "Bar's Width", tooltip = "Width of each bar", group = vpGrp)
 int vpOffset = input.int(24, "Offset From Last Bar", group = vpGrp)
 color vpColor = input.color(DARK_GRAY_COLOR, "Color", group = vpGrp)
 
@@ -72,7 +72,7 @@ color vpColor = input.color(DARK_GRAY_COLOR, "Color", group = vpGrp)
 var vpLines = array.new_line()
 
 if barstate.isfirst
-    for i = 0 to vpRowSize - 1
+    for i = 0 to vpLevelsSize - 1
         array.push(vpLines, line.new(na, na, na, na, width = 2))
 
 series float vpHighest = ta.highest(vpLen)
@@ -83,10 +83,10 @@ array<float> vpSumv = array.new_float(0)
 line vpLine = na
 
 if barstate.islast
-    for i = 0 to vpRowSize
-        array.push(vpLevels, vpLowest + i / vpRowSize * (vpHighest - vpLowest))
+    for i = 0 to vpLevelsSize
+        array.push(vpLevels, vpLowest + i / vpLevelsSize * (vpHighest - vpLowest))
 
-    for i = 0 to vpRowSize - 1
+    for i = 0 to vpLevelsSize - 1
         series float sum = 0.
 
         for j = 0 to vpLen - 1
@@ -95,15 +95,15 @@ if barstate.islast
         array.push(vpSumv, sum)
 
 
-    for i = 0 to vpRowSize - 1
+    for i = 0 to vpLevelsSize - 1
         series float mult = array.get(vpSumv, i) / array.max(vpSumv)
-        series int vol = math.round(vpLen * vpBoxWidth / 100 * mult)
+        series int vol = math.round(vpLen * vpWidth / 100 * mult)
         array.push(vpVols, vol)
     
     series int maxVol = array.max(vpVols)
     int shift = barIdx + maxVol + vpOffset
 
-    for i = 0 to vpRowSize - 1
+    for i = 0 to vpLevelsSize - 1
         series int vol = array.get(vpVols, i)
         series float level = array.get(vpLevels, i)
         vpLine := array.get(vpLines, i)
