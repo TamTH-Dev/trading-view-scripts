@@ -36,128 +36,81 @@ debug(simple string txt) =>
 
 
 //-----------------------------------------------------------------------------*
+// Common Variables
+//-----------------------------------------------------------------------------{
+series int barIdx = bar_index
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// General Settings
+//-----------------------------------------------------------------------------{
+string generalGrp = 'General'
+int generalLen = input.int(500, 'Length', minval = 1, maxval = 500, group = generalGrp, tooltip = "Number of most recent bars to use for the calculation of supporter")
+
+bool shouldDisplay = last_bar_index - bar_index < generalLen
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
 // Volume Profile
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
 string vpGrp = "Volume Profile"
-int vpLen = input.int(200, "Length", 1, 500, group = vpGrp)
-int vpSmooth = input.int(3, "Smooth", 1, 6, group = vpGrp)
-color vpHighColor = input.color(LIGHT_GRAY_COLOR, "Histogram Colors", inline = "hist", group = vpGrp)
-color vpLowColor = input.color(DARK_GRAY_COLOR, "", inline = "hist", group = vpGrp)
-int vpTransparency = input.int(20, "Transparency", 0, 100, group = vpGrp)
-int vpOffset = input.int(20, "Offset From Last Bar", group = vpGrp)
-int vpCompactionFactor = input.int(2, "Compaction Factor", tooltip = "Compact volume profile", minval = 1, maxval = 6, group = vpGrp)
-
-//-----------------------------------------------------------------------------}
-// Setup Volumes
-//-----------------------------------------------------------------------------{
-getWeight(int src, int bandwidth) =>
-    if src == 0
-        1
-    else
-        math.sin(math.pi * src / bandwidth) / (math.pi * src / bandwidth)  
-
-getMultiKernelRegression(src, smooth)=>
-    series int size = array.size(src)
-    array<float> estimatedVals = array.new<float>(size) 
-    float curPrice = na
-
-    for i = 0 to size - 1 
-        float sum = 0
-        float sumw = 0
-
-        for j = 0 to size - 1 
-            int diff = i - j
-            series float weight = getWeight(diff, smooth)
-            sum += array.get(src, j) * weight
-            sumw += weight
-
-        curPrice := sum / sumw
-        array.set(estimatedVals, i, curPrice >= 0 ? curPrice : 0)
-
-    estimatedVals
-
-int vpNumOfBars = 100
-series float vpTop = ta.highest(vpLen)
-series float vpBot = ta.lowest(vpLen)
-series float vpDist = (vpTop - vpBot) / 500
-series float vpStep = (vpTop - vpBot) / vpNumOfBars
-array<float> vpLevels = array.new_float(vpNumOfBars + 1)
-
-for x = 0 to vpNumOfBars by 1
-    array.set(vpLevels, x, vpBot + vpStep * x)
-
-caclLevelVol(float a, float b, float x, float y, float vol) =>
-    // Bar is completely below or above the range
-    if y < a or x > b
-        0
-    // Entire bar is inside the range but doesn't span it
-    else if x >= a and y <= b
-        pRange = (y - x) / (b - a)
-        pRange * vol
-    // Bar completely covers the range
-    else if x <= a and y >= b
-        pBar = (b - a) / (y - x)
-        pBar * vol
-    // vpTop of the bar is inside the range
-    else if x < a and y <= b
-        pBar = (y - a) / (y - x)
-        pBar * vol
-    // Bottom of the bar is inside the range
-    else if x >= a and y > b
-        pBar = (b - x) / (y - x)
-        pBar * vol
-    else
-        vol
+int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars to use for the calculation of the volume profile", group = vpGrp)
+int vpRowSize = input.int(200, "Row Size", minval = 1, maxval = 200, tooltip = "Determines the number of rows used for the calculation of the volume profile", group = vpGrp)
+int vpBoxWidth = input.int(20, "Width (% of the box)", minval = 1, maxval = 100, tooltip = "Determines the length of the bars relative to the Lookback value", group = vpGrp)
+int vpBarWidth = input.int(2, "Bar Width", tooltip = "Width of each bar", group = vpGrp)
+int vpOffset = input.int(24, "Offset From Last Bar", group = vpGrp)
+color vpColor = input.color(DARK_GRAY_COLOR, "Color", group = vpGrp)
 
 //-----------------------------------------------------------------------------}
 // Render Volume Profile
 //-----------------------------------------------------------------------------{
+var vpLines = array.new_line()
+
+if barstate.isfirst
+    for i = 0 to vpRowSize - 1
+        array.push(vpLines, line.new(na, na, na, na, width = 2))
+
+series float vpHighest = ta.highest(vpLen)
+series float vpLowest = ta.lowest(vpLen)
+array<float> vpLevels = array.new_float(0)
+array<int> vpVols = array.new_int(0)
+array<float> vpSumv = array.new_float(0)
+line vpLine = na
+
 if barstate.islast
-    array<float> levelVols = array.new_float(vpNumOfBars, 0.)
-    array<float> bullishVols = array.new_float(vpNumOfBars, 0.)
+    for i = 0 to vpRowSize
+        array.push(vpLevels, vpLowest + i / vpRowSize * (vpHighest - vpLowest))
 
-    for i = 0 to vpLen - 1 by 1
-        float _high = high[i]
-        float _low = low[i]
-        float _vol = volume[i]
-        bool isBullish = open[i] < close[i]
+    for i = 0 to vpRowSize - 1
+        series float sum = 0.
 
-        for x = 0 to vpNumOfBars - 1 by 1
-            array.set(levelVols, x, array.get(levelVols, x) + caclLevelVol(array.get(vpLevels, x), array.get(vpLevels, x + 1), _low, _high, _vol))
+        for j = 0 to vpLen - 1
+            sum := high[j] > array.get(vpLevels, i) and low[j] < array.get(vpLevels, i + 1) ? sum + volume[j] : sum
 
-            if isBullish
-                array.set(bullishVols, x, array.get(bullishVols, x) + caclLevelVol(array.get(vpLevels, x), array.get(vpLevels, x + 1), _low, _high, _vol))
-                 
-    array<float> volColors = array.new_float(vpNumOfBars, 0.)
+        array.push(vpSumv, sum)
 
-    for i = 0 to vpNumOfBars - 1
-        float max_level = array.get(levelVols, i)
-        float bullish_level = array.get(bullishVols, i)
-        array.set(volColors, i, bullish_level / max_level)
 
-    series float maxvol = array.max(levelVols)
+    for i = 0 to vpRowSize - 1
+        series float mult = array.get(vpSumv, i) / array.max(vpSumv)
+        series int vol = math.round(vpLen * vpBoxWidth / 100 * mult)
+        array.push(vpVols, vol)
+    
+    series int maxVol = array.max(vpVols)
+    int shift = barIdx + maxVol + vpOffset
 
-    for x = 0 to vpNumOfBars - 1 by 1
-        array.set(levelVols, x, array.get(levelVols, x) * vpLen / (3 * maxvol))
-
-    array<float> processedVols = getMultiKernelRegression(levelVols, vpSmooth)
-    int edge = bar_index + math.round(array.max(processedVols) / vpCompactionFactor) + vpOffset
-    var volBars = array.new_box(vpNumOfBars, na)
-
-    for i = 0 to vpNumOfBars - 1 by 1
-        int vol = math.round(array.get(processedVols, i) / vpCompactionFactor)
-        box.delete(array.get(volBars, i))
-        array.set(
-         volBars, i, 
-         box.new(edge - vol, 
-          array.get(vpLevels, i + 1) - vpDist, 
-          edge, 
-          array.get(vpLevels, i) + vpDist, 
-          border_width = 0, 
-          bgcolor = color.new(color.from_gradient(array.get(volColors, i), 0, 1, vpLowColor, vpHighColor), vpTransparency))
-         )
+    for i = 0 to vpRowSize - 1
+        series int vol = array.get(vpVols, i)
+        series float level = array.get(vpLevels, i)
+        vpLine := array.get(vpLines, i)
+        line.set_xy1(vpLine, shift, level)
+        line.set_xy2(vpLine, shift - vol, level)
+        line.set_color(vpLine, vpColor)
+        line.set_width(vpLine, vpBarWidth)
 
 //-----------------------------------------------------------------------------}
 
@@ -434,7 +387,6 @@ color pdzTextColor = input.color(#787b86, 'Text Color', group = 'Premium & Disco
 //-----------------------------------------------------------------------------}
 // Functions
 //-----------------------------------------------------------------------------{
-series int barIdx = bar_index
 series float atr = ta.atr(200)
 series float cmean_range = ta.cum(high - low) / barIdx
 
@@ -760,7 +712,7 @@ if ta.crossover(close, iTopY) and iTopCross and topY != iTopY and bullConcordant
     txt = choch ? 'CHoCH' : 'BOS'
 
     if iStructureShowed
-        if iBullShowed == 'All' or (iBullShowed == 'BOS' and not choch) or (iBullShowed == 'CHoCH' and choch)
+        if (iBullShowed == 'All' or (iBullShowed == 'BOS' and not choch) or (iBullShowed == 'CHoCH' and choch)) and shouldDisplay
             displayStructure(iTopX, iTopY, txt, ibull_css, true, true, internal_structureLblSize)
     
     iTopCross := false
@@ -783,7 +735,7 @@ if ta.crossover(close, topY) and topCross
     txt = choch ? 'CHoCH' : 'BOS'
     
     if sStructureShowed
-        if sBullShowed == 'All' or (sBullShowed == 'BOS' and not choch) or (sBullShowed == 'CHoCH' and choch)
+        if (sBullShowed == 'All' or (sBullShowed == 'BOS' and not choch) or (sBullShowed == 'CHoCH' and choch)) and shouldDisplay
             displayStructure(topX, topY, txt, bull_css, false, true, swing_structureLblSize)
     
     // Order Block
@@ -814,7 +766,7 @@ if ta.crossunder(close, iBtmY) and iBtmCross and btmY != iBtmY and bear_concorda
     string txt = choch ? 'CHoCH' : 'BOS'
 
     if iStructureShowed
-        if iBearShowed == 'All' or (iBearShowed == 'BOS' and not choch) or (iBearShowed == 'CHoCH' and choch)
+        if (iBearShowed == 'All' or (iBearShowed == 'BOS' and not choch) or (iBearShowed == 'CHoCH' and choch)) and shouldDisplay
             displayStructure(iBtmX, iBtmY, txt, ibear_css, true, false, internal_structureLblSize)
     
     iBtmCross := false
@@ -837,7 +789,7 @@ if ta.crossunder(close, btmY) and btmCross
     string txt = choch ? 'CHoCH' : 'BOS'
     
     if sStructureShowed
-        if sBearShowed == 'All' or (sBearShowed == 'BOS' and not choch) or (sBearShowed == 'CHoCH' and choch)
+        if (sBearShowed == 'All' or (sBearShowed == 'BOS' and not choch) or (sBearShowed == 'CHoCH' and choch))  and shouldDisplay
             displayStructure(btmX, btmY, txt, bear_css, false, false, swing_structureLblSize)
     
     // Order Block
@@ -925,7 +877,7 @@ if eqShowed
         max = math.max(eqTop, eqPrevTop)
         min = math.min(eqTop, eqPrevTop)
         
-        if max < min + atr * eqThreshold
+        if max < min + atr * eqThreshold and shouldDisplay
             eqhLine = line.new(eqTopX, eqPrevTop, barIdx - eqLen, eqTop
               , color = bear_css
               , style = line.style_dotted)
@@ -934,12 +886,12 @@ if eqShowed
               , textcolor = bear_css
               , style = label.style_label_down
               , size = eqhl_lblSize)
+            eqhAlert := true
 
             if mode == 'Present'
                 line.delete(eqhLine[1])
                 label.delete(eqhLbl[1])
             
-            eqhAlert := true
 
         eqPrevTop := eqTop
         eqTopX := barIdx - eqLen
@@ -948,7 +900,7 @@ if eqShowed
         max = math.max(eqBtm, eqPrevBtm)
         min = math.min(eqBtm, eqPrevBtm)
         
-        if min > max - atr * eqThreshold
+        if min > max - atr * eqThreshold and shouldDisplay
             eqlLine = line.new(eqBtmX, eqPrevBtm, barIdx - eqLen, eqBtm
               , color = bull_css
               , style = line.style_dotted)
@@ -996,7 +948,7 @@ if fvgShowed
       and tfChanged
 
     // FVG Areas
-    if bullishFvgCond
+    if bullishFvgCond and shouldDisplay
         array.unshift(bullishFvgMax, box.new(barIdx - 1, srcL, barIdx + fvgExtend, math.avg(srcL, srcH2)
           , border_color = fvgBullColor
           , bgcolor = fvgBullColor))
@@ -1004,7 +956,7 @@ if fvgShowed
           , border_color = fvgBullColor
           , bgcolor = fvgBullColor))
     
-    if bearishFvgCond
+    if bearishFvgCond and shouldDisplay
         array.unshift(bearishFvgMax, box.new(barIdx - 1, srcH, barIdx + fvgExtend, math.avg(srcH, srcL2)
           , border_color = fvgBearColor
           , bgcolor = fvgBearColor))
@@ -1146,7 +1098,6 @@ alertcondition(bearishFvgCond, 'Bearish FVG', 'Bearish FVG formed')
 // Settings
 //-----------------------------------------------------------------------------{
 string mpGrp = 'Master Pattern'
-int mpLen = input.int(500, 'Length', minval = 1, maxval = 500, group = mpGrp)
 int mpContractionLookback = input.int(3, 'Contraction Detection Lookback', minval = 1, group = mpGrp)
 int mpLiqLen = input.int(20, 'Liquidity Levels Length', minval = 1, group = mpGrp)
 color mpColor = input.color(PURPLE_COLOR, 'Box & True Value Line Color', group = mpGrp)
@@ -1172,7 +1123,7 @@ series float mpPl = ta.pivotlow(mpContractionLookback, mpContractionLookback)
 series float mpLiqPh = ta.pivothigh(mpLiqLen, mpLiqLen)
 series float mpLiqPl = ta.pivotlow(mpLiqLen, mpLiqLen)
 
-if last_bar_index - bar_index < mpLen
+if shouldDisplay
     var mpPhy = 0., var mpPhx = 0, var mpPht = 0.
     var mpPly = 0., var mpPlx = 0, var mpPlt = 0.
     var float mpTop = na
