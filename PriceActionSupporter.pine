@@ -1216,3 +1216,222 @@ if shouldDisplay
             liqdnReached := true
 
 //-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
+// Golden Pocket
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string gpGrp = "Golden Pocket"
+bool gpShowed = input.bool(true, "Show", group = gpGrp)
+string gpDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
+int gpDepth = input.int(10, "Depth", group = gpGrp, tooltip = gpDepthTooltip)
+string gpDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
+float gpThresholdMultiplier = input.float(3, "Deviation", group = gpGrp, tooltip = gpDevTooltip)
+color gpColor = input.color(YELLOW_COLOR, "Color", group = gpGrp)
+
+//-----------------------------------------------------------------------------}
+// Types
+//-----------------------------------------------------------------------------{
+type Settings
+    float devThreshold = 3
+    int depth = 10
+
+type Point
+    int unixTime
+    float price
+
+type Pivot
+    bool isHigh 
+    float vol
+    Point start
+    Point end
+
+type ZigZag
+    Settings settings
+    array<Pivot> pivots
+    float volTotal = 0
+    Pivot extend = na
+
+//-----------------------------------------------------------------------------}
+// Methods
+//-----------------------------------------------------------------------------{
+findPivotPoint(series float src, series float len, simple bool isHigh) =>
+    float pivot = nz(src[len])
+
+    if len == 0
+        Point.new(time, pivot)
+    else if len * 2 <= bar_index
+        bool found = true
+
+        for i = 0 to math.abs(len - 1)
+            if (isHigh and src[i] > pivot) or (not isHigh and src[i] < pivot)
+                found := false
+                break
+
+        for i = len + 1 to 2 * len
+            if (isHigh and src[i] >= pivot) or (not isHigh and src[i] <= pivot)
+                found := false
+                break
+
+        if found
+            Point.new(time[len], pivot)
+
+calcDev(series float basePrice, series float price) =>
+    float result = 100 * (price - basePrice) / math.abs(basePrice)
+
+method updatePivot(Pivot this, Point end, float vol, Settings settings) =>
+    this.end := end
+    this.vol := vol
+
+getNewPivot(series Point start, series Point end, series float vol, series bool isHigh, series Settings settings) =>
+    Pivot pivot = Pivot.new(isHigh, vol, start, end)
+    pivot.updatePivot(end, vol, settings)
+    pivot
+
+method isPriceHigher(series Pivot this, series Point point) => 
+    int mult = this.isHigh ? 1 : -1
+    point.price * mult > this.end.price * mult
+
+method getLastPivot(series ZigZag this) =>
+    int size = this.pivots.size()
+    size > 0 ? this.pivots.get(size - 1) : na
+
+method updateLastPivot(series ZigZag this, series Point point) =>
+    Pivot lastPivot = this.getLastPivot()
+
+    if this.pivots.size() == 1
+        lastPivot.start := point
+
+    lastPivot.updatePivot(point, lastPivot.vol + this.volTotal, this.settings)
+    this.volTotal := 0
+
+method addNewPivot(series ZigZag this, series Pivot pivot) =>
+    this.pivots.push(pivot)
+    this.volTotal := 0
+
+method hasNewPivotPointFound(series ZigZag this, simple bool isHigh, series Point point) =>
+    bool found = false
+    Pivot lastPivot = this.getLastPivot()
+
+    if not na(lastPivot)
+        if lastPivot.isHigh == isHigh 
+            if lastPivot.isPriceHigher(point)
+                this.updateLastPivot(point)
+                found := true
+        else
+            float dev = calcDev(lastPivot.end.price, point.price)
+
+            if (not lastPivot.isHigh and dev >= this.settings.devThreshold) or (lastPivot.isHigh and dev <= -1 * this.settings.devThreshold)
+                this.addNewPivot(getNewPivot(lastPivot.end, point, this.volTotal, isHigh, this.settings))
+                found := true
+    else
+        this.addNewPivot(getNewPivot(point, point, this.volTotal, isHigh, this.settings))
+        found := true
+
+    found
+
+method findPivot(series ZigZag this, series float src, simple bool isHigh, series int depth, series bool pivotRegistered = true) =>
+    Point point = findPivotPoint(src, depth, isHigh)
+    not na(point) and pivotRegistered ? this.hasNewPivotPointFound(isHigh, point) : false
+
+method updateZigzag(series ZigZag this, series float vols, series float highVal, series float lowVal, series int timeVal) =>
+    int depth = math.max(2, math.floor(this.settings.depth / 2))
+    this.volTotal += nz(vols[depth])
+    bool updated = this.findPivot(highVal, true, depth)
+    updated := this.findPivot(lowVal, false, depth, not updated) or updated
+    Pivot lastPivot = this.getLastPivot()
+    float remVol = math.sum(vols, math.max(depth, 1))
+
+    if barstate.islast and not na(lastPivot)
+        bool isHigh = not lastPivot.isHigh
+        float curSeries = isHigh ? highVal : lowVal
+        Point end = Point.new(timeVal, curSeries)
+
+        if na(this.extend) or updated
+            this.extend := getNewPivot(lastPivot.end, end, this.volTotal, isHigh, this.settings)
+
+        this.extend.updatePivot(end, this.volTotal + remVol, this.settings)
+
+    updated
+
+initZigzag(series Settings settings = na) =>
+    ZigZag result = ZigZag.new(na(settings) ? Settings.new() : settings, array.new<Pivot>())
+
+getGpVals(series float close_val, series float vol_val, series float highVal, series float lowVal, series int timeVal) =>
+    var settings = Settings.new(gpThresholdMultiplier, gpDepth)
+    var ZigZag zigzagInstance = initZigzag(settings)
+    var Pivot lastPivot = na
+    var float startPrice = na
+    var float height = na
+    settings.devThreshold := ta.atr(10) / close_val * 100 * gpThresholdMultiplier
+
+    if zigzagInstance.updateZigzag(vol_val, highVal, lowVal, timeVal)
+        lastPivot := zigzagInstance.getLastPivot()
+
+        if not na(lastPivot)
+            var line last_line = na
+
+            if na(last_line)
+                last_line := line.new(lastPivot.start.unixTime, lastPivot.start.price, lastPivot.end.unixTime, lastPivot.end.price, xloc = xloc.bar_time, color = color.new(gpColor, 20), width = 1, style = line.style_dashed)
+            else
+                line.set_xy1(last_line, lastPivot.start.unixTime, lastPivot.start.price)
+                line.set_xy2(last_line, lastPivot.end.unixTime, lastPivot.end.price)
+
+            startPrice := lastPivot.end.price
+            endPrice = lastPivot.start.price
+            height := (startPrice > endPrice ? -1 : 1) * math.abs(startPrice - endPrice)
+
+    [lastPivot, startPrice, height]
+
+[gpLastPivot, gpStartPrice, gpHeight] = getGpVals(close, volume, high, low, time)
+
+drawFibLevel(Pivot pivot, float level, color color, float lineWidth) =>
+    var box fibLine = na, box.delete(fibLine)
+    fibLine := box.new(pivot.start.unixTime, level + lineWidth / 2, time, level - lineWidth / 2, xloc = xloc.bar_time, bgcolor = gpColor, border_color = gpColor, border_width = 0, extend = extend.right)
+
+processFibLevel(Pivot pivot, series float startPrice, series float height, simple float val, color color) =>
+	float level = startPrice + height * val
+
+    if not na(pivot)
+		drawFibLevel(pivot, level, color, height / 240)
+        level
+    else
+        na
+
+getPrdWidthByPerc(int prd, int perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+
+getTfTxt() =>
+    string prd = timeframe.period
+    string tf = na
+
+    if str.contains(prd, "S")
+        tf := str.length(prd) == 1 ? "1S" : prd
+    else if str.contains(prd, "D")
+        tf := str.length(prd) == 1 ? "1D" : prd
+    else if str.contains(prd, "W")
+        tf := str.length(prd) == 1 ? "1W" : prd
+    else if str.contains(prd, "M")
+        tf := str.length(prd) == 1 ? "1M" : prd
+    else
+        float mins = str.tonumber(prd)
+
+        if mins >= 60
+            tf := str.format("{0}H",  mins / 60)
+        else
+            tf := str.format("{0}M",  mins)
+
+    tf
+
+//-----------------------------------------------------------------------------}
+// Plots
+//-----------------------------------------------------------------------------{
+if gpShowed
+    float level618 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.618, gpColor)
+    float level65 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.65, gpColor)
+
+//-----------------------------------------------------------------------------}
