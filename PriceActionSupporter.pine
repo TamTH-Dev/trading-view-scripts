@@ -124,7 +124,7 @@ if barstate.islast
 // Settings
 //-----------------------------------------------------------------------------{
 string tlGrp = "Trend Lines"
-bool tlShowed = input.bool(true, "Show", group = tlGrp)
+bool tlShowed = input.bool(false, "Show", group = tlGrp)
 color tlColor = input.color(#787b86, "Color", group = tlGrp)
 int tlPivotLenL = input.int(20, "Lookback", step = 1, minval = 1, group = tlGrp)
 int tlPivotLenR = tlPivotLenL
@@ -394,7 +394,7 @@ color sobBearColor = input.color(color.new(RED_COLOR, 85), 'Bearish OB'
 //----------------------------------------}
 // EQH/EQL
 //----------------------------------------{
-bool eqShowed = input.bool(true, 'Equal High/Low'
+bool eqShowed = input.bool(false, 'Equal High/Low'
   , group = 'EQH/EQL'
   , tooltip = SHOW_EQHL)
 
@@ -1340,7 +1340,7 @@ if shouldDisplay
 // Settings
 //-----------------------------------------------------------------------------{
 string gpGrp = "Golden Pocket"
-bool gpShowed = input.bool(true, "Show", group = gpGrp)
+bool gpShowed = input.bool(false, "Show", group = gpGrp)
 string gpDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
 int gpDepth = input.int(10, "Depth", group = gpGrp, tooltip = gpDepthTooltip)
 string gpDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
@@ -1487,13 +1487,13 @@ getGpVals(series float close_val, series float vol_val, series float highVal, se
         lastPivot := zigzagInstance.getLastPivot()
 
         if not na(lastPivot)
-            var line last_line = na
+            var line lastLine = na
 
-            if na(last_line)
-                last_line := line.new(lastPivot.start.unixTime, lastPivot.start.price, lastPivot.end.unixTime, lastPivot.end.price, xloc = xloc.bar_time, color = color.new(gpColor, 20), width = 1, style = line.style_dashed)
+            if na(lastLine) and gpShowed
+                lastLine := line.new(lastPivot.start.unixTime, lastPivot.start.price, lastPivot.end.unixTime, lastPivot.end.price, xloc = xloc.bar_time, color = color.new(gpColor, 20), width = 1, style = line.style_dashed)
             else
-                line.set_xy1(last_line, lastPivot.start.unixTime, lastPivot.start.price)
-                line.set_xy2(last_line, lastPivot.end.unixTime, lastPivot.end.price)
+                line.set_xy1(lastLine, lastPivot.start.unixTime, lastPivot.start.price)
+                line.set_xy2(lastLine, lastPivot.end.unixTime, lastPivot.end.price)
 
             startPrice := lastPivot.end.price
             endPrice = lastPivot.start.price
