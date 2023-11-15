@@ -1503,15 +1503,15 @@ getGpVals(series float close_val, series float vol_val, series float highVal, se
 
 [gpLastPivot, gpStartPrice, gpHeight] = getGpVals(close, volume, high, low, time)
 
-drawFibLevel(Pivot pivot, float level, color color, float lineWidth) =>
-    var box fibLine = na, box.delete(fibLine)
-    fibLine := box.new(pivot.start.unixTime, level + lineWidth / 2, time + (time - time[1]) * 20, level - lineWidth / 2, xloc = xloc.bar_time, bgcolor = gpColor, border_color = gpColor, border_width = 0, extend = extend.none)
+drawFibLevel(Pivot pivot, float level, color color) =>
+    var line fibLine = na, line.delete(fibLine)
+    fibLine := line.new(pivot.start.unixTime, level, time + (time - time[1]) * 20, level, color = color, width = 1, xloc = xloc.bar_time, extend = extend.none)
 
 processFibLevel(Pivot pivot, series float startPrice, series float height, simple float val, color color) =>
     float level = startPrice + height * val
 
     if not na(pivot)
-        drawFibLevel(pivot, level, color, height / 240)
+        drawFibLevel(pivot, level, color)
         level
     else
         na
@@ -1548,7 +1548,8 @@ if gpShowed
     float level65 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.65, gpColor)
 
     if barstate.islast
-        float middle = (math.abs(level618 - level65) / 2) + (level618 > level65 ? level65 : level618) 
-        label gpLabel = label.new(time + (time - time[1]) * 20, middle, xloc = xloc.bar_time, text = 'GP', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
+        float middle = (math.abs(level618 - level65) / 2) + (level618 > level65 ? level65 : level618)
+        var label gpLabel = na, label.delete(gpLabel)
+        gpLabel := label.new(time + (time - time[1]) * 20, middle, xloc = xloc.bar_time, text = 'GP', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
 
 //-----------------------------------------------------------------------------}
