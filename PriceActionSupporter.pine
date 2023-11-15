@@ -453,7 +453,7 @@ string pdhlStyle = input.string('⎯⎯⎯', ''
   , inline = 'daily'
   , group = 'Highs & Lows MTF')
 
-color pdhlColor = input.color(YELLOW_COLOR, ''
+color pdhlColor = input.color(#787b86, ''
   , inline = 'daily'
   , group = 'Highs & Lows MTF')
 
@@ -467,7 +467,7 @@ string pwhlStyle = input.string('⎯⎯⎯', ''
   , inline = 'weekly'
   , group = 'Highs & Lows MTF')
 
-color pwhlColor = input.color(YELLOW_COLOR, ''
+color pwhlColor = input.color(#787b86, ''
   , inline = 'weekly'
   , group = 'Highs & Lows MTF')
 
@@ -481,7 +481,7 @@ string pmhlStyle = input.string('⎯⎯⎯', ''
   , inline = 'monthly'
   , group = 'Highs & Lows MTF')
 
-color pmhlColor = input.color(YELLOW_COLOR, ''
+color pmhlColor = input.color(#787b86, ''
   , inline = 'monthly'
   , group = 'Highs & Lows MTF')
 
@@ -736,8 +736,8 @@ trailUpX := trailUp == high ? barIdx : trailUpX
 // Set top extension label/line
 if barstate.islast and hlSwingsShowed
     line.set_xy1(extendTop, trailUpX, trailUp)
-    line.set_xy2(extendTop, barIdx + 12, trailUp)
-    label.set_x(extendTopLbl, barIdx + 12)
+    line.set_xy2(extendTop, barIdx + 17, trailUp)
+    label.set_x(extendTopLbl, barIdx + 17)
     label.set_y(extendTopLbl, trailUp)
     label.set_text(extendTopLbl, trend < 0 ? 'Strong High' : 'Weak High')
 
@@ -786,8 +786,8 @@ trailDnX := trailDn == low ? barIdx : trailDnX
 // Set btm extension label/line
 if barstate.islast and hlSwingsShowed
     line.set_xy1(extend_btm, trailDnX, trailDn)
-    line.set_xy2(extend_btm, barIdx + 12, trailDn)
-    label.set_x(extend_btm_lbl, barIdx + 12)
+    line.set_xy2(extend_btm, barIdx + 17, trailDn)
+    label.set_x(extend_btm_lbl, barIdx + 17)
     label.set_y(extend_btm_lbl, trailDn)
     label.set_text(extend_btm_lbl, trend > 0 ? 'Strong Low' : 'Weak Low')
 
@@ -1340,7 +1340,7 @@ if shouldDisplay
 // Settings
 //-----------------------------------------------------------------------------{
 string gpGrp = "Golden Pocket"
-bool gpShowed = input.bool(false, "Show", group = gpGrp)
+bool gpShowed = input.bool(true, "Show", group = gpGrp)
 string gpDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
 int gpDepth = input.int(10, "Depth", group = gpGrp, tooltip = gpDepthTooltip)
 string gpDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
@@ -1505,13 +1505,13 @@ getGpVals(series float close_val, series float vol_val, series float highVal, se
 
 drawFibLevel(Pivot pivot, float level, color color, float lineWidth) =>
     var box fibLine = na, box.delete(fibLine)
-    fibLine := box.new(pivot.start.unixTime, level + lineWidth / 2, time, level - lineWidth / 2, xloc = xloc.bar_time, bgcolor = gpColor, border_color = gpColor, border_width = 0, extend = extend.right)
+    fibLine := box.new(pivot.start.unixTime, level + lineWidth / 2, time + (time - time[1]) * 20, level - lineWidth / 2, xloc = xloc.bar_time, bgcolor = gpColor, border_color = gpColor, border_width = 0, extend = extend.none)
 
 processFibLevel(Pivot pivot, series float startPrice, series float height, simple float val, color color) =>
-	float level = startPrice + height * val
+    float level = startPrice + height * val
 
     if not na(pivot)
-		drawFibLevel(pivot, level, color, height / 200)
+        drawFibLevel(pivot, level, color, height / 240)
         level
     else
         na
@@ -1546,5 +1546,8 @@ getTfTxt() =>
 if gpShowed
     float level618 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.618, gpColor)
     float level65 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.65, gpColor)
+
+    if barstate.islast
+        label gpLabel = label.new(time + (time - time[1]) * 20, level618, xloc = xloc.bar_time, text = 'Golden Pocket', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
 
 //-----------------------------------------------------------------------------}
