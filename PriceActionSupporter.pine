@@ -1548,6 +1548,7 @@ if gpShowed
     float level65 = processFibLevel(gpLastPivot, gpStartPrice, gpHeight, 0.65, gpColor)
 
     if barstate.islast
-        label gpLabel = label.new(time + (time - time[1]) * 20, level618, xloc = xloc.bar_time, text = 'Golden Pocket', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
+        float middle = (math.abs(level618 - level65) / 2) + (level618 > level65 ? level65 : level618) 
+        label gpLabel = label.new(time + (time - time[1]) * 20, middle, xloc = xloc.bar_time, text = 'GP', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
 
 //-----------------------------------------------------------------------------}
