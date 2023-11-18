@@ -1,4 +1,6 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © tamth_
+
 // @version=5
 indicator("Market Cipher B", overlay = false)
 
@@ -34,6 +36,7 @@ int wtShortBrearishDivLevel = input.int(15, title = "Short Bearish Divergence Le
 int wtShortBullishDivLevel = input.int(-40, title = "Short Bullish Divergence Level", group = wtGrp)
 string mfoGrp = "MFO"
 bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
+bool mfoBarShowed = input.bool(false, title = "Support Bar", group = mfoGrp)
 int mfoPrd = input.int(21, title = "Period", group = mfoGrp)
 int mfoMult = input.int(100, title = "Area Multiplier", group = mfoGrp)
 string rsiGrp = "RSI"
@@ -99,12 +102,12 @@ getIndicators() =>
 plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = color.new(AQUA_COLOR, 60), display = display.pane, linewidth = 4)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = color.new(RED_COLOR, 60), display = display.pane, linewidth = 4)
 
-var mfoBarTopLine = plot(mfoShowed ? -100 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
-var mfoBarBotLine = plot(mfoShowed ? -105 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
-fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? color.new(AQUA_COLOR, 10) : color.new(RED_COLOR, 10))
+var mfoBarTopLine = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
+var mfoBarBotLine = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
+fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? color.new(AQUA_COLOR, 40) : color.new(RED_COLOR, 40))
 
 plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = LIGHT_GRAY_COLOR, linewidth = 1, style = plot.style_area)
-plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(DARK_GRAY_COLOR, 20), linewidth = 1, style = plot.style_area)
+plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(DARK_GRAY_COLOR, 50), linewidth = 1, style = plot.style_area)
 
 plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
