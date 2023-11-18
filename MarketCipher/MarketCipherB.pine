@@ -109,7 +109,7 @@ fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? color.ne
 plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = LIGHT_GRAY_COLOR, linewidth = 1, style = plot.style_area)
 plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(DARK_GRAY_COLOR, 50), linewidth = 1, style = plot.style_area)
 
-plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 50), style = plot.style_area)
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 40), style = plot.style_area)
 
 plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
