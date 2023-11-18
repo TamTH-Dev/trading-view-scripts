@@ -47,7 +47,7 @@ series int barIdx = bar_index
 // General Settings
 //-----------------------------------------------------------------------------{
 string generalGrp = 'General'
-int generalLen = input.int(500, 'Length', minval = 1, maxval = 500, group = generalGrp, tooltip = "Number of most recent bars to use for the calculation of supporter")
+int generalLen = input.int(672, 'Length', minval = 1, maxval = 672, group = generalGrp, tooltip = "Number of most recent bars to use for the calculation of supporter")
 
 bool shouldDisplay = last_bar_index - bar_index < generalLen
 //-----------------------------------------------------------------------------}
@@ -60,7 +60,7 @@ bool shouldDisplay = last_bar_index - bar_index < generalLen
 //-----------------------------------------------------------------------------{
 string vpGrp = "Volume Profile"
 int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars", group = vpGrp)
-int vpLevelsSize = input.int(400, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
+int vpLevelsSize = input.int(200, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
 int vpWidth = input.int(16, "Profile's Width", minval = 1, maxval = 100, tooltip = "The length of the bars relative to the Lookback value", group = vpGrp)
 int vpBarWidth = input.int(2, "Bar's Width", tooltip = "Width of each bar", group = vpGrp)
 int vpOffset = input.int(16, "Offset From Last Bar", group = vpGrp)
@@ -444,7 +444,7 @@ int fvgExtend = input.int(1, "Extend FVG"
 // Previous day/week high/low
 //----------------------------------------{
 // Daily
-bool pdhlShowed = input.bool(false, 'Daily'
+bool pdhlShowed = input.bool(true, 'Daily'
   , inline = 'daily'
   , group = 'Highs & Lows MTF')
 
