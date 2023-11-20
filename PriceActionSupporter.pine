@@ -47,6 +47,7 @@ series int barIdx = bar_index
 // General Settings
 //-----------------------------------------------------------------------------{
 string generalGrp = 'General'
+// 7 * 24 * 4
 int generalLen = input.int(672, 'Length', minval = 1, maxval = 672, group = generalGrp, tooltip = "Number of most recent bars to use for the calculation of supporter")
 
 bool shouldDisplay = last_bar_index - bar_index < generalLen
@@ -1211,6 +1212,7 @@ alertcondition(bearishFvgCond, 'Bearish FVG', 'Bearish FVG formed')
 // Settings
 //-----------------------------------------------------------------------------{
 string mpGrp = 'Master Pattern'
+bool mpShowed = input.bool(false, 'Show', group = mpGrp)
 int mpContractionLookback = input.int(3, 'Contraction Detection Lookback', minval = 1, group = mpGrp)
 int mpLiqLen = input.int(20, 'Liquidity Levels Length', minval = 1, group = mpGrp)
 color mpColor = input.color(PURPLE_COLOR, 'Box & True Value Line Color', group = mpGrp)
@@ -1236,7 +1238,7 @@ series float mpPl = ta.pivotlow(mpContractionLookback, mpContractionLookback)
 series float mpLiqPh = ta.pivothigh(mpLiqLen, mpLiqLen)
 series float mpLiqPl = ta.pivotlow(mpLiqLen, mpLiqLen)
 
-if shouldDisplay
+if shouldDisplay and mpShowed
     var mpPhy = 0., var mpPhx = 0, var mpPht = 0.
     var mpPly = 0., var mpPlx = 0, var mpPlt = 0.
     var float mpTop = na
