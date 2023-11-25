@@ -39,6 +39,8 @@ debug(simple string txt) =>
 // Common Variables
 //-----------------------------------------------------------------------------{
 series int barIdx = bar_index
+series int BAR_IDX_RIGHT_ALIGNMENT = barIdx + 16
+series int BAR_TIME_RIGHT_ALIGNMENT = time + (time - time[1]) * 20 
 
 //-----------------------------------------------------------------------------}
 
@@ -561,7 +563,7 @@ displayOb(array<box> boxes, array<float> targetTop, array<float> targetBtm, arra
     for i = 0 to math.min(lastShowed - 1, size - 1)
         box box = array.get(boxes, i)
         box.set_lefttop(box, array.get(targetLeft, i), array.get(targetTop, i))
-        box.set_rightbottom(box, time[0], array.get(targetBtm, i))
+        box.set_rightbottom(box, BAR_TIME_RIGHT_ALIGNMENT, array.get(targetBtm, i))
         color contractionColor = na
         
         if swing 
@@ -622,15 +624,14 @@ getPHL(series float h, series float l, string tf, color css)=>
     series int lx = ta.valuewhen(l == low, time, 1)
 
     if barstate.islast
-        series int ext = time + (time - time[1]) * 20
         //High
         line.set_xy1(highLine, hx, hy)
-        line.set_xy2(highLine, ext, hy)
-        label.set_xy(highLbl, ext, hy)
+        line.set_xy2(highLine, BAR_TIME_RIGHT_ALIGNMENT, hy)
+        label.set_xy(highLbl, BAR_TIME_RIGHT_ALIGNMENT, hy)
         //Low
         line.set_xy1(lowLine, lx, ly)
-        line.set_xy2(lowLine, ext, ly)
-        label.set_xy(lowLbl, ext, ly)
+        line.set_xy2(lowLine, BAR_TIME_RIGHT_ALIGNMENT, ly)
+        label.set_xy(lowLbl, BAR_TIME_RIGHT_ALIGNMENT, ly)
 
 //-----------------------------------------------------------------------------}
 // Global variables
@@ -737,8 +738,8 @@ trailUpX := trailUp == high ? barIdx : trailUpX
 // Set top extension label/line
 if barstate.islast and hlSwingsShowed
     line.set_xy1(extendTop, trailUpX, trailUp)
-    line.set_xy2(extendTop, barIdx + 17, trailUp)
-    label.set_x(extendTopLbl, barIdx + 17)
+    line.set_xy2(extendTop, BAR_IDX_RIGHT_ALIGNMENT, trailUp)
+    label.set_x(extendTopLbl, BAR_IDX_RIGHT_ALIGNMENT)
     label.set_y(extendTopLbl, trailUp)
     label.set_text(extendTopLbl, trend < 0 ? 'Strong High' : 'Weak High')
 
@@ -787,8 +788,8 @@ trailDnX := trailDn == low ? barIdx : trailDnX
 // Set btm extension label/line
 if barstate.islast and hlSwingsShowed
     line.set_xy1(extend_btm, trailDnX, trailDn)
-    line.set_xy2(extend_btm, barIdx + 17, trailDn)
-    label.set_x(extend_btm_lbl, barIdx + 17)
+    line.set_xy2(extend_btm, BAR_IDX_RIGHT_ALIGNMENT, trailDn)
+    label.set_x(extend_btm_lbl, BAR_IDX_RIGHT_ALIGNMENT)
     label.set_y(extend_btm_lbl, trailDn)
     label.set_text(extend_btm_lbl, trend > 0 ? 'Strong Low' : 'Weak Low')
 
@@ -1147,16 +1148,17 @@ var discountLbl = label.new(na, na
 
 // Show Premium/Discount Areas
 if barstate.islast and pdzShowed
+    // TODO
     series float avg = math.avg(trailUp, trailDn)
     box.set_lefttop(premium, math.max(topX, btmX), trailUp)
-    box.set_rightbottom(premium, barIdx, .95 * trailUp + .05 * trailDn)
-    label.set_xy(premiumLbl, int(math.avg(math.max(topX, btmX), barIdx)), trailUp)
+    box.set_rightbottom(premium, BAR_IDX_RIGHT_ALIGNMENT, .95 * trailUp + .05 * trailDn)
+    label.set_xy(premiumLbl, int(math.avg(math.max(topX, btmX), BAR_IDX_RIGHT_ALIGNMENT)), trailUp)
     box.set_lefttop(eq, math.max(topX, btmX), .525 * trailUp + .475*trailDn)
-    box.set_rightbottom(eq, barIdx, .525 * trailDn + .475 * trailUp)
-    label.set_xy(eqLbl, barIdx, avg)
+    box.set_rightbottom(eq, BAR_IDX_RIGHT_ALIGNMENT, .525 * trailDn + .475 * trailUp)
+    label.set_xy(eqLbl, BAR_IDX_RIGHT_ALIGNMENT, avg)
     box.set_lefttop(discount, math.max(topX, btmX), .95 * trailDn + .05 * trailUp)
-    box.set_rightbottom(discount, barIdx, trailDn)
-    label.set_xy(discountLbl, int(math.avg(math.max(topX, btmX), barIdx)), trailDn)
+    box.set_rightbottom(discount, BAR_IDX_RIGHT_ALIGNMENT, trailDn)
+    label.set_xy(discountLbl, int(math.avg(math.max(topX, btmX), BAR_IDX_RIGHT_ALIGNMENT)), trailDn)
 
 //-----------------------------------------------------------------------------}
 // Trend
@@ -1507,7 +1509,7 @@ getOTEVals(series float close_val, series float vol_val, series float highVal, s
 
 drawFibLevel(Pivot pivot, float level, color color) =>
     var line fibLine = na, line.delete(fibLine)
-    fibLine := line.new(pivot.start.unixTime, level, time + (time - time[1]) * 20, level, color = color, width = 1, xloc = xloc.bar_time, extend = extend.none)
+    fibLine := line.new(pivot.start.unixTime, level, BAR_TIME_RIGHT_ALIGNMENT, level, color = color, width = 1, xloc = xloc.bar_time, extend = extend.none)
     fibLine
 
 processFibLevel(Pivot pivot, series float startPrice, series float height, simple float val, color color) =>
@@ -1552,9 +1554,9 @@ if oteShowed
     [retracement2, retracement2Line] = processFibLevel(oteLastPivot, oteStartPrice, oteHeight, 0.79, oteColor)
 
     if barstate.islast
-        linefill.new(retracement1Line, retracement2Line, color = color.new(oteColor, 85))
+        linefill.new(retracement1Line, retracement2Line, color = color.new(oteColor, 90))
         float middle = (math.abs(retracement1 - retracement2) / 2) + (retracement1 > retracement2 ? retracement2 : retracement1)
         var label oteLabel = na, label.delete(oteLabel)
-        oteLabel := label.new(time + (time - time[1]) * 20, middle, xloc = xloc.bar_time, text = 'OTE', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
+        oteLabel := label.new(BAR_TIME_RIGHT_ALIGNMENT, middle, xloc = xloc.bar_time, text = 'OTE', color = TRANSPARENT_COLOR, textcolor = YELLOW_COLOR, size = size.small, style = label.style_label_left)
 
 //-----------------------------------------------------------------------------}
