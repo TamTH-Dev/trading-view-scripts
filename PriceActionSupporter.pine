@@ -41,7 +41,7 @@ debug(simple string txt) =>
 // Common Variables
 //-----------------------------------------------------------------------------{
 series int barIdx = bar_index
-series int BAR_IDX_RIGHT_ALIGNMENT = barIdx + 16
+series int BAR_IDX_RIGHT_ALIGNMENT = barIdx + 21
 series int BAR_TIME_RIGHT_ALIGNMENT = timenow + (time[1] - time[101]) / 100 * 20
 
 //-----------------------------------------------------------------------------}
@@ -51,10 +51,12 @@ series int BAR_TIME_RIGHT_ALIGNMENT = timenow + (time[1] - time[101]) / 100 * 20
 // General Settings
 //-----------------------------------------------------------------------------{
 string generalGrp = "General"
+
 // 7 * 24 * 4
 int generalLen = input.int(672, "Length", minval = 1, maxval = 672, group = generalGrp, tooltip = "Number of most recent bars to use for the calculation of supporter")
 
 bool shouldDisplay = last_bar_index - bar_index < generalLen
+
 //-----------------------------------------------------------------------------}
 
 
@@ -357,22 +359,32 @@ bool hlSwingsShowed = input.bool(true, "Show Strong/Weak High/Low"
 // Order Blocks
 //----------------------------------------{
 string obGrp = "Order Blocks"
-bool obShowed = input.bool(true, "Order Blocks", group = obGrp, inline = "ob1")
+bool obShowed = input.bool(true, "Order Blocks", inline = "ob1", group = obGrp)
 color obBullishColor = input.color(BLOCK_COLOR, "", inline = "ob1", group = obGrp)
 color obBearishColor = input.color(BLOCK_COLOR, "", inline = "ob1", group = obGrp)
-var obTf = input.timeframe("", "Timeframe", group = obGrp, inline = "ob2")
-string obMitigationFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], group = obGrp, inline = "ob3")
-int obsMax = input.int(4, "Max OBs", minval = 3, group = obGrp, inline = "ob4")
-bool obMtfShowed = input.bool(false, "MTF Order Blocks", group = obGrp, inline = "m_ob1")
+var obTf = input.timeframe("", "Timeframe", inline = "ob2", group = obGrp)
+string obMitigationFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], inline = "ob3", group = obGrp)
+int obsMax = input.int(4, "Max OBs", minval = 3, inline = "ob4", group = obGrp)
+bool obMtfShowed = input.bool(false, "MTF Order Blocks", inline = "m_ob1", group = obGrp)
 color obBullishMtfColor = input.color(BLOCK_COLOR, "", inline = "m_ob1", group = obGrp)
 color obBearishMtfColor = input.color(BLOCK_COLOR, "", inline = "m_ob1", group = obGrp)
-var obMtfTf = input.timeframe("240", "Timeframe", group = obGrp, inline = "mob2")
-string obMitigationMtfFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], group = obGrp, inline = "mob3")
-int obsMaxMtf = input.int(4, "Max OBs", minval = 3, group = obGrp, inline = "mob4")
-string obTfStr = obMtfTf == "" ? timeframe.period : obMtfTf
-string obTfPrefix = not(str.contains(obTfStr, "S")) and not(str.contains(obTfStr, "D")) and not(str.contains(obTfStr, "W")) and not(str.contains(obTfStr, "M")) ? str.tonumber(obTfStr) >= 60? str.tostring(str.tonumber(obTfStr) / 60) + "H" : obTfStr + "M" : obTfStr
-string obTfTxt = obTfPrefix + " : "
-var int obMaxWidth = 20
+var obMtfTf = input.timeframe("240", "Timeframe", inline = "mob2", group = obGrp)
+string obMitigationMtfFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], inline = "mob3", group = obGrp)
+int obsMaxMtf = input.int(4, "Max OBs", minval = 3, inline = "mob4", group = obGrp)
+
+//----------------------------------------}
+// Liquidity Levels
+//----------------------------------------{
+string llGrp = "Liquidity Levels"
+bool llShowed = input.bool(true, title = "Showed", group = llGrp, inline = "1")
+var llTf = input.timeframe("", title = "Timeframe", group = llGrp, inline = "2")
+int llPivotLen = input.int(8, title = "Pivot Length", group = llGrp, inline = "3")
+int llMaxLevels = input.int(6, title = "Max Levels", group = llGrp, inline = "4")
+color llSellSideColor = input.color(#00bbf94d, "", group = llGrp, inline = "1")
+color llBuySideColor = input.color(#e91e624d, "", group = llGrp, inline = "1")
+float llBoxWidth = 2.5
+series float llAtrLiq = ta.atr(300)
+float llTholdLiq = llAtrLiq * llBoxWidth / 10
 
 //----------------------------------------}
 // EQH/EQL
@@ -549,11 +561,11 @@ getPHL(series float h, series float l, string tf, color css)=>
     series int lx = ta.valuewhen(l == low, time, 1)
 
     if barstate.islast
-        //High
+        // High
         line.set_xy1(highLine, hx, hy)
         line.set_xy2(highLine, BAR_TIME_RIGHT_ALIGNMENT, hy)
         label.set_xy(highLbl, BAR_TIME_RIGHT_ALIGNMENT, hy)
-        //Low
+        // Low
         line.set_xy1(lowLine, lx, ly)
         line.set_xy2(lowLine, BAR_TIME_RIGHT_ALIGNMENT, ly)
         label.set_xy(lowLbl, BAR_TIME_RIGHT_ALIGNMENT, ly)
@@ -571,18 +583,6 @@ var trailUpX = 0,  var trailDnX = 0
 var topCross = true,  var btmCross = true
 var iTopCross = true, var iBtmCross = true
 var txtTop = "",  var txtBtm = ""
-
-// Alerts
-bool bullChochAlert = false 
-bool bullBosAlert   = false 
-bool bearChochAlert = false 
-bool bearBosAlert   = false 
-bool bullIChochAlert = false 
-bool bullIBosAlert   = false 
-bool bearIChochAlert = false 
-bool bearIBosAlert   = false 
-bool eqhAlert = false 
-bool eqlAlert = false 
 
 // Structure colors
 var bull_css = style == "Monochrome" ? #b2b5be 
@@ -729,9 +729,6 @@ if ta.crossover(close, iTopY) and iTopCross and topY != iTopY and bullConcordant
     
     if itrend < 0
         choch := true
-        bullIChochAlert := true
-    else 
-        bullIBosAlert := true
     
     txt = choch ? "CHoCH" : "BOS"
 
@@ -748,9 +745,6 @@ if ta.crossover(close, topY) and topCross
     
     if trend < 0
         choch := true
-        bullChochAlert := true
-    else 
-        bullBosAlert := true
 
     txt = choch ? "CHoCH" : "BOS"
     
@@ -775,9 +769,6 @@ if ta.crossunder(close, iBtmY) and iBtmCross and btmY != iBtmY and bear_concorda
     
     if itrend > 0
         choch := true
-        bearIChochAlert := true
-    else 
-        bearIBosAlert := true
     
     string txt = choch ? "CHoCH" : "BOS"
 
@@ -794,9 +785,6 @@ if ta.crossunder(close, btmY) and btmCross
     
     if trend > 0
         choch := true
-        bearChochAlert := true
-    else 
-        bearBosAlert := true
 
     string txt = choch ? "CHoCH" : "BOS"
     
@@ -810,6 +798,11 @@ if ta.crossunder(close, btmY) and btmCross
 //-----------------------------------------------------------------------------}
 // Order Blocks
 //-----------------------------------------------------------------------------{
+string obTfStr = obMtfTf == "" ? timeframe.period : obMtfTf
+string obTfPrefix = not(str.contains(obTfStr, "S")) and not(str.contains(obTfStr, "D")) and not(str.contains(obTfStr, "W")) and not(str.contains(obTfStr, "M")) ? str.tonumber(obTfStr) >= 60? str.tostring(str.tonumber(obTfStr) / 60) + "H" : obTfStr + "M" : obTfStr
+string obTfTxt = obTfPrefix + " : "
+var int obMaxWidth = 20
+
 findOb()=>
     bool valid = false
     series float _high = high
@@ -1160,6 +1153,68 @@ if obMtfSize > 0 and barstate.islast
         showOb(obMtfBoxes, obMtfVolLines, obMtfTops, obMtfBtms, obMtfLefts, obMtfTypes, obsMaxMtf, false, obMtfSize, obMtfVols, obBullishMtfColor, obBearishMtfColor, obTfTxt)
 
 //-----------------------------------------------------------------------------}
+// Order Blocks
+//-----------------------------------------------------------------------------{
+getTfMulti(string tf) =>
+    simple int ts = timeframe.in_seconds("")
+    series int htfs = timeframe.in_seconds(tf)
+    htfs / ts
+
+shiftLimitBox(array<box> arr) =>
+    if array.size(arr) > llMaxLevels / 2
+        box.delete(array.shift(arr))
+
+extendBoxToCurrent(array<box> arr) =>
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0 by 1
+            box.set_right(array.get(arr, i), BAR_TIME_RIGHT_ALIGNMENT)
+
+removeMitigatedBoxes(array<box> arr, string hl) =>
+    bool removed = false
+
+    if array.size(arr) > 0
+        for i = array.size(arr) - 1 to 0 by 1
+            series box l = array.get(arr, i)
+            series float hh = close[1]
+            series float ll = close[1]
+
+            if hl == "High" and hh > box.get_top(l)
+                array.remove(arr, i)
+                box.delete(l)
+                removed := true
+            if hl == "Low" and ll < box.get_top(l)
+                array.remove(arr, i)
+                box.delete(l)
+                removed := true
+
+    shiftLimitBox(arr) 
+    removed
+
+
+[_llTime, _llOpen, _llHigh, _llLow, _llClose] = request.security(syminfo.tickerid, llTf, [time, open, high, low, close])
+
+series float llPivotHigh = ta.pivothigh(_llHigh, llPivotLen * getTfMulti(llTf), llPivotLen + getTfMulti(llTf))
+series float llPivotLow = ta.pivotlow(_llLow, llPivotLen * getTfMulti(llTf), llPivotLen + getTfMulti(llTf))
+var llHtfHighBoxes = array.new_box()
+var llHtfLowBoxes = array.new_box()
+
+if llShowed
+    series float displacement = llPivotLen + getTfMulti(llTf)
+
+    if not na(llPivotHigh)
+        series float yOffset = _llHigh[displacement] - llTholdLiq
+        array.push(llHtfHighBoxes, box.new(_llTime[displacement], _llHigh[displacement], _llTime[+1], yOffset, bgcolor = llBuySideColor, border_color = color.new(llBuySideColor, 90), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text = "BUY SIDE $$$", text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))  
+    if not na(llPivotLow)
+        series float yOffset = _llLow[displacement] + llTholdLiq
+        array.push(llHtfLowBoxes, box.new(_llTime[displacement], _llLow[displacement], _llTime[+1], yOffset, bgcolor = llSellSideColor, border_color = color.new(llSellSideColor, 90), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text = "SELL SIDE $$$", text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))
+
+
+removeMitigatedBoxes(llHtfHighBoxes, "High")
+removeMitigatedBoxes(llHtfLowBoxes, "Low")
+extendBoxToCurrent(llHtfHighBoxes)
+extendBoxToCurrent(llHtfLowBoxes)
+
+//-----------------------------------------------------------------------------}
 // EQH/EQL
 //-----------------------------------------------------------------------------{
 var eqPrevTop = 0.
@@ -1184,7 +1239,6 @@ if eqShowed
               , textcolor = bear_css
               , style = label.style_label_down
               , size = eqhl_lblSize)
-            eqhAlert := true
 
             if mode == "Present"
                 line.delete(eqhLine[1])
@@ -1207,7 +1261,6 @@ if eqShowed
               , textcolor = bull_css
               , style = label.style_label_up
               , size = eqhl_lblSize)
-            eqlAlert := true
 
             if mode == "Present"
                 line.delete(eqlLine[1])
@@ -1355,29 +1408,6 @@ if trendShowed
         trendColor := itrend == 1 ? #b2b5be : #5d606b
 
 plotcandle(open, high, low, close, color = trendColor, wickcolor = trendColor, bordercolor = trendColor, editable = false)
-
-//-----------------------------------------------------------------------------}
-// Alerts
-//-----------------------------------------------------------------------------{
-// Internal Structure
-alertcondition(bullIBosAlert, "Internal Bullish BOS", "Internal Bullish BOS formed")
-alertcondition(bullIChochAlert, "Internal Bullish CHoCH", "Internal Bullish CHoCH formed")
-alertcondition(bearIBosAlert, "Internal Bearish BOS", "Internal Bearish BOS formed")
-alertcondition(bearIChochAlert, "Internal Bearish CHoCH", "Internal Bearish CHoCH formed")
-
-// Swing Structure
-alertcondition(bullBosAlert, "Bullish BOS", "Internal Bullish BOS formed")
-alertcondition(bullChochAlert, "Bullish CHoCH", "Internal Bullish CHoCH formed")
-alertcondition(bearBosAlert, "Bearish BOS", "Bearish BOS formed")
-alertcondition(bearChochAlert, "Bearish CHoCH", "Bearish CHoCH formed")
-
-// EQH/EQL
-alertcondition(eqhAlert, "Equal Highs", "Equal highs detected")
-alertcondition(eqlAlert, "Equal Lows", "Equal lows detected")
-
-// FVG
-alertcondition(bullishFvgCond, "Bullish FVG", "Bullish FVG formed")
-alertcondition(bearishFvgCond, "Bearish FVG", "Bearish FVG formed")
 
 //-----------------------------------------------------------------------------}
 
