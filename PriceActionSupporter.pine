@@ -803,7 +803,7 @@ string obTfPrefix = not(str.contains(obTfStr, "S")) and not(str.contains(obTfStr
 string obTfTxt = obTfPrefix + " : "
 var int obMaxWidth = 20
 
-findOb()=>
+findOb() =>
     bool valid = false
     series float _high = high
     series float _low = low
@@ -905,6 +905,7 @@ findOb()=>
         bVol := int((buyingVol / ta.highest(tVol, 300)) * 100)
         sVol := int((sellingVol / ta.highest(tVol, 300)) * 100)
         fVol := _vol
+
         // Search for highest/lowest high within the structure interval and get range
         if maxUsed
             max := _high
@@ -916,29 +917,29 @@ findOb()=>
             max := math.min(max_1, min + thold_)
     [valid, fVol, bVol, sVol, max, min, idx, maxUsed ? -1 : 1]
 
-showOb(boxes, lines, targetTop, targetBtm, targetLeft, targetType, showLast, swing, size, vol, col1, col2, tfTxt)=>
+showOb(array<box> boxes, array<line> lines, array<float> targetTops, array<float> targetBtms, array<int> targetLefts, array<int> targetTypes, int showLast, series int size, array<float> vols, color col1, color col2, string tfTxt) =>
     for x = 0 to showLast - 1
-        obBox = array.get(boxes, x)
+        series box obBox = array.get(boxes, x)
         box.set_lefttop(obBox, na, na)
         box.set_rightbottom(obBox, na , na)
         box.set_border_color(obBox, na)
         box.set_bgcolor(obBox, na)
-        obLine = array.get(lines, x)
+        series line obLine = array.get(lines, x)
         line.set_color(obLine, na)
         line.set_xy1(obLine, na, na)
         line.set_xy2(obLine, na, na)
 
     for i = 0 to size - 1
-        obBox = array.get(boxes, i)
-        obLine = array.get(lines, i)
+        series box obBox = array.get(boxes, i)
+        series line obLine = array.get(lines, i)
         series int leftMax = bar_index - 750
-        series float volTotal = array.sum(vol)
-        vol_ = array.get(vol, i) > 100000000 ? array.get(vol, i) / 100000000. : array.get(vol, i)>1000000 ? array.get(vol, i) / 1000000. : array.get(vol, i) / 1000.
-        volPer = (array.get(vol, i) / volTotal) * 100
-        unit = array.get(vol, i) > 100000000 ? " B" : array.get(vol, i) > 1000000 ? " M" : " K"
-        volTxt = tfTxt +  str.tostring(vol_, "#.##") + unit + " (" + str.tostring(volPer, "#.##") + "%)"
-        box.set_lefttop(obBox, array.get(targetLeft, i), array.get(targetTop, i))
-        box.set_rightbottom(obBox, BAR_TIME_RIGHT_ALIGNMENT, array.get(targetBtm, i))
+        series float volTotal = array.sum(vols)
+        series float vol = array.get(vols, i) > 100000000 ? array.get(vols, i) / 100000000. : array.get(vols, i)>1000000 ? array.get(vols, i) / 1000000. : array.get(vols, i) / 1000.
+        series float volPercent = array.get(vols, i) / volTotal * 100
+        string unit = array.get(vols, i) > 100000000 ? " B" : array.get(vols, i) > 1000000 ? " M" : " K"
+        string volTxt = tfTxt +  str.tostring(vol, "#.##") + unit + " (" + str.tostring(volPercent, "#.##") + "%)"
+        box.set_lefttop(obBox, array.get(targetLefts, i), array.get(targetTops, i))
+        box.set_rightbottom(obBox, BAR_TIME_RIGHT_ALIGNMENT, array.get(targetBtms, i))
         box.set_text(obBox, volTxt)
         box.set_text_color(obBox, TXT_COLOR)
         box.set_border_color(obBox, TXT_COLOR)
@@ -951,28 +952,28 @@ showOb(boxes, lines, targetTop, targetBtm, targetLeft, targetType, showLast, swi
         // line.set_xy1(obLine, array.get(targetLeft, i), array.get(targetTop, i) - (array.get(targetTop, i) - array.get(targetBtm, i)) / 2)
         // line.set_xy2(obLine, time + ((time[1] - time[101]) / 10), array.get(targetTop, i) - (array.get(targetTop, i) - array.get(targetBtm, i)) / 2)
         // line.set_color(obLine, TXT_COLOR)
-        color css = array.get(targetType, i) == 1 ? col1 : col2
+        color css = array.get(targetTypes, i) == 1 ? col1 : col2
         box.set_border_color(obBox, css)
         box.set_bgcolor(obBox, css)
         box.set_border_color(obBox, css)
 
-removeOb(targetTop, targetBtm, targetLeft, targetType, showLast, swing, size)=>
+removeOb(array<float> targetTops, array<float> targetBtms, int showLast, series int size) =>
     var int delIdx = 0
-    deleted = false
+    bool deleted = false
 
     for i = 0 to size - 1
         if i > 0
             for x = i - 1 to 0
-                if array.get(targetTop, i) >= array.get(targetBtm, x) and array.get(targetTop, i) <= array.get(targetTop, x)
+                if array.get(targetTops, i) >= array.get(targetBtms, x) and array.get(targetTops, i) <= array.get(targetTops, x)
                     deleted := true
                     delIdx := i
-                if array.get(targetBtm, i) >= array.get(targetBtm, x) and array.get(targetBtm, i) <= array.get(targetTop, x)
+                if array.get(targetBtms, i) >= array.get(targetBtms, x) and array.get(targetBtms, i) <= array.get(targetTops, x)
                     deleted := true
                     delIdx := i
-                if array.get(targetBtm, i) == array.get(targetBtm, x) and array.get(targetTop, i) == array.get(targetTop,x)
+                if array.get(targetBtms, i) == array.get(targetBtms, x) and array.get(targetTops, i) == array.get(targetTops,x)
                     deleted := true
                     delIdx := i
-                if array.get(targetBtm, i) <= array.get(targetBtm, x) and array.get(targetTop, i) >= array.get(targetTop,x)
+                if array.get(targetBtms, i) <= array.get(targetBtms, x) and array.get(targetTops, i) >= array.get(targetTops,x)
                     deleted := true
                     delIdx := i
     [deleted, delIdx]
@@ -1001,8 +1002,8 @@ lookBars = barmerge.lookahead_on
 [obValid, obFVol, obBVols, obSVols, obFTops, obFBtms, obFLefts, obFTypes] = request.security(ticker.standard(syminfo.tickerid), obTf, findOb(), barMerge, lookBars)
 [obValidMtf, obMtfFVol, obMtfBVols, obMtfSVols, obMtfFTops, obMtfFBtms, obMtfFLefts, obMtfFTypes] = request.security(ticker.standard(syminfo.tickerid), obMtfTf, findOb(), barMerge, lookBars)
 
-obTf1Request = request.security(ticker.standard(syminfo.tickerid), obTf, time_diff(), barMerge, lookBars)
-obTf2Request = request.security(ticker.standard(syminfo.tickerid), obMtfTf, time_diff(), barMerge, lookBars)
+series int obTf1Request = request.security(ticker.standard(syminfo.tickerid), obTf, time_diff(), barMerge, lookBars)
+series int obTf2Request = request.security(ticker.standard(syminfo.tickerid), obMtfTf, time_diff(), barMerge, lookBars)
 
 if obValid and not(obValid[1]) and barstate.isconfirmed
     array.unshift(obVols, obFVol)
@@ -1118,7 +1119,7 @@ if barstate.islast
         array.push(obMtfVolLines, line.new(na,na,na,na, xloc = xloc.bar_time, color = TXT_COLOR, style = line.style_solid, width = 1))
 
 if obSize > 1
-    [deletedOb, delIdx] = removeOb(obTops, obBtms, obLefts, obTypes, obsMax, false, obSize)
+    [deletedOb, delIdx] = removeOb(obTops, obBtms, obsMax, obSize)
 
     if deletedOb
         array.remove(obTops, delIdx)
@@ -1130,7 +1131,7 @@ if obSize > 1
         array.remove(obVols, delIdx)
 
 if obMtfSize > 1
-    [deletedOb, delIdx] = removeOb(obMtfTops, obMtfBtms, obMtfLefts, obMtfTypes, obsMaxMtf, false, obMtfSize)
+    [deletedOb, delIdx] = removeOb(obMtfTops, obMtfBtms, obsMaxMtf, obMtfSize)
     
     if deletedOb
         array.remove(obMtfTops, delIdx)
@@ -1146,14 +1147,14 @@ obSize := array.size(obTypes)
 
 if obSize > 0 and barstate.islast
     if obShowed
-        showOb(obBoxes, obVolLines, obTops, obBtms, obLefts, obTypes, obsMax, false, obSize, obVols, obBullishColor, obBearishColor, "")
+        showOb(obBoxes, obVolLines, obTops, obBtms, obLefts, obTypes, obsMax, obSize, obVols, obBullishColor, obBearishColor, "")
 
 if obMtfSize > 0 and barstate.islast
     if obMtfShowed
-        showOb(obMtfBoxes, obMtfVolLines, obMtfTops, obMtfBtms, obMtfLefts, obMtfTypes, obsMaxMtf, false, obMtfSize, obMtfVols, obBullishMtfColor, obBearishMtfColor, obTfTxt)
+        showOb(obMtfBoxes, obMtfVolLines, obMtfTops, obMtfBtms, obMtfLefts, obMtfTypes, obsMaxMtf, obMtfSize, obMtfVols, obBullishMtfColor, obBearishMtfColor, obTfTxt)
 
 //-----------------------------------------------------------------------------}
-// Order Blocks
+// Liquidity Levels
 //-----------------------------------------------------------------------------{
 getTfMulti(string tf) =>
     simple int ts = timeframe.in_seconds("")
