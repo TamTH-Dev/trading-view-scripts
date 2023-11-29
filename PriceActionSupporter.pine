@@ -67,10 +67,10 @@ bool shouldDisplay = last_bar_index - bar_index < generalLen
 //-----------------------------------------------------------------------------{
 string vpGrp = "Volume Profile"
 int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars", group = vpGrp)
-int vpLevelsSize = input.int(200, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
+int vpLevelsSize = input.int(360, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
 int vpWidth = input.int(16, "Profile's Width", minval = 1, maxval = 100, tooltip = "The length of the bars relative to the Lookback value", group = vpGrp)
 int vpBarWidth = input.int(2, "Bar's Width", tooltip = "Width of each bar", group = vpGrp)
-int vpOffset = input.int(16, "Offset From Last Bar", group = vpGrp)
+int vpOffset = input.int(20, "Offset From Last Bar", group = vpGrp)
 color vpColor = input.color(DARK_GRAY_COLOR, "Color", group = vpGrp)
 
 //-----------------------------------------------------------------------------}
