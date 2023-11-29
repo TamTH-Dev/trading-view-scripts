@@ -1552,7 +1552,7 @@ if shouldDisplay and mpShowed
 // Settings
 //-----------------------------------------------------------------------------{
 string oteGrp = "OTE"
-bool oteShowed = input.bool(true, "Show", group = oteGrp)
+bool oteShowed = input.bool(false, "Show", group = oteGrp)
 string oteDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
 int oteDepth = input.int(10, "Depth", group = oteGrp, tooltip = oteDepthTooltip)
 string oteDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
