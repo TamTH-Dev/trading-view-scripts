@@ -124,6 +124,81 @@ if barstate.islast
 
 
 
+//-----------------------------------------------------------------------------*
+// Killzones
+//------------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------{
+string kzGrp = "Killzones"
+bool kzShowed = input.bool(true, "Show", group = kzGrp)
+bool kzLabelsShowed = input.bool(false, "Show Labels", group = kzGrp)
+// New York
+bool kzNyShowed = input.bool(true, "New York", inline = "ny", group = kzGrp)
+color kzNyColor = input.color(color.new(YELLOW_COLOR, 96), "", inline = "ny", group = kzGrp)
+// London Open
+bool kzLdnoShowed = input.bool(true, "London Open", inline = "ldno", group = kzGrp)
+color kzLdnoColor = input.color(color.new(AQUA_COLOR, 96), "", inline = "ldno", group = kzGrp)
+// London Close
+bool kzLdncShowed = input.bool(true, "London Close", inline = "ldnc", group = kzGrp)
+color kzLdncColor = input.color(color.new(RED_COLOR, 96), "", inline = "ldnc", group = kzGrp)
+// Asian
+bool kzAsianShowed = input.bool(true, "Asian", inline = "asian", group = kzGrp)
+color kzAsiaColor = input.color(color.new(PURPLE_COLOR, 96), "", inline = "asian", group = kzGrp)
+
+//-----------------------------------------------------------------------------}
+// Functions
+//-----------------------------------------------------------------------------{
+showKzLabels(bool session, color css, string txt)=>
+    var label lbl = na
+    var float max = na 
+    var int anchor = na
+    var getCss = color.rgb(color.r(css), color.g(css), color.b(css))
+
+    if session and not session[1]
+        max := high
+        anchor := time
+        lbl := label.new(anchor, max
+          , txt
+          , xloc.bar_time
+          , color = #ffffff00
+          , style = label.style_label_down
+          , textcolor = getCss
+          , size = size.small)
+    
+    if session
+        max := math.max(high, max)
+        label.set_x(lbl, int(math.avg(time - (time[1] - time[5]) / 5, anchor)))
+        label.set_y(lbl, max)
+
+//-----------------------------------------------------------------------------}
+// Retracements
+//-----------------------------------------------------------------------------{
+bool isKzNySession = time(timeframe.period, "0700-0900", "UTC-5") and kzNyShowed and shouldDisplay
+bool isKzLdnoSession = time(timeframe.period, "0200-0500", "UTC-5") and kzLdnoShowed and shouldDisplay
+bool isKzLdncSession = time(timeframe.period, "1000-1200", "UTC-5") and kzLdncShowed and shouldDisplay
+bool isKzAsianSession = time(timeframe.period, "2000-0000", "UTC-5") and kzAsianShowed and shouldDisplay
+
+//-----------------------------------------------------------------------------}
+// Labels
+//-----------------------------------------------------------------------------{
+showKzLabels(kzLabelsShowed and isKzNySession, kzNyColor, "New York")
+showKzLabels(kzLabelsShowed and isKzLdnoSession, kzLdnoColor, "London Open")
+showKzLabels(kzLabelsShowed and isKzLdncSession, kzLdncColor, "London Close")
+showKzLabels(kzLabelsShowed and isKzAsianSession, kzAsiaColor, "Asian")
+
+//-----------------------------------------------------------------------------}
+// Background
+//-----------------------------------------------------------------------------{
+bgcolor(isKzNySession ? kzNyColor : na, editable = false)
+bgcolor(isKzLdnoSession ? kzLdnoColor : na, editable = false)
+bgcolor(isKzLdncSession ? kzLdncColor : na, editable = false)
+bgcolor(isKzAsianSession ? kzAsiaColor : na, editable = false)
+
+//-----------------------------------------------------------------------------}
+
+
+
+
 
 //-----------------------------------------------------------------------------*
 // Trend Lines
@@ -380,8 +455,8 @@ bool llShowed = input.bool(true, title = "Showed", group = llGrp, inline = "1")
 var llTf = input.timeframe("", title = "Timeframe", group = llGrp, inline = "2")
 int llPivotLen = input.int(8, title = "Pivot Length", group = llGrp, inline = "3")
 int llMaxLevels = input.int(6, title = "Max Levels", group = llGrp, inline = "4")
-color llSellSideColor = input.color(#00bbf94d, "", group = llGrp, inline = "1")
-color llBuySideColor = input.color(#e91e624d, "", group = llGrp, inline = "1")
+color llSellSideColor = input.color(color.new(AQUA_COLOR, 60), "", group = llGrp, inline = "1")
+color llBuySideColor = input.color(color.new(RED_COLOR, 60), "", group = llGrp, inline = "1")
 float llBoxWidth = 2.5
 series float llAtrLiq = ta.atr(300)
 float llTholdLiq = llAtrLiq * llBoxWidth / 10
