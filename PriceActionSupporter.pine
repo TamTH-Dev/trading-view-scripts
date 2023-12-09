@@ -130,7 +130,7 @@ if barstate.islast
 // Settings
 //-----------------------------------------------------------------------------{
 string kzGrp = "Killzones"
-bool kzShowed = input.bool(true, "Show", group = kzGrp)
+bool kzShowed = input.bool(false, "Show", group = kzGrp)
 bool kzLabelsShowed = input.bool(false, "Show Labels", group = kzGrp)
 // New York
 bool kzNyShowed = input.bool(true, "New York", inline = "ny", group = kzGrp)
@@ -173,10 +173,10 @@ showKzLabels(bool session, color css, string txt)=>
 //-----------------------------------------------------------------------------}
 // Retracements
 //-----------------------------------------------------------------------------{
-bool isKzNySession = time(timeframe.period, "0700-0900", "UTC-5") and kzNyShowed and shouldDisplay
-bool isKzLdnoSession = time(timeframe.period, "0200-0500", "UTC-5") and kzLdnoShowed and shouldDisplay
-bool isKzLdncSession = time(timeframe.period, "1000-1200", "UTC-5") and kzLdncShowed and shouldDisplay
-bool isKzAsianSession = time(timeframe.period, "2000-0000", "UTC-5") and kzAsianShowed and shouldDisplay
+bool isKzNySession = time(timeframe.period, "0700-0900", "UTC-5") and kzShowed and kzNyShowed and shouldDisplay
+bool isKzLdnoSession = time(timeframe.period, "0200-0500", "UTC-5") and kzShowed and kzLdnoShowed and shouldDisplay
+bool isKzLdncSession = time(timeframe.period, "1000-1200", "UTC-5") and kzShowed and kzLdncShowed and shouldDisplay
+bool isKzAsianSession = time(timeframe.period, "2000-0000", "UTC-5") and kzShowed and kzAsianShowed and shouldDisplay
 
 //-----------------------------------------------------------------------------}
 // Labels
@@ -455,9 +455,9 @@ bool llShowed = input.bool(true, title = "Showed", group = llGrp, inline = "1")
 var llTf = input.timeframe("", title = "Timeframe", group = llGrp, inline = "2")
 int llPivotLen = input.int(8, title = "Pivot Length", group = llGrp, inline = "3")
 int llMaxLevels = input.int(6, title = "Max Levels", group = llGrp, inline = "4")
-color llSellSideColor = input.color(color.new(AQUA_COLOR, 60), "", group = llGrp, inline = "1")
-color llBuySideColor = input.color(color.new(RED_COLOR, 60), "", group = llGrp, inline = "1")
-float llBoxWidth = 2.5
+color llSellSideColor = input.color(color.new(AQUA_COLOR, 50), "", group = llGrp, inline = "1")
+color llBuySideColor = input.color(color.new(RED_COLOR, 50), "", group = llGrp, inline = "1")
+float llBoxWidth = 1.5
 series float llAtrLiq = ta.atr(300)
 float llTholdLiq = llAtrLiq * llBoxWidth / 10
 
@@ -1279,10 +1279,10 @@ if llShowed
 
     if not na(llPivotHigh)
         series float yOffset = _llHigh[displacement] - llTholdLiq
-        array.push(llHtfHighBoxes, box.new(_llTime[displacement], _llHigh[displacement], _llTime[+1], yOffset, bgcolor = llBuySideColor, border_color = color.new(llBuySideColor, 90), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text = "BUY SIDE $$$", text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))  
+        array.push(llHtfHighBoxes, box.new(_llTime[displacement], _llHigh[displacement], _llTime[+1], yOffset, bgcolor = llBuySideColor, border_color = color.new(llBuySideColor, 80), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))  
     if not na(llPivotLow)
         series float yOffset = _llLow[displacement] + llTholdLiq
-        array.push(llHtfLowBoxes, box.new(_llTime[displacement], _llLow[displacement], _llTime[+1], yOffset, bgcolor = llSellSideColor, border_color = color.new(llSellSideColor, 90), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text = "SELL SIDE $$$", text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))
+        array.push(llHtfLowBoxes, box.new(_llTime[displacement], _llLow[displacement], _llTime[+1], yOffset, bgcolor = llSellSideColor, border_color = color.new(llSellSideColor, 80), xloc = xloc.bar_time, border_style = line.style_solid, extend = extend.none, border_width = 2, text_halign = text.align_center, text_color = WHITE_COLOR, text_size = size.small))
 
 
 removeMitigatedBoxes(llHtfHighBoxes, "High")
