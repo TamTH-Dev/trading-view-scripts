@@ -311,7 +311,6 @@ bearish_OB_Break = false
 
 
 
-bosConfType = 'Candle High'//input.string('Candle Close', 'BOS Confirmation', ['Candle Close', 'Wicks'], tooltip='Choose whether candle close/wick above previous swing point counts as a BOS.')
 MSS = true//input.bool(false, 'Show MSS', tooltip='Renames the first counter t_MS BOS to MSS' )
 // showSwing = false//input.bool(true, 'Show Swing Points', tooltip='Show or hide HH, LH, HL, LL')
 
