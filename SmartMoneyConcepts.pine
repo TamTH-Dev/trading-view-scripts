@@ -264,9 +264,15 @@ color iBearColor = input.color(RED_COLOR, ""
   , inline = "ibear"
   , group = "Real Time Internal Structure")
 
-bool iConfluenceFiltered = input.bool(false, "Confluence Filter"
+bool iConfluenceFiltered = input.bool(true, "Confluence Filter"
   , group = "Real Time Internal Structure"
   , tooltip = CONFLUENCE_FILTER)
+
+int internalLen = input.int(5, ""
+  , minval = 2
+  , maxval = 10
+  , inline = "swings"
+  , group = "Real Time Swing Structure")
 
 string iStructureSize = input.string("Tiny", "Internal Label Size"
   , options = ["Tiny", "Small", "Normal"]
@@ -604,7 +610,7 @@ var eqhl_lblSize = eqSize == "Tiny"
 
 // Swings
 [top, btm] = getSwings(swingLen)
-[itop, ibtm] = getSwings(5)
+[itop, ibtm] = getSwings(internalLen)
 
 //-----------------------------------------------------------------------------}
 // Pivot High
@@ -632,16 +638,17 @@ if top
 
     // Extend recent top to last bar
     line.delete(extendTop[1])
-    extendTop := line.new(barIdx - swingLen, top, barIdx, top, color = bear_css)
+    series int xOffset = barIdx - swingLen
+    extendTop := line.new(xOffset, top, barIdx, top, color = bear_css)
     topY := top
-    topX := barIdx - swingLen
+    topX := xOffset
     trailUp := top
-    trailUpX := barIdx - swingLen
+    trailUpX := xOffset
 
 if itop
     iTopCross := true
     iTopY := itop
-    iTopX := barIdx - 5
+    iTopX := barIdx - internalLen
 
 // Trailing maximum
 trailUp := math.max(high, trailUp)
@@ -681,17 +688,18 @@ if btm
             label.delete(btm_lbl[1])
     
     // Extend recent btm to last bar
+    series int xOffset = barIdx - swingLen
     line.delete(extend_btm[1])
-    extend_btm := line.new(barIdx - swingLen, btm, barIdx, btm, color = bull_css)
+    extend_btm := line.new(xOffset, btm, barIdx, btm, color = bull_css)
     btmY := btm
-    btmX := barIdx - swingLen
+    btmX := xOffset
     trailDn := btm
-    trailDnX := barIdx - swingLen
+    trailDnX := xOffset
 
 if ibtm
     iBtmCross := true
     iBtmY := ibtm
-    iBtmX := barIdx - 5
+    iBtmX := barIdx - internalLen
 
 // Trailing minimum
 trailDn := math.min(low, trailDn)
