@@ -66,6 +66,7 @@ bool shouldDisplay = last_bar_index - bar_index < generalLen
 // Settings
 //-----------------------------------------------------------------------------{
 string vpGrp = "Volume Profile"
+bool vpShowed = input.bool(false, "Show", group = vpGrp)
 int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars", group = vpGrp)
 int vpLevelsSize = input.int(360, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
 int vpWidth = input.int(16, "Profile's Width", minval = 1, maxval = 100, tooltip = "The length of the bars relative to the Lookback value", group = vpGrp)
@@ -89,7 +90,7 @@ array<int> vpVols = array.new_int(0)
 array<float> vpSumv = array.new_float(0)
 line vpLine = na
 
-if barstate.islast
+if barstate.islast and vpShowed
     for i = 0 to vpLevelsSize
         array.push(vpLevels, vpLowest + i / vpLevelsSize * (vpHighest - vpLowest))
 
