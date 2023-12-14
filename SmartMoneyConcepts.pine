@@ -2,7 +2,7 @@
 // © tamth_
 
 // @version=5
-indicator("Price Action Supporter", "Price Action Supporter", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500, max_bars_back = 500)
+indicator("Smart Money Concepts", "Smart Money Concepts", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 500, max_bars_back = 500)
 
 
 //-----------------------------------------------------------------------------*
@@ -201,119 +201,6 @@ bgcolor(isKzAsianSession ? kzAsiaColor : na, editable = false)
 
 
 //-----------------------------------------------------------------------------*
-// Trend Lines
-//-----------------------------------------------------------------------------*
-// Settings
-//-----------------------------------------------------------------------------{
-string tlGrp = "Trend Lines"
-bool tlShowed = input.bool(false, "Show", group = tlGrp)
-color tlColor = input.color(TXT_COLOR, "Color", group = tlGrp)
-int tlPivotLenL = input.int(20, "Lookback", step = 1, minval = 1, group = tlGrp)
-int tlPivotLenR = tlPivotLenL
-string tlSrc = input.string("Close", "Mitigation", options = ["Close", "High/Low"], group = tlGrp)
-int tlMaxLines = input.int(2, "Max Broken Lines", step = 1, minval = 1, maxval = 50, group = tlGrp)
-
-//-----------------------------------------------------------------------------}
-// Get values
-//-----------------------------------------------------------------------------{
-series float tlClose = request.security(ticker.standard(syminfo.tickerid), timeframe.period, close)
-series float tlOpen = request.security(ticker.standard(syminfo.tickerid), timeframe.period, open)
-series float tlHigh = request.security(ticker.standard(syminfo.tickerid), timeframe.period, high)
-series float tlLow = request.security(ticker.standard(syminfo.tickerid), timeframe.period, low)
-
-var line[] tlPhs = array.new_line()
-var line[] tlPls = array.new_line()
-series float tlPh = ta.pivothigh(tlHigh, tlPivotLenL, tlPivotLenR)
-series float tlPl = ta.pivotlow(tlLow, tlPivotLenL, tlPivotLenR)
-
-var float tlPrevCloseH = na, var float tlCurCloseH = na
-var float tlPrevCloseL = na, var float tlCurCloseL = na
-var int tlXPrevLow = na, var float tlYPrevLow = na, var int tlXCurLow = na, var float tlYCurLow = na
-var int tlXCurHigh = na, var float tlYCurHigh = na, var int tlXPrevHigh = na, var float tlYPrevHigh = na
-
-int tlUpSize = tlMaxLines / 2
-int tlDnSize = tlMaxLines % 2 == 0 ? tlMaxLines / 2 : (tlMaxLines / 2) + 1
-
-//-----------------------------------------------------------------------------}
-// Functions
-//-----------------------------------------------------------------------------{
-getNewTrendLine(string ptype, series int x1, series float y1, series int x2, series float y2)=>
-    series line newTrendLine = line.new(x1, y1, x2, y2, extend = extend.none, color = tlColor, width = 1, style = line.style_solid, xloc = xloc.bar_index)
-
-    if ptype == "ph"
-        tlPhs.unshift(newTrendLine)
-    else
-        tlPls.unshift(newTrendLine)
-
-slopeLine(series line line)=>
-    float slopePh = (line.get_y2(line) - line.get_y1(line)) / (line.get_x2(line) - line.get_x1(line))
-    float extendedPh = line.get_y2(line) - slopePh * (line.get_x2(line) - bar_index)
-    extendedPh
-
-if not na(tlPl)
-    tlXPrevLow := tlXCurLow, tlYPrevLow := tlYCurLow, tlPrevCloseL := tlCurCloseL
-    tlXCurLow := bar_index[tlPivotLenR], tlYCurLow := tlLow[tlPivotLenR], tlCurCloseL:= tlClose[tlPivotLenR]
-
-    if tlYPrevLow < tlYCurLow and tlShowed and tlYCurLow > tlPrevCloseL 
-        getNewTrendLine("pl", tlXPrevLow, tlYPrevLow, tlXCurLow, tlYCurLow)
-
-if not na(tlPh)
-    tlXPrevHigh := tlXCurHigh, tlYPrevHigh := tlYCurHigh, tlPrevCloseH := tlCurCloseH
-    tlXCurHigh := bar_index[tlPivotLenR], tlYCurHigh := tlHigh[tlPivotLenR], tlCurCloseH:= tlClose[tlPivotLenR]
-    
-    if tlYPrevHigh > tlYCurHigh and tlShowed and tlPrevCloseH > tlYCurHigh
-        getNewTrendLine("ph", tlXPrevHigh, tlYPrevHigh, tlXCurHigh, tlYCurHigh)
-
-if close > tlYPrevHigh
-    tlYPrevHigh := 0.000000
-
-if close < tlYPrevLow
-    tlYPrevLow := 9999999999.9999
-
-//-----------------------------------------------------------------------------}
-// Plots
-//-----------------------------------------------------------------------------{
-for x in tlPls
-    var line [] downTrendLines = array.new_line(tlUpSize)
-    var label [] downTrendLabels = array.new_label(tlUpSize)
-    series float src = tlSrc == "Close" ? tlClose : tlLow
-    x.set_xy2(bar_index, slopeLine(x))
-
-    if x.get_x2() - x.get_x1() > 300
-        x.delete()
-
-    if src < line.get_y2(x)
-        series line tlLine = line.new(line.get_x1(x), line.get_y1(x), line.get_x2(x), line.get_y2(x), color = tlColor, style = line.style_dashed, width = 1, xloc = xloc.bar_index, extend = extend.none)
-        downTrendLines.unshift(tlLine)
-        line.delete(x)
-
-    if downTrendLines.size() > tlUpSize
-        line.delete(downTrendLines.pop())
-
-for x in tlPhs
-    var line [] upTrendLines = array.new_line(tlDnSize)
-    var label [] upTrendLabels = array.new_label(tlDnSize)
-    series float src = tlSrc == "Close" ? tlClose : tlHigh
-    x.set_xy2(bar_index, slopeLine(x))
-
-    if x.get_x2() - x.get_x1() > 300
-        x.delete()
-
-    if src > line.get_y2(x)
-        series line tlLine = line.new(line.get_x1(x), line.get_y1(x), line.get_x2(x), line.get_y2(x), color = tlColor, style = line.style_dashed, width = 1, xloc = xloc.bar_index, extend = extend.none)
-        upTrendLines.unshift(tlLine)
-        line.delete(x)
-
-    if upTrendLines.size() > tlDnSize
-        line.delete(upTrendLines.pop())
-
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
 // Smart Money Concepts
 //-----------------------------------------------------------------------------*
 // Tooltips
@@ -326,6 +213,9 @@ string CONFLUENCE_FILTER     = "Filter non significant internal structure breako
 string SHOW_SWING            = "Display swing market Structure"
 string SHOW_SWING_POINTS     = "Display swing point as labels on the chart"
 string SHOW_SWHL_POINTS      = "Highlight most recent strong and weak high/low points on the chart"
+string INTERNAL_OB           = 'Display internal order blocks on the chart\n\nNumber of internal order blocks to display on the chart'
+string SWING_OB              = 'Display swing order blocks on the chart\n\nNumber of internal swing blocks to display on the chart'
+string FILTER_OB             = 'Method used to filter out volatile order blocks \n\nIt is recommended to use the cumulative mean range method when a low amount of data is available'
 string SHOW_EQHL             = "Display equal highs and equal lows on the chart"
 string EQHL_BARS             = "Number of bars used to confirm equal highs and equal lows"
 string EQHL_THRESHOLD        = "Sensitivity threshold in a range (0, 1) used for the detection of equal highs & lows\n\nLower values will return fewer but more pertinent results"
@@ -344,11 +234,6 @@ string mode = input.string("Historical"
   , options = ["Historical", "Present"]
   , group = "Smart Money Concepts"
   , tooltip = MODE_TOOLTIP)
-
-string style = input.string("Colored"
-  , options = ["Colored", "Monochrome"]
-  , group = "Smart Money Concepts"
-  , tooltip = STYLE_TOOLTIP)
 
 bool trendShowed = input.bool(false, "Color Candles"
   , group = "Smart Money Concepts"
@@ -434,18 +319,21 @@ bool hlSwingsShowed = input.bool(true, "Show Strong/Weak High/Low"
 // Order Blocks
 //----------------------------------------{
 string obGrp = "Order Blocks"
-bool obShowed = input.bool(true, "Order Blocks", inline = "ob1", group = obGrp)
+bool iobShowed = input.bool(true, 'Internal Order Blocks', inline = 'iob', group = obGrp, tooltip = INTERNAL_OB)
+int numOfIobs = input.int(5, '', minval = 1, inline = 'iob', group = obGrp)
+bool sobShowed = input.bool(false, 'Swing Order Blocks', inline = 'ob', group = obGrp, tooltip = SWING_OB)
+int numOfSobs = input.int(5, '', minval = 1, inline = 'ob', group = obGrp)
+string obFilter = input.string('Atr', 'Order Block Filter', options = ['Atr', 'Cumulative Mean Range'], group = obGrp, tooltip = FILTER_OB)
 color obBullishColor = input.color(BLOCK_COLOR, "", inline = "ob1", group = obGrp)
 color obBearishColor = input.color(BLOCK_COLOR, "", inline = "ob1", group = obGrp)
-var obTf = input.timeframe("", "Timeframe", inline = "ob2", group = obGrp)
-string obMitigationFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], inline = "ob3", group = obGrp)
-int obsMax = input.int(4, "Max OBs", minval = 3, inline = "ob4", group = obGrp)
-bool obMtfShowed = input.bool(false, "MTF Order Blocks", inline = "m_ob1", group = obGrp)
-color obBullishMtfColor = input.color(BLOCK_COLOR, "", inline = "m_ob1", group = obGrp)
-color obBearishMtfColor = input.color(BLOCK_COLOR, "", inline = "m_ob1", group = obGrp)
-var obMtfTf = input.timeframe("240", "Timeframe", inline = "mob2", group = obGrp)
-string obMitigationMtfFilt = input.string("Wicks", "Mitigation Method", options = ["Touch", "Wicks", "Close", "Average"], inline = "mob3", group = obGrp)
-int obsMaxMtf = input.int(4, "Max OBs", minval = 3, inline = "mob4", group = obGrp)
+var iobTop = array.new_float(0)
+var iobBtm = array.new_float(0)
+var iobLeft = array.new_int(0)
+var iobType = array.new_int(0)
+var obTop = array.new_float(0)
+var obBtm = array.new_float(0)
+var obLeft = array.new_int(0)
+var obType = array.new_int(0)
 
 //----------------------------------------}
 // Liquidity Levels
@@ -457,7 +345,7 @@ int llPivotLen = input.int(8, title = "Pivot Length", group = llGrp, inline = "3
 int llMaxLevels = input.int(6, title = "Max Levels", group = llGrp, inline = "4")
 color llSellSideColor = input.color(color.new(AQUA_COLOR, 50), "", group = llGrp, inline = "1")
 color llBuySideColor = input.color(color.new(RED_COLOR, 50), "", group = llGrp, inline = "1")
-float llBoxWidth = 1.5
+float llBoxWidth = 1
 series float llAtrLiq = ta.atr(300)
 float llTholdLiq = llAtrLiq * llBoxWidth / 10
 
@@ -558,12 +446,8 @@ color pmhlColor = input.color(TXT_COLOR, ""
 //----------------------------------------}
 // Premium/Discount zones
 //----------------------------------------{
-bool pdzShowed = input.bool(false, "Premium/Discount Zones"
-  , group = "Premium & Discount Zones"
-  , tooltip = PED_ZONES)
-
+bool pdzShowed = input.bool(false, "Premium/Discount Zones", group = "Premium & Discount Zones", tooltip = PED_ZONES)
 color pdzBgColor = input.color(BLOCK_COLOR, "Background Color", group = "Premium & Discount Zones")
-
 color pdzTextColor = input.color(TXT_COLOR, "Text Color", group = "Premium & Discount Zones")
 
 //-----------------------------------------------------------------------------}
@@ -572,14 +456,53 @@ color pdzTextColor = input.color(TXT_COLOR, "Text Color", group = "Premium & Dis
 series float atr = ta.atr(200)
 series float cmean_range = ta.cum(high - low) / barIdx
 
-// HL Output
+// Order block coordinates function
+getObCoord(bool maxUsed, series int loc, array<float> targetTop, array<float> targetBtm, array<int> targetLeft, array<int> targetType) =>
+    float min = 99999999.
+    float max = 0.
+    int idx = 1
+    series float ob_threshold = obFilter == 'Atr' ? atr : cmean_range 
+
+    // Search for highest/lowest high within the structure interval and get range
+    if maxUsed
+        for i = 1 to (barIdx - loc)-1
+            if (high[i] - low[i]) < ob_threshold[i] * 2
+                max := math.max(high[i], max)
+                min := max == high[i] ? low[i] : min
+                idx := max == high[i] ? i : idx
+    else
+        for i = 1 to (barIdx - loc)-1
+            if (high[i] - low[i]) < ob_threshold[i] * 2
+                min := math.min(low[i], min)
+                max := min == low[i] ? high[i] : max
+                idx := min == low[i] ? i : idx
+
+    array.unshift(targetTop, max)
+    array.unshift(targetBtm, min)
+    array.unshift(targetLeft, time[idx])
+    array.unshift(targetType, maxUsed ? -1 : 1)
+
+displayOb(array<box> boxes, array<float> targetTop, array<float> targetBtm, array<int> targetLeft, array<int> targetType, int lastShowed, bool swing, series int size) =>
+    for i = 0 to math.min(lastShowed - 1, size - 1)
+        box box = array.get(boxes, i)
+        box.set_lefttop(box, array.get(targetLeft, i), array.get(targetTop, i))
+        box.set_rightbottom(box, BAR_TIME_RIGHT_ALIGNMENT, array.get(targetBtm, i))
+        color contractionColor = na
+        
+        if swing 
+            contractionColor := array.get(targetType, i) == 1 ? obBullishColor : obBearishColor
+            box.set_border_color(box, contractionColor)
+            box.set_bgcolor(box, contractionColor)
+        else
+            contractionColor := array.get(targetType, i) == 1 ? obBullishColor : obBearishColor
+            box.set_border_color(box, contractionColor)
+            box.set_bgcolor(box, contractionColor)
+
 getHL() => [high, low]
 
-// Get ohlc values
-getOHLC()=> [close[1], open[1], high, low, high[2], low[2]]
+getOHLC() => [close[1], open[1], high, low, high[2], low[2]]
 
-// Display structure
-displayStructure(series int x, series float y, string txt, color color, bool dashed, bool down, string lblSize)=>
+displayStructure(series int x, series float y, string txt, color color, bool dashed, bool down, string lblSize) =>
     line structureLine = line.new(x, y, barIdx, y, color = color, style = dashed ? line.style_dashed : line.style_solid)
     label structureLbl = label.new(int(math.avg(x, barIdx)), y, txt, color = TRANSPARENT_COLOR, textcolor = color, style = down ? label.style_label_down : label.style_label_up, size = lblSize)
 
@@ -587,8 +510,7 @@ displayStructure(series int x, series float y, string txt, color color, bool das
         line.delete(structureLine[1])
         label.delete(structureLbl[1])
 
-// Swings detection/measurements
-getSwings(int len)=>
+getSwings(int len) =>
     var os = 0
     series float upper = ta.highest(len)
     series float lower = ta.lowest(len)
@@ -598,15 +520,13 @@ getSwings(int len)=>
 
     [top, btm]
         
-// Line Style function
 getLineStyle(string style) =>
     string out = switch style
         "⎯⎯⎯"  => line.style_solid
         "----" => line.style_dashed
         "····" => line.style_dotted
 
-// Set line/labels function for previous high/lows
-getPHL(series float h, series float l, string tf, color css)=>
+getPHL(series float h, series float l, string tf, color css) =>
     var line highLine = line.new(na,na,na,na
       , xloc = xloc.bar_time
       , color = css
@@ -660,14 +580,10 @@ var iTopCross = true, var iBtmCross = true
 var txtTop = "",  var txtBtm = ""
 
 // Structure colors
-var bull_css = style == "Monochrome" ? #b2b5be 
-  : sBullColor
-var bear_css = style == "Monochrome" ? #b2b5be 
-  : sBearColor
-var ibull_css = style == "Monochrome" ? #b2b5be 
-  : iBullColor
-var ibear_css = style == "Monochrome" ? #b2b5be 
-  : iBearColor
+var bull_css = sBullColor
+var bear_css = sBearColor
+var ibull_css = iBullColor
+var ibear_css = iBearColor
 
 // Labels size
 var internal_structureLblSize = iStructureSize == "Tiny" 
@@ -814,6 +730,10 @@ if ta.crossover(close, iTopY) and iTopCross and topY != iTopY and bullConcordant
     iTopCross := false
     itrend := 1
 
+    // Internal Order Block
+    if iobShowed
+        getObCoord(false, iTopX, iobTop, iobBtm, iobLeft, iobType)
+
 // Detect bullish Structure
 if ta.crossover(close, topY) and topCross
     bool choch = na
@@ -829,6 +749,10 @@ if ta.crossover(close, topY) and topCross
 
     topCross := false
     trend := 1
+
+    // Order Block
+    if sobShowed
+        getObCoord(false, topX, obTop, obBtm, obLeft, obType)
 
 //-----------------------------------------------------------------------------}
 // Pivot Low BOS/CHoCH
@@ -854,6 +778,10 @@ if ta.crossunder(close, iBtmY) and iBtmCross and btmY != iBtmY and bear_concorda
     iBtmCross := false
     itrend := -1
 
+    // Internal Order Block
+    if iobShowed
+        getObCoord(true, iBtmX, iobTop, iobBtm, iobLeft, iobType)
+
 // Detect bearish Structure
 if ta.crossunder(close, btmY) and btmCross
     bool choch = na
@@ -870,363 +798,64 @@ if ta.crossunder(close, btmY) and btmCross
     btmCross := false
     trend := -1
 
+    // Order Block
+    if sobShowed
+        getObCoord(true, btmX, obTop, obBtm, obLeft, obType)
+
 //-----------------------------------------------------------------------------}
 // Order Blocks
 //-----------------------------------------------------------------------------{
-string obTfStr = obMtfTf == "" ? timeframe.period : obMtfTf
-string obTfPrefix = not(str.contains(obTfStr, "S")) and not(str.contains(obTfStr, "D")) and not(str.contains(obTfStr, "W")) and not(str.contains(obTfStr, "M")) ? str.tonumber(obTfStr) >= 60? str.tostring(str.tonumber(obTfStr) / 60) + "H" : obTfStr + "M" : obTfStr
-string obTfTxt = obTfPrefix + " : "
-var int obMaxWidth = 20
-
-findOb() =>
-    bool valid = false
-    series float _high = high
-    series float _low = low
-    series float _open = open
-    series float _close = close
-    series float _vol = volume
-    int idx = 1
-    float fVol = 0.0
-    var int bVol = 0
-    var int sVol = 0
-    var bool maxUsed = false
-    var float min = 99999999.
-    var float max = 0.
-
-    if open[5] > close[5] and close[4] >= open[5] and low[1] > high[5] and low > high[5] and obShowed
-        if low[5] > low[4]
-            _high := math.min(high[4], high[5])
-            _low := low[4]
-            _open := open[4]        
-            _close := close[4]
-            _vol := volume[4]
-            idx := time[4]
-            valid := true
-            maxUsed := false
-        else
-            _high := high[5]
-            _low := low[5]
-            _open := open[5]        
-            _close := close[5]
-            _vol := volume[5]
-            idx := time[5]
-            valid := true
-            maxUsed := false
-    else if open[5] < close[5] and close[4] <= open[5] and high[1] < low[5] and high < low[5] and obShowed
-        if high[4] > high[5]
-            _high := high[4]
-            _low := math.max(low[4], low[5])
-            _open := open[4]        
-            _close := close[4]
-            _vol := volume[4]
-            idx := time[4]
-            valid := true
-            maxUsed := true
-        else
-            _high := high[5]
-            _low := low[5]
-            _open := open[5]        
-            _close := close[5]
-            _vol := volume[5]
-            idx := time[5]
-            valid := true
-            maxUsed := true
-    else if open[5] > close[5] and close[4] > close[5] and close[3] >= open[5] and low > high[5] and obShowed
-        if low[5] > low[4]
-            _high := math.min(high[4], high[5])
-            _low := low[4]
-            _open := open[4]        
-            _close := close[4]
-            _vol := volume[4]
-            idx := time[4]
-            valid := true
-            maxUsed := false
-        else
-            _high := high[5]
-            _low := low[5]
-            _open := open[5]        
-            _close := close[5]
-            _vol := volume[5]
-            idx := time[5]
-            valid := true
-            maxUsed := false
-    else if open[5] < close[5] and close[4] < close[5] and close[3] <= open[5] and high < low[5] and obShowed
-        if high[4] > high[5]
-            _high := high[4]
-            _low := math.max(low[4], low[5])
-            _open := open[4]        
-            _close := close[4]
-            _vol := volume[4]
-            idx := time[4]
-            valid := true
-            maxUsed := true
-        else
-            _high := high[5]
-            _low := low[5]
-            _open := open[5]      
-            _close := close[5]
-            _vol := volume[5]
-            idx := time[5]
-            valid := true
-            maxUsed := true
-    else
-        valid := false
-
-    if valid
-        series float thold_ = (ta.highest(300) - ta.lowest(300)) * (obMaxWidth / 2.) / 100.
-        series int buyingVol = math.round(_vol * (_close - _low) / (_high - _low))
-        series int sellingVol = math.round(_vol * (_high - _close) / (_high - _low))
-        series float tVol = (buyingVol + sellingVol) / 2.
-        bVol := int((buyingVol / ta.highest(tVol, 300)) * 100)
-        sVol := int((sellingVol / ta.highest(tVol, 300)) * 100)
-        fVol := _vol
-
-        // Search for highest/lowest high within the structure interval and get range
-        if maxUsed
-            max := _high
-            min_1 = _low
-            min := math.max(min_1, max - thold_)
-        else
-            max_1 = _high
-            min := _low
-            max := math.min(max_1, min + thold_)
-    [valid, fVol, bVol, sVol, max, min, idx, maxUsed ? -1 : 1]
-
-showOb(array<box> boxes, array<line> lines, array<float> targetTops, array<float> targetBtms, array<int> targetLefts, array<int> targetTypes, int showLast, series int size, array<float> vols, color col1, color col2, string tfTxt) =>
-    for x = 0 to showLast - 1
-        series box obBox = array.get(boxes, x)
-        box.set_lefttop(obBox, na, na)
-        box.set_rightbottom(obBox, na , na)
-        box.set_border_color(obBox, na)
-        box.set_bgcolor(obBox, na)
-        series line obLine = array.get(lines, x)
-        line.set_color(obLine, na)
-        line.set_xy1(obLine, na, na)
-        line.set_xy2(obLine, na, na)
-
-    for i = 0 to size - 1
-        series box obBox = array.get(boxes, i)
-        series line obLine = array.get(lines, i)
-        series int leftMax = bar_index - 750
-        series float volTotal = array.sum(vols)
-        series float vol = array.get(vols, i) > 100000000 ? array.get(vols, i) / 100000000. : array.get(vols, i)>1000000 ? array.get(vols, i) / 1000000. : array.get(vols, i) / 1000.
-        series float volPercent = array.get(vols, i) / volTotal * 100
-        string unit = array.get(vols, i) > 100000000 ? " B" : array.get(vols, i) > 1000000 ? " M" : " K"
-        string volTxt = tfTxt +  str.tostring(vol, "#.##") + unit + " (" + str.tostring(volPercent, "#.##") + "%)"
-        box.set_lefttop(obBox, array.get(targetLefts, i), array.get(targetTops, i))
-        box.set_rightbottom(obBox, BAR_TIME_RIGHT_ALIGNMENT, array.get(targetBtms, i))
-        box.set_text(obBox, volTxt)
-        box.set_text_color(obBox, TXT_COLOR)
-        box.set_border_color(obBox, TXT_COLOR)
-        box.set_border_width(obBox, 2)
-        box.set_text_halign(obBox, text.align_right)
-        box.set_text_valign(obBox, text.align_center)
-        box.set_text_size(obBox, size.normal)
-        // line.set_extend(obLine, extend.none)
-        // line.set_style(obLine, line.style_solid)
-        // line.set_xy1(obLine, array.get(targetLeft, i), array.get(targetTop, i) - (array.get(targetTop, i) - array.get(targetBtm, i)) / 2)
-        // line.set_xy2(obLine, time + ((time[1] - time[101]) / 10), array.get(targetTop, i) - (array.get(targetTop, i) - array.get(targetBtm, i)) / 2)
-        // line.set_color(obLine, TXT_COLOR)
-        color css = array.get(targetTypes, i) == 1 ? col1 : col2
-        box.set_border_color(obBox, css)
-        box.set_bgcolor(obBox, css)
-        box.set_border_color(obBox, css)
-
-removeOb(array<float> targetTops, array<float> targetBtms, int showLast, series int size) =>
-    var int delIdx = 0
-    bool deleted = false
-
-    for i = 0 to size - 1
-        if i > 0
-            for x = i - 1 to 0
-                if array.get(targetTops, i) >= array.get(targetBtms, x) and array.get(targetTops, i) <= array.get(targetTops, x)
-                    deleted := true
-                    delIdx := i
-                if array.get(targetBtms, i) >= array.get(targetBtms, x) and array.get(targetBtms, i) <= array.get(targetTops, x)
-                    deleted := true
-                    delIdx := i
-                if array.get(targetBtms, i) == array.get(targetBtms, x) and array.get(targetTops, i) == array.get(targetTops,x)
-                    deleted := true
-                    delIdx := i
-                if array.get(targetBtms, i) <= array.get(targetBtms, x) and array.get(targetTops, i) >= array.get(targetTops,x)
-                    deleted := true
-                    delIdx := i
-    [deleted, delIdx]
-
-time_diff() => (time[1] - time[101]) / 100
-
-var obTops = array.new_float(0)
-var obBtms = array.new_float(0)
-var obLefts = array.new_int(0)
-var obTypes = array.new_int(0)
-var obSellVols = array.new_int(0)
-var obBuyVols = array.new_int(0)
-var obVols = array.new_float(0)
-
-var obMtfTops = array.new_float(0)
-var obMtfBtms = array.new_float(0)
-var obMtfLefts = array.new_int(0)
-var obMtfTypes = array.new_int(0)
-var obMtfSellVols = array.new_int(0)
-var obMtfBuyVols = array.new_int(0)
-var obMtfVols = array.new_float(0)
-
-barMerge = barmerge.gaps_off
-lookBars = barmerge.lookahead_on
-
-[obValid, obFVol, obBVols, obSVols, obFTops, obFBtms, obFLefts, obFTypes] = request.security(ticker.standard(syminfo.tickerid), obTf, findOb(), barMerge, lookBars)
-[obValidMtf, obMtfFVol, obMtfBVols, obMtfSVols, obMtfFTops, obMtfFBtms, obMtfFLefts, obMtfFTypes] = request.security(ticker.standard(syminfo.tickerid), obMtfTf, findOb(), barMerge, lookBars)
-
-series int obTf1Request = request.security(ticker.standard(syminfo.tickerid), obTf, time_diff(), barMerge, lookBars)
-series int obTf2Request = request.security(ticker.standard(syminfo.tickerid), obMtfTf, time_diff(), barMerge, lookBars)
-
-if obValid and not(obValid[1]) and barstate.isconfirmed
-    array.unshift(obVols, obFVol)
-    array.unshift(obBuyVols, obBVols)
-    array.unshift(obSellVols, obSVols)
-    array.unshift(obTops, obFTops)
-    array.unshift(obBtms, obFBtms)
-    array.unshift(obLefts, obFLefts)
-    array.unshift(obTypes, obFTypes)
-
-if obValidMtf and not(obValidMtf[1]) and barstate.isconfirmed
-    array.unshift(obMtfVols, obMtfFVol)
-    array.unshift(obMtfBuyVols, obMtfBVols)
-    array.unshift(obMtfSellVols, obMtfSVols)
-    array.unshift(obMtfTops, obMtfFTops)
-    array.unshift(obMtfBtms, obMtfFBtms)
-    array.unshift(obMtfLefts, time - obTf2Request * 5)
-    array.unshift(obMtfTypes, obMtfFTypes)
-
+// Set order blocks
+var iobBoxes = array.new_box(0)
 var obBoxes = array.new_box(0)
-var obVolLines = array.new_line(0)
-var obBuyBoxes = array.new_box(0)
-var obSellBoxes = array.new_box(0)
-var obMtfBoxes = array.new_box(0)
-var obMtfVolLines = array.new_line(0)
-var obMtfBuyBoxes = array.new_box(0)
-var obMtfSellBoxes = array.new_box(0)
 
-if array.size(obMtfTops) > obsMaxMtf
-    array.pop(obMtfTops)
-    array.pop(obMtfBtms)
-    array.pop(obMtfLefts)
-    array.pop(obMtfTypes)
-    array.pop(obMtfBuyVols)
-    array.pop(obMtfSellVols)
-    array.pop(obMtfVols)
+// Delete internal order blocks box coordinates if top/bottom is broken
+for element in iobType
+    series int idx = array.indexof(iobType, element)
 
-if array.size(obTops) > obsMax
-    array.pop(obTops)
-    array.pop(obBtms)
-    array.pop(obLefts)
-    array.pop(obTypes)
-    array.pop(obBuyVols)
-    array.pop(obSellVols)
-    array.pop(obVols)
+    if close < array.get(iobBtm, idx) and element == 1
+        array.remove(iobTop, idx) 
+        array.remove(iobBtm, idx) 
+        array.remove(iobLeft, idx) 
+        array.remove(iobType, idx)
+    else if close > array.get(iobTop, idx) and element == -1
+        array.remove(iobTop, idx) 
+        array.remove(iobBtm, idx)
+        array.remove(iobLeft, idx) 
+        array.remove(iobType, idx)
 
-if array.size(obMtfTops) > 1
-    for idx = 0 to array.size(obMtfTops) - 1
-        series float src1 = obMitigationMtfFilt == "Wicks" or obMitigationMtfFilt == "Touch" ? low : obMitigationMtfFilt == "Close" ? close : low
-        series float src2 = obMitigationMtfFilt == "Wicks" or obMitigationMtfFilt == "Touch" ? high : obMitigationMtfFilt == "Close" ? close : high
-        series float up = obMitigationMtfFilt == "Touch" ? array.get(obMtfTops, idx) : obMitigationMtfFilt == "Average" ? array.get(obMtfTops, idx) - (array.get(obMtfTops, idx) - array.get(obMtfBtms, idx)) / 2  : array.get(obMtfBtms, idx)
-        series float dn = obMitigationMtfFilt == "Touch" ? array.get(obMtfBtms, idx) : obMitigationMtfFilt == "Average" ? array.get(obMtfTops, idx) - (array.get(obMtfTops, idx) - array.get(obMtfBtms, idx)) / 2  : array.get(obMtfTops, idx)
+// Delete internal order blocks box coordinates if top/bottom is broken
+for element in obType
+    series int idx = array.indexof(obType, element)
+    if close < array.get(obBtm, idx) and element == 1
+        array.remove(obTop, idx) 
+        array.remove(obBtm, idx) 
+        array.remove(obLeft, idx) 
+        array.remove(obType, idx)
+    else if close > array.get(obTop, idx) and element == -1
+        array.remove(obTop, idx) 
+        array.remove(obBtm, idx)
+        array.remove(obLeft, idx) 
+        array.remove(obType, idx)
 
-        if (src1 < up or src1[1] < up or (obMitigationMtfFilt != "Touch" and src1[1] < up)) and array.get(obMtfTypes, idx) == 1
-            array.remove(obMtfTops, idx) 
-            array.remove(obMtfBtms, idx) 
-            array.remove(obMtfLefts, idx) 
-            array.remove(obMtfTypes, idx)
-            array.remove(obMtfBuyVols, idx)
-            array.remove(obMtfSellVols, idx)
-            array.remove(obMtfVols, idx)
-            break
-        else if (src2 > dn or src2[1] > dn  or (obMitigationMtfFilt != "Touch" and src2[1] > dn)) and array.get(obMtfTypes, idx) == -1
-            array.remove(obMtfTops, idx) 
-            array.remove(obMtfBtms, idx)
-            array.remove(obMtfLefts, idx) 
-            array.remove(obMtfTypes, idx)
-            array.remove(obMtfBuyVols, idx)
-            array.remove(obMtfSellVols, idx)
-            array.remove(obMtfVols, idx)
-            break
+series int iobSize = array.size(iobType)
+series int obSize = array.size(obType)
 
-if array.size(obTops) > 1
-    for idx = 0 to array.size(obTops) - 1
-        series float src1 = obMitigationFilt == "Wicks" or obMitigationFilt == "Touch"? low : obMitigationFilt == "Close" ? close : low
-        series float src2 = obMitigationFilt == "Wicks" or obMitigationFilt == "Touch"? high : obMitigationFilt == "Close" ? close : high
-        series float up = obMitigationFilt == "Touch" ? array.get(obTops, idx) : obMitigationFilt == "Average" ? array.get(obTops, idx) - (array.get(obTops, idx) - array.get(obBtms, idx)) / 2 : array.get(obBtms, idx)
-        series float dn = obMitigationFilt == "Touch" ? array.get(obBtms, idx) : obMitigationFilt == "Average" ? array.get(obTops, idx) - (array.get(obTops, idx) - array.get(obBtms, idx)) / 2 : array.get(obTops, idx)
+if barstate.isfirst
+    if iobShowed
+        for i = 0 to numOfIobs - 1
+            array.push(iobBoxes, box.new(na,na,na,na, xloc = xloc.bar_time))
+    if sobShowed
+        for i = 0 to numOfSobs - 1
+            array.push(obBoxes, box.new(na,na,na,na, xloc = xloc.bar_time))
 
-        if (src1 < up or src1[1] < up or (obMitigationFilt != "Touch" and src1[2] < up)) and array.get(obTypes, idx) == 1
-            array.remove(obTops, idx) 
-            array.remove(obBtms, idx) 
-            array.remove(obLefts, idx) 
-            array.remove(obTypes, idx)
-            array.remove(obBuyVols, idx)
-            array.remove(obSellVols, idx)
-            array.remove(obVols, idx)
-            break
-        else if (src2 > dn or src2[1] > dn or (obMitigationFilt != "Touch" and src2[2] > dn)) and array.get(obTypes, idx) == -1
-            array.remove(obTops, idx) 
-            array.remove(obBtms, idx)
-            array.remove(obLefts, idx) 
-            array.remove(obTypes, idx)
-            array.remove(obBuyVols, idx)
-            array.remove(obSellVols, idx)
-            array.remove(obVols, idx)
-            break
+if iobSize > 0
+    if barstate.islast
+        displayOb(iobBoxes, iobTop, iobBtm, iobLeft, iobType, numOfIobs, false, iobSize)
 
-series int obSize = array.size(obTypes)
-series int obMtfSize = array.size(obMtfTypes)
-
-if barstate.islast
-    for i = 0 to obsMax - 1
-        array.push(obBoxes, box.new(na, na, na, na, xloc = xloc.bar_time))
-        array.push(obBuyBoxes, box.new(na, na, na, na, xloc = xloc.bar_time))
-        array.push(obSellBoxes, box.new(na, na, na, na, xloc = xloc.bar_time))
-        array.push(obVolLines, line.new(na, na, na, na, xloc = xloc.bar_time, color = TXT_COLOR, style = line.style_solid, width = 1))
-
-    for i = 0 to obsMaxMtf - 1
-        array.push(obMtfBoxes, box.new(na,na,na,na, xloc = xloc.bar_time))
-        array.push(obMtfBuyBoxes, box.new(na,na,na,na, xloc = xloc.bar_time))
-        array.push(obMtfSellBoxes, box.new(na,na,na,na, xloc = xloc.bar_time))
-        array.push(obMtfVolLines, line.new(na,na,na,na, xloc = xloc.bar_time, color = TXT_COLOR, style = line.style_solid, width = 1))
-
-if obSize > 1
-    [deletedOb, delIdx] = removeOb(obTops, obBtms, obsMax, obSize)
-
-    if deletedOb
-        array.remove(obTops, delIdx)
-        array.remove(obBtms, delIdx)
-        array.remove(obLefts, delIdx)
-        array.remove(obTypes, delIdx)
-        array.remove(obBuyVols, delIdx)
-        array.remove(obSellVols, delIdx)
-        array.remove(obVols, delIdx)
-
-if obMtfSize > 1
-    [deletedOb, delIdx] = removeOb(obMtfTops, obMtfBtms, obsMaxMtf, obMtfSize)
-    
-    if deletedOb
-        array.remove(obMtfTops, delIdx)
-        array.remove(obMtfBtms, delIdx)
-        array.remove(obMtfLefts, delIdx)
-        array.remove(obMtfTypes, delIdx)
-        array.remove(obMtfBuyVols, delIdx)
-        array.remove(obMtfSellVols, delIdx)
-        array.remove(obMtfVols, delIdx)
-
-obMtfSize := array.size(obMtfTypes)
-obSize := array.size(obTypes)
-
-if obSize > 0 and barstate.islast
-    if obShowed
-        showOb(obBoxes, obVolLines, obTops, obBtms, obLefts, obTypes, obsMax, obSize, obVols, obBullishColor, obBearishColor, "")
-
-if obMtfSize > 0 and barstate.islast
-    if obMtfShowed
-        showOb(obMtfBoxes, obMtfVolLines, obMtfTops, obMtfBtms, obMtfLefts, obMtfTypes, obsMaxMtf, obMtfSize, obMtfVols, obBullishMtfColor, obBearishMtfColor, obTfTxt)
+if obSize > 0
+    if barstate.islast
+        displayOb(obBoxes, obTop, obBtm, obLeft, obType, numOfSobs, true, obSize)
 
 //-----------------------------------------------------------------------------}
 // Liquidity Levels
@@ -1478,142 +1107,9 @@ if barstate.islast and pdzShowed
 var color trendColor = na
 
 if trendShowed
-    if style == "Colored"
-        trendColor := itrend == 1 ? bull_css : bear_css
-    else if style == "Monochrome"
-        trendColor := itrend == 1 ? #b2b5be : #5d606b
+    trendColor := itrend == 1 ? bull_css : bear_css
 
 plotcandle(open, high, low, close, color = trendColor, wickcolor = trendColor, bordercolor = trendColor, editable = false)
-
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
-// Master Pattern
-//-----------------------------------------------------------------------------*
-// Settings
-//-----------------------------------------------------------------------------{
-string mpGrp = "Master Pattern"
-bool mpShowed = input.bool(false, "Show", group = mpGrp)
-int mpContractionLookback = input.int(3, "Contraction Detection Lookback", minval = 1, group = mpGrp)
-int mpLiqLen = input.int(20, "Liquidity Levels Length", minval = 1, group = mpGrp)
-color mpColor = input.color(PURPLE_COLOR, "Box & True Value Line Color", group = mpGrp)
-bool mpMinorShowed = input(true, "Show Minor Pattern", group = mpGrp)
-bool mpLiqShowed = input(true, "Show Liquidity Levels", group = mpGrp)
-color mpUpperLiqColor = input.color(AQUA_COLOR, "Upper Liquidity Color", group = mpGrp)
-color mpLowerLiqColor = input.color(RED_COLOR, "Lower Liquidity Color", group = mpGrp)
-
-//-----------------------------------------------------------------------------}
-// UDT
-//-----------------------------------------------------------------------------{
-type MasterPattern
-    box area
-    line avg
-    bool breakup
-    bool breakdn
-
-//-----------------------------------------------------------------------------}
-// Detect contraction & Liquidity Levels
-//-----------------------------------------------------------------------------{
-series float mpPh = ta.pivothigh(mpContractionLookback, mpContractionLookback)
-series float mpPl = ta.pivotlow(mpContractionLookback, mpContractionLookback)
-series float mpLiqPh = ta.pivothigh(mpLiqLen, mpLiqLen)
-series float mpLiqPl = ta.pivotlow(mpLiqLen, mpLiqLen)
-
-if shouldDisplay and mpShowed
-    var mpPhy = 0., var mpPhx = 0, var mpPht = 0.
-    var mpPly = 0., var mpPlx = 0, var mpPlt = 0.
-    var float mpTop = na
-    var float mpBot = na
-    series int mpBarIdx = bar_index
-
-    if not na(mpPh)
-        mpPht := math.sign(mpPh - mpPhy)
-        mpPhy := mpPh
-
-        if mpPht == -1 and mpPlt == 1
-            mpTop := mpPh
-            mpBot := mpPly
-            mpPhx := mpBarIdx - mpContractionLookback
-
-    if not na(mpPl)
-        mpPlt := math.sign(mpPl - mpPly)
-        mpPly := mpPl
-
-        if mpPht  == -1 and mpPlt == 1
-            mpTop := mpPhy
-            mpBot := mpPl
-            mpPlx := mpBarIdx - mpContractionLookback
-
-    var MasterPattern master = MasterPattern.new()
-    bool mpIsBullish = high[mpContractionLookback] > mpTop and mpTop > mpBot
-    bool mpIsBearish = low[mpContractionLookback] < mpBot and mpTop > mpBot
-
-    if mpIsBullish or mpIsBearish
-        master.avg.set_x2(mpBarIdx-mpContractionLookback)
-        float val = math.avg(mpTop, mpBot)
-  
-        // Create new master pattern object
-        master := MasterPattern.new(
-          mpIsBullish or mpIsBearish ? box.new(math.max(mpPhx, mpPlx), mpTop, mpBarIdx-mpContractionLookback, mpBot, na, bgcolor = mpMinorShowed ? color.new(mpColor, 75) : na) : na
-          , mpIsBullish or mpIsBearish ? line.new(mpBarIdx-mpContractionLookback, val, mpBarIdx, val, color = mpMinorShowed ? mpColor : na) : na
-          , mpIsBullish
-          , mpIsBearish)
-
-        mpTop := na
-        mpBot := na
-
-    // Determine if pattern switch to major
-    if master.breakup
-        if low < master.area.get_bottom()
-            master.area.set_border_color(mpColor)
-
-            if not mpMinorShowed
-                master.area.set_bgcolor(color.new(mpColor, 50))
-                master.avg.set_color(mpColor)
-    else if master.breakdn
-        if high > master.area.get_top()
-            master.area.set_border_color(mpColor)
-
-            if not mpMinorShowed
-                master.area.set_bgcolor(color.new(mpColor, 50))
-                master.avg.set_color(mpColor)
-
-    // Set friction level x2 coordinate to current bar
-    if not na(master.avg)
-        master.avg.set_x2(mpBarIdx)
-
-    var line mpLiqUp = na, var liqupReached = false
-    var line mpLiqDn = na, var liqdnReached = false
-
-    // Set upper liquidity
-    if not na(mpLiqPh) and mpLiqShowed
-        if not liqupReached
-            mpLiqUp.set_x2(mpBarIdx-mpLiqLen)
-
-        mpLiqUp := line.new(mpBarIdx-mpLiqLen, mpLiqPh, mpBarIdx, mpLiqPh, color = mpUpperLiqColor, style = line.style_dotted)
-        liqupReached := false
-    else if not liqupReached and mpLiqShowed
-        mpLiqUp.set_x2(mpBarIdx)
-
-        if high > mpLiqUp.get_y1()
-            liqupReached := true
-
-    // Set lower liquidity
-    if not na(mpLiqPl) and mpLiqShowed
-        if not liqdnReached
-            mpLiqDn.set_x2(mpBarIdx-mpLiqLen)
-
-        mpLiqDn := line.new(mpBarIdx-mpLiqLen, mpLiqPl, mpBarIdx, mpLiqPl, color = mpLowerLiqColor, style = line.style_dotted)
-        liqdnReached := false
-    else if not liqdnReached and mpLiqShowed
-        mpLiqDn.set_x2(mpBarIdx)
-
-        if low < mpLiqDn.get_y1()
-            liqdnReached := true
 
 //-----------------------------------------------------------------------------}
 
