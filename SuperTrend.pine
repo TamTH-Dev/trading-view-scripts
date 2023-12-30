@@ -1,0 +1,70 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © tamth_
+
+//@version=5
+indicator(title = "SuperTrend", shorttitle = "SuperTrend", overlay = true, format = format.price, precision = 2)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR = #ffffff
+color RED_COLOR = #e91e62
+color AQUA_COLOR = #00bbf9
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+color GREEN_COLOR = #008170
+color PURPLE_COLOR = #764AF1
+color YELLOW_COLOR = #f2e40a
+color ORANGE_COLOR = #f2aa0a
+color TXT_COLOR = #787b86
+color BLOCK_COLOR = #5d606b19
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+int prds = input.int(10, title = "ATR Period")
+series float src = input(hl2, title = "Source")
+float mult = input.float(3.0, title = "ATR Multiplier", step = 0.1)
+
+//-----------------------------------------------------------------------------}
+// Retracements
+//-----------------------------------------------------------------------------{
+series float atr = ta.atr(prds)
+series float up = src - (mult * atr)
+series float cloneUp = nz(up[1], up)
+up := close[1] > cloneUp ? math.max(up, cloneUp) : up
+series float dn = src + (mult * atr)
+series float cloneDn  = nz(dn[1], dn)
+dn := close[1] < cloneDn  ? math.min(dn, cloneDn ) : dn
+series int trend = 1
+trend := nz(trend[1], trend)
+trend := trend == -1 and close > cloneDn  ? 1 : trend == 1 and close < cloneUp ? -1 : trend
+var upPlot = plot(trend == 1 ? up : na, title = "Up Trend", style = plot.style_linebr, linewidth = 2, color = AQUA_COLOR)
+series bool buySignal = trend == 1 and trend[1] == -1
+plotshape(buySignal ? up : na, title = "UpTrend Begins", location = location.absolute, style = shape.circle, size = size.tiny, color = AQUA_COLOR)
+var dnPlot = plot(trend == 1 ? na : dn, title = "Down Trend", style = plot.style_linebr, linewidth = 2, color = RED_COLOR)
+series bool sellSignal = trend == -1 and trend[1] == 1
+plotshape(sellSignal ? dn : na, title = "DownTrend Begins", location = location.absolute, style = shape.circle, size = size.tiny, color = RED_COLOR)
+var mPlot = plot(ohlc4, title = "", style = plot.style_circles, linewidth = 0)
+series color longFillColor = trend == 1 ? color.new(AQUA_COLOR, 90) : TRANSPARENT_COLOR
+series color shortFillColor = trend == -1 ? color.new(RED_COLOR, 90) : TRANSPARENT_COLOR
+fill(mPlot, upPlot, title = "UpTrend Highligter", color = longFillColor)
+fill(mPlot, dnPlot, title = "DownTrend Highligter", color = shortFillColor)
+
+//-----------------------------------------------------------------------------}
