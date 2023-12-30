@@ -2,7 +2,7 @@
 // © tamth_
 
 // @version=5
-indicator(title = "Ichimoku Kinko Hyo", shorttitle = "Ichimoku", overlay = true)
+indicator(title = "Ichimoku Kinko Hyo", shorttitle = "Ichimoku Kinko Hyo", overlay = true)
 
 //-----------------------------------------------------------------------------{
 // Constants

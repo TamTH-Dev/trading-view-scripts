@@ -1,0 +1,58 @@
+// This work is licensed under a Attribution-NonCommercial-ShareAlike 4.0 International (CC BY-NC-SA 4.0) https://creativecommons.org/licenses/by-nc-sa/4.0/
+// © tamth_
+
+// @version=5
+indicator(title = "Ichimoku Raiden", shorttitle = "Ichimoku Raiden", overlay = true)
+
+//-----------------------------------------------------------------------------{
+// Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color RED_COLOR = #e91e62
+color AQUA_COLOR = #00bbf9
+color PURPLE_COLOR = #764AF1
+color YELLOW_COLOR = #f2e40a
+
+
+
+//------------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------{
+int lightningTenkanLen = input.int(7, minval = 1, title = "Lightning Tenkan-Sen Length")
+int lightningKijunLen = input.int(12, minval = 1, title = "Lightning Kijun-Sen Length")
+int lightningSenkouSpanBLen = input.int(15, minval = 1, title = "Lightning Senkou-Span B Length")
+int lightningKumoCloudDisplacement = input.int(6, minval = 1, title = "Lightning Kumo Cloud Displacement")
+
+int thunderTenkanLen = input.int(7, minval = 1, title = "Thunder Tenkan-Sen Length")
+int thunderKijunLen = input.int(21, minval = 1, title = "Thunder Kijun-Sen Length")
+int thunderSenkouSpanBLen = input.int(48, minval = 1, title = "Thunder Senkou-Span B Length")
+int thunderKumoCloudDisplacement = input.int(21, minval = 1, title = "Thunder Kumo Cloud Displacement")
+
+//------------------------------------------------------------------------------
+// Get lines' value
+//-----------------------------------------------------------------------------{
+getDonchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+
+lightningTenkan = getDonchian(lightningTenkanLen)
+lightningKijun = getDonchian(lightningKijunLen)
+lightningSenkouSpanA = math.avg(lightningTenkan, lightningKijun)
+lightningSenkouSpanB = getDonchian(lightningSenkouSpanBLen)
+
+thunderTenkan = getDonchian(thunderTenkanLen)
+thunderKijun = getDonchian(thunderKijunLen)
+thunderSenkouSpanA = math.avg(thunderTenkan, thunderKijun)
+thunderSenkouSpanB = getDonchian(thunderSenkouSpanBLen)
+
+//------------------------------------------------------------------------------
+// Set lines and kumo cloud
+//-----------------------------------------------------------------------------{
+int bgOpacity = 95
+int lineOpacity = 0
+
+lightningSenkouSpanAPlot = plot(lightningSenkouSpanA, offset = lightningKumoCloudDisplacement - 1, color = color.new(AQUA_COLOR, lineOpacity), title = "Lightning Senkou-Span A")
+lightningSenkouSpanBPlot = plot(lightningSenkouSpanB, offset = lightningKumoCloudDisplacement - 1, color = color.new(RED_COLOR, lineOpacity), title = "Lightning Senkou-Span B")
+fill(lightningSenkouSpanAPlot, lightningSenkouSpanBPlot, color = lightningSenkouSpanA > lightningSenkouSpanB ? color.new(AQUA_COLOR, bgOpacity) : color.new(RED_COLOR, bgOpacity))
+
+thunderSenkouSpanAPlot = plot(thunderSenkouSpanA, offset = thunderKumoCloudDisplacement - 1, color = color.new(YELLOW_COLOR, lineOpacity), title = "Thunder Senkou-Span A")
+thunderSenkouSpanBPlot = plot(thunderSenkouSpanB, offset = thunderKumoCloudDisplacement - 1, color = color.new(PURPLE_COLOR, lineOpacity), title = "Thunder Senkou-Span B")
+fill(thunderSenkouSpanAPlot, thunderSenkouSpanBPlot, color = thunderSenkouSpanA > thunderSenkouSpanB ? color.new(YELLOW_COLOR, bgOpacity) : color.new(PURPLE_COLOR, bgOpacity))
