@@ -30,10 +30,10 @@ int kumoCloudDisplacement = input.int(26, minval = 1, title = "Kumo Cloud Displa
 //-----------------------------------------------------------------------------{
 getDonchian(len) => math.avg(ta.lowest(len), ta.highest(len))
 
-tenkan = getDonchian(tenkanLen)
-kijun = getDonchian(kijunLen)
-senkouSpanA = math.avg(tenkan, kijun)
-senkouSpanB = getDonchian(senkouSpanBLen)
+float tenkan = getDonchian(tenkanLen)
+float kijun = getDonchian(kijunLen)
+float senkouSpanA = math.avg(tenkan, kijun)
+float senkouSpanB = getDonchian(senkouSpanBLen)
 
 
 //------------------------------------------------------------------------------
