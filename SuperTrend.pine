@@ -38,6 +38,7 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
+string tf = input.timeframe("", title = "Timeframe")
 int prds = input.int(10, title = "ATR Period")
 series float src = input(hl2, title = "Source")
 float mult = input.float(3.0, title = "ATR Multiplier", step = 0.1)
@@ -45,16 +46,17 @@ float mult = input.float(3.0, title = "ATR Multiplier", step = 0.1)
 //-----------------------------------------------------------------------------}
 // Retracements
 //-----------------------------------------------------------------------------{
-series float atr = ta.atr(prds)
-series float up = src - (mult * atr)
+series float closeVal = request.security(syminfo.tickerid, tf, close)
+series float atr = request.security(syminfo.tickerid, tf, ta.atr(prds))
+series float up = request.security(syminfo.tickerid, tf, src - (mult * atr))
 series float cloneUp = nz(up[1], up)
-up := close[1] > cloneUp ? math.max(up, cloneUp) : up
-series float dn = src + (mult * atr)
-series float cloneDn  = nz(dn[1], dn)
-dn := close[1] < cloneDn  ? math.min(dn, cloneDn ) : dn
+up := closeVal[1] > cloneUp ? math.max(up, cloneUp) : up
+series float dn = request.security(syminfo.tickerid, tf, src + (mult * atr))
+series float cloneDn = nz(dn[1], dn)
+dn := closeVal[1] < cloneDn ? math.min(dn, cloneDn) : dn
 series int trend = 1
 trend := nz(trend[1], trend)
-trend := trend == -1 and close > cloneDn  ? 1 : trend == 1 and close < cloneUp ? -1 : trend
+trend := trend == -1 and closeVal > cloneDn  ? 1 : trend == 1 and closeVal < cloneUp ? -1 : trend
 var upPlot = plot(trend == 1 ? up : na, title = "Up Trend", style = plot.style_linebr, linewidth = 2, color = AQUA_COLOR)
 series bool buySignal = trend == 1 and trend[1] == -1
 plotshape(buySignal ? up : na, title = "UpTrend Begins", location = location.absolute, style = shape.circle, size = size.tiny, color = AQUA_COLOR)
