@@ -37,8 +37,8 @@ int wtShortBullishDivLevel = input.int(-40, title = "Short Bullish Divergence Le
 string mfoGrp = "MFO"
 bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
 bool mfoBarShowed = input.bool(false, title = "Support Bar", group = mfoGrp)
-int mfoPrd = input.int(21, title = "Period", group = mfoGrp)
-int mfoMult = input.int(100, title = "Area Multiplier", group = mfoGrp)
+int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
+int mfoMult = input.int(200, title = "Area Multiplier", group = mfoGrp)
 string rsiGrp = "RSI"
 bool rsiShowed = input.bool(false, title = "Show", group = rsiGrp)
 int rsiPrd = input.int(40, title = "Period", group = rsiGrp)
@@ -75,14 +75,7 @@ getWtAndVwap() =>
     float vwap = leadingWt - laggingWt
     [leadingWt, laggingWt, vwap]
 
-getMfo() =>
-    var vol = nz(volume)
-
-    if vol == 0
-        ta.sma(((close - open) / (high - low)) * mfoMult, mfoPrd)
-    else
-        ad = close == high and close == low or high == low ? 0 : ((2 * close - low - high) / (high - low)) * volume
-        (math.sum(ad, mfoPrd) / math.sum(volume, mfoPrd)) * mfoMult
+getMfo() => ta.sma(((close - open) / (high - low)) * mfoMult, mfoPrd) - 2.5
         
 getIndicators() =>
     int offset = 0
