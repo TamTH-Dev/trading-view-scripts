@@ -34,8 +34,6 @@ debug(simple string txt) =>
     label.set_xy(label, bar_index, ta.highest(10)[1])
     label.set_text(label, txt)
 
-requestCustomSecurity(simple string _symbol, simple string _res, series float _src, bool _repaint = false) => 
-    request.security(_symbol, _res, _src[_repaint ? 0 : barstate.isrealtime ? 1 : 0])[_repaint ? 0 : barstate.isrealtime ? 0 : 1]
 
 //-----------------------------------------------------------------------------*
 // Settings
@@ -91,7 +89,7 @@ getDivPoints(series float src, int topLimit, int botLimit) =>
     [isTopFractal, isBotFractal, lowPrev, isBearish, isBullish]
 
 getWtAndVwap() =>
-    float src = requestCustomSecurity(syminfo.tickerid, timeframe.period, wtMaSrc)
+    float src = request.security(syminfo.tickerid, timeframe.period, wtMaSrc)
     float esa = ta.ema(src, wtChlPrd)
     float d = ta.ema(math.abs(src - esa), wtChlPrd)
     float ci = (src - esa) / (0.015 * d)
@@ -100,7 +98,7 @@ getWtAndVwap() =>
     float vwap = leadingWt - laggingWt
     [leadingWt, laggingWt, vwap]
 
-getHaVal(series float src) => requestCustomSecurity(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
+getHaVal(series float src) => request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
 
 getMfo() =>
     series float haOpen = getHaVal(open)
@@ -118,9 +116,9 @@ getStochRsi(series float _close, series float _high, series float _low) =>
 //-----------------------------------------------------------------------------}
 // Get values
 //-----------------------------------------------------------------------------{
-series float _close = requestCustomSecurity(syminfo.tickerid, timeframe.period, close)
-series float _high = requestCustomSecurity(syminfo.tickerid, timeframe.period, high)
-series float _low = requestCustomSecurity(syminfo.tickerid, timeframe.period, low)
+series float _close = request.security(syminfo.tickerid, timeframe.period, close)
+series float _high = request.security(syminfo.tickerid, timeframe.period, high)
+series float _low = request.security(syminfo.tickerid, timeframe.period, low)
 float rsi = getRsi(_close, _high, _low)
 float stochRsi = getStochRsi(_close, _high, _low)
 float mfo = getMfo()
