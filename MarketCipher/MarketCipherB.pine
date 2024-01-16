@@ -5,28 +5,41 @@
 indicator("Market Cipher B", overlay = false)
 
 
-
-
-requestCustomSecurity(_symbol, _res, _src, _repaint = false) => 
-    request.security(_symbol, _res, _src[_repaint ? 0 : barstate.isrealtime ? 1 : 0])[_repaint ? 0 : barstate.isrealtime ? 0 : 1]
-
-
-
-
-// Colors
-color WHITE_COLOR = color.white
-color BLUE_DARK_COLOR = #082EBF
-color BLUE_LIGHT_COLOR = #3DCBFF
-color YELLOW_COLOR = #f2e40a
-color AQUA_COLOR = #00bbf9
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR = #ffffff
 color RED_COLOR = #e91e62
-color PURPLE_COLOR = #764AF1
+color AQUA_COLOR = #00bbf9
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
+color GREEN_COLOR = #008170
+color PURPLE_COLOR = #764AF1
+color YELLOW_COLOR = #f2e40a
+color ORANGE_COLOR = #f2aa0a
+color TXT_COLOR = #787b86
+color BLOCK_COLOR = #5d606b19
+
+//-----------------------------------------------------------------------------}
 
 
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
 
-// Inputs
+requestCustomSecurity(simple string _symbol, simple string _res, series float _src, bool _repaint = false) => 
+    request.security(_symbol, _res, _src[_repaint ? 0 : barstate.isrealtime ? 1 : 0])[_repaint ? 0 : barstate.isrealtime ? 0 : 1]
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
 string thresholdGrp = "Threshold"
 bool thresholdShowed = input.bool(true, title = "Show", group = thresholdGrp)
 int overboughtThreshold = input.int(60, title = "Overbought Threshold", group = thresholdGrp)
@@ -56,22 +69,26 @@ int stochRsiPrd = input.int(81, title = "Period", group = stochRsiGrp)
 string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
 
+//-----------------------------------------------------------------------------}
+// Functions
+//-----------------------------------------------------------------------------{
+getTopFractal(series float src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+getBotFractal(series float src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+fractalize(series float src) =>
+    series bool isBotFractal = getBotFractal(src)
+    series bool isTopFractal = getTopFractal(src)
+    isTopFractal ? 1 : isBotFractal ? -1 : 0
 
-// Methods
-getTopFractal(src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
-getBotFractal(src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
-fractalize(src) => getTopFractal(src) ? 1 : getBotFractal(src) ? -1 : 0
-
-getDivPoints(src, topLimit, botLimit) =>
-    float top_fractal = fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na
-    float bot_fractal = fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na
-    float high_prev = ta.valuewhen(top_fractal, src[2], 0)[2]
-    float high_price = ta.valuewhen(top_fractal, high[2], 0)[2]
-    float low_prev = ta.valuewhen(bot_fractal, src[2], 0)[2]
-    float low_price = ta.valuewhen(bot_fractal, low[2], 0)[2]
-    bool is_bearish = top_fractal and high[2] > high_price and src[2] < high_prev
-    bool is_bullish = bot_fractal and low[2] < low_price and src[2] > low_prev
-    [top_fractal, bot_fractal, low_prev, is_bearish, is_bullish]
+getDivPoints(series float src, int topLimit, int botLimit) =>
+    series bool isTopFractal = not na(fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na)
+    series bool isBotFractal = not na(fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na)
+    float highPrev = ta.valuewhen(isTopFractal, src[2], 0)[2]
+    float highPrice = ta.valuewhen(isTopFractal, high[2], 0)[2]
+    float lowPrev = ta.valuewhen(isBotFractal, src[2], 0)[2]
+    float lowPrice = ta.valuewhen(isBotFractal, low[2], 0)[2]
+    bool isBearish = isTopFractal and high[2] > highPrice and src[2] < highPrev
+    bool isBullish = isBotFractal and low[2] < lowPrice and src[2] > lowPrev
+    [isTopFractal, isBotFractal, lowPrev, isBearish, isBullish]
 
 getWtAndVwap() =>
     float src = requestCustomSecurity(syminfo.tickerid, timeframe.period, wtMaSrc)
@@ -83,22 +100,24 @@ getWtAndVwap() =>
     float vwap = leadingWt - laggingWt
     [leadingWt, laggingWt, vwap]
 
-getHaVal(src) => requestCustomSecurity(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
+getHaVal(series float src) => requestCustomSecurity(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
 
 getMfo() =>
-    haOpen = getHaVal(open)
-    haClose = getHaVal(close)
-    haHigh = getHaVal(high)
-    haLow = getHaVal(low)
+    series float haOpen = getHaVal(open)
+    series float haClose = getHaVal(close)
+    series float haHigh = getHaVal(high)
+    series float haLow = getHaVal(low)
     mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
 
-getRsi(_close, _high, _low) =>
+getRsi(series float _close, series float _high, series float _low) =>
     ta.sma(ta.stoch(_close, _high, _low, rsiPrd), 2)
 
-getStochRsi(_close, _high, _low) =>
+getStochRsi(series float _close, series float _high, series float _low) =>
     ta.sma(ta.stoch(_close, _high, _low, stochRsiPrd), 2)
-        
 
+//-----------------------------------------------------------------------------}
+// Get values
+//-----------------------------------------------------------------------------{
 series float _close = requestCustomSecurity(syminfo.tickerid, timeframe.period, close)
 series float _high = requestCustomSecurity(syminfo.tickerid, timeframe.period, high)
 series float _low = requestCustomSecurity(syminfo.tickerid, timeframe.period, low)
@@ -106,11 +125,12 @@ float rsi = getRsi(_close, _high, _low)
 float stochRsi = getStochRsi(_close, _high, _low)
 float mfo = getMfo()
 [leadingWt, laggingWt, vwap] = getWtAndVwap()
-
 [wtLongTopFractal, wtLongBotFractal, wtLongLowPrev, isWtLongBearishDiv, isWtLongBullishDiv] = getDivPoints(laggingWt, wtLongBearishDivLevel, wtLongBullishDivLevel)
 [wtShortTopFractal, wtShortBotFractal, wtShortLowPrev, isWtShortBearishDiv, isWtShortBullishDiv] =  getDivPoints(laggingWt, wtShortBrearishDivLevel, wtShortBullishDivLevel)
 
-// Plots
+//-----------------------------------------------------------------------------}
+// Render values
+//-----------------------------------------------------------------------------{
 plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = color.new(AQUA_COLOR, 60), display = display.pane, linewidth = 4)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = color.new(RED_COLOR, 60), display = display.pane, linewidth = 4)
 
