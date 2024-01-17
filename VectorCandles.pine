@@ -14,10 +14,10 @@ color RED_COLOR = #e91e62
 color AQUA_COLOR = #00bbf9
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
-color GREEN_COLOR = #008170
+color GREEN_COLOR = #A4F233
+color YELLOW_COLOR = #F2CA63
 color PURPLE_COLOR = #764AF1
-color YELLOW_COLOR = #f2e40a
-color ORANGE_COLOR = #f2aa0a
+color PINK_COLOR = #D557F2
 color TXT_COLOR = #787b86
 color BLOCK_COLOR = #5d606b19
 
@@ -40,12 +40,14 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-color redVectorColor = input.color(color.red, title = "Vector: Red", group = "PVSRA Colors", inline = "vectors")
-color greenVectorColor = input.color(color.lime, title = "Green", group = "PVSRA Colors", inline = "vectors")
-color violetVectorColor = input.color(color.fuchsia, title = "Violet", group = "PVSRA Colors", inline = "vectors")
-color blueVectorColor = input.color(color.blue, title = "Blue", group = "PVSRA Colors", inline = "vectors", tooltip = "Bull bars are green and bear bars are red when the bar is with volume >= 200% of the average volume of the 10 previous bars, or bars where the product of candle spread x candle volume is >= the highest for the 10 previous bars.\n Bull bars are blue and bear are violet when the bar is with with volume >= 150% of the average volume of the 10 previous bars.")
-color regularCandleUpColor = input.color(#999999, title = "Regular: Up Candle", group = "PVSRA Colors", inline = "nonVectors")
-color regularCandleDownColor = input.color(#4d4d4d, title = "Down Candle", group = "PVSRA Colors", inline = "nonVectors", tooltip = "Bull bars are light gray and bear are dark gray when none of the red/green/blue/violet vector conditions are met.")
+string vcsGrp = "Vector Candles"
+color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
+string ncsGrp = "Normal Candles"
+color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
 
 //-----------------------------------------------------------------------------}
 
@@ -53,21 +55,21 @@ color regularCandleDownColor = input.color(#4d4d4d, title = "Down Candle", group
 //-----------------------------------------------------------------------------*
 // Functions
 //-----------------------------------------------------------------------------{
-getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color redVectorColor, simple color greenVectorColor, simple color violetVectorColor, simple color blueVectorColor, simple color regularCandleDownColor, simple color regularCandleUpColor) =>
+getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color lgVolDnCandleColor, simple color lgVolUpCandleColor, simple color mdVolDnCandleColor, simple color mdVolUpCandleColor, simple color norDnCandleColor, simple color norUpCandleColor) =>
     float avgVol = math.sum(_vol[1], 10) / 10.0
     float volSpread = _vol * (_high - _low)
     float highestVolSpread = ta.highest(volSpread[1], 10)
     color vcsColor = na
     
-    // High volume
+    // Large volume
     if _vol >= 2 * avgVol or volSpread >= highestVolSpread
-        vcsColor := _close > _open ? greenVectorColor : redVectorColor
+        vcsColor := _close > _open ? lgVolUpCandleColor : lgVolDnCandleColor
     // Medium volume
     else if _vol >= 1.5 * avgVol
-        vcsColor := _close > _open ? blueVectorColor : violetVectorColor
-    // Low volume
+        vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
+    // Normal volume
     else
-        vcsColor := _close > _open ? regularCandleUpColor : regularCandleDownColor
+        vcsColor := _close > _open ? norUpCandleColor : norDnCandleColor
 
     vcsColor
 
@@ -85,7 +87,7 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
 //-----------------------------------------------------------------------------*
 // Render Vector Candles
 //-----------------------------------------------------------------------------{
-vcsColor = getVcsColor(_vol, _high, _low, _close, _open, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor, regularCandleDownColor, regularCandleUpColor)
+vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
 barcolor(vcsColor)
 
 //-----------------------------------------------------------------------------}
