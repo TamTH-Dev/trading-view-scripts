@@ -1,0 +1,91 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+// @version=5
+indicator(title = "Vector Candles", shorttitle = "Vector Candles", overlay = true, max_bars_back = 500, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR = #ffffff
+color RED_COLOR = #e91e62
+color AQUA_COLOR = #00bbf9
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+color GREEN_COLOR = #008170
+color PURPLE_COLOR = #764AF1
+color YELLOW_COLOR = #f2e40a
+color ORANGE_COLOR = #f2aa0a
+color TXT_COLOR = #787b86
+color BLOCK_COLOR = #5d606b19
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+color redVectorColor = input.color(color.red, title = "Vector: Red", group = "PVSRA Colors", inline = "vectors")
+color greenVectorColor = input.color(color.lime, title = "Green", group = "PVSRA Colors", inline = "vectors")
+color violetVectorColor = input.color(color.fuchsia, title = "Violet", group = "PVSRA Colors", inline = "vectors")
+color blueVectorColor = input.color(color.blue, title = "Blue", group = "PVSRA Colors", inline = "vectors", tooltip = "Bull bars are green and bear bars are red when the bar is with volume >= 200% of the average volume of the 10 previous bars, or bars where the product of candle spread x candle volume is >= the highest for the 10 previous bars.\n Bull bars are blue and bear are violet when the bar is with with volume >= 150% of the average volume of the 10 previous bars.")
+color regularCandleUpColor = input.color(#999999, title = "Regular: Up Candle", group = "PVSRA Colors", inline = "nonVectors")
+color regularCandleDownColor = input.color(#4d4d4d, title = "Down Candle", group = "PVSRA Colors", inline = "nonVectors", tooltip = "Bull bars are light gray and bear are dark gray when none of the red/green/blue/violet vector conditions are met.")
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
+getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color redVectorColor, simple color greenVectorColor, simple color violetVectorColor, simple color blueVectorColor, simple color regularCandleDownColor, simple color regularCandleUpColor) =>
+    float avgVol = math.sum(_vol[1], 10) / 10.0
+    float volSpread = _vol * (_high - _low)
+    float highestVolSpread = ta.highest(volSpread[1], 10)
+    color vcsColor = na
+    
+    // High volume
+    if _vol >= 2 * avgVol or volSpread >= highestVolSpread
+        vcsColor := _close > _open ? greenVectorColor : redVectorColor
+    // Medium volume
+    else if _vol >= 1.5 * avgVol
+        vcsColor := _close > _open ? blueVectorColor : violetVectorColor
+    // Low volume
+    else
+        vcsColor := _close > _open ? regularCandleUpColor : regularCandleDownColor
+
+    vcsColor
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+[_vol, _high, _low, _close, _open] = request.security(syminfo.tickerid, timeframe.period, [volume,high,low,close,open], barmerge.gaps_off, barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Render Vector Candles
+//-----------------------------------------------------------------------------{
+vcsColor = getVcsColor(_vol, _high, _low, _close, _open, redVectorColor, greenVectorColor, violetVectorColor, blueVectorColor, regularCandleDownColor, regularCandleUpColor)
+barcolor(vcsColor)
+
+//-----------------------------------------------------------------------------}
