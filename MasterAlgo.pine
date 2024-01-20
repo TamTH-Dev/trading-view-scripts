@@ -2,7 +2,7 @@
 // © tamth_
 
 // @version=5
-indicator(title = "UnkillableAlgo", shorttitle = "UnkillableAlgo", overlay = true, max_bars_back = 500, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+indicator(title = "MasterAlgo", shorttitle = "MasterAlgo", overlay = true, max_bars_back = 500, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
 
 
 //-----------------------------------------------------------------------------*
@@ -35,67 +35,6 @@ debug(simple string txt) =>
     label.set_text(label, txt)
 
 //-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
-// Vector Candles
-//-----------------------------------------------------------------------------*
-// Settings
-//-----------------------------------------------------------------------------{
-string vcsGrp = "Vector Candles"
-bool vcsShowed = input.bool(true, title = "Show", group = vcsGrp)
-color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
-color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
-color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
-color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
-string ncsGrp = "Normal Candles"
-color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
-color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
-
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
-// Functions
-//-----------------------------------------------------------------------------{
-getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color lgVolDnCandleColor, simple color lgVolUpCandleColor, simple color mdVolDnCandleColor, simple color mdVolUpCandleColor, simple color norDnCandleColor, simple color norUpCandleColor) =>
-    float avgVol = math.sum(_vol[1], 10) / 10.0
-    float volSpread = _vol * (_high - _low)
-    float highestVolSpread = ta.highest(volSpread[1], 10)
-    color vcsColor = na
-    
-    // Large volume
-    if (_vol >= 2 * avgVol or volSpread >= highestVolSpread) and vcsShowed
-        vcsColor := _close > _open ? lgVolUpCandleColor : lgVolDnCandleColor
-    // Medium volume
-    else if _vol >= 1.5 * avgVol and vcsShowed
-        vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
-    // Normal volume
-    else
-        vcsColor := _close > _open ? norUpCandleColor : norDnCandleColor
-
-    vcsColor
-
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
-// Get Values
-//-----------------------------------------------------------------------------{
-[_vol, _high, _low, _close, _open] = request.security(syminfo.tickerid, timeframe.period, [volume,high,low,close,open], barmerge.gaps_off, barmerge.lookahead_off)
-
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
-// Render Vector Candles
-//-----------------------------------------------------------------------------{
-vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
-barcolor(vcsColor)
-
-//-----------------------------------------------------------------------------}
-
-
-
 
 
 //-----------------------------------------------------------------------------*
@@ -224,5 +163,67 @@ if londonSesShowed and sesShowed
 
 if asiaSesShowed and sesShowed
     showSessions(isAsiaSes, asiaTxt, asiaSesCss)
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
+// Vector Candles
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string vcsGrp = "Vector Candles"
+bool vcsShowed = input.bool(true, title = "Show", group = vcsGrp)
+color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
+string ncsGrp = "Normal Candles"
+color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
+getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color lgVolDnCandleColor, simple color lgVolUpCandleColor, simple color mdVolDnCandleColor, simple color mdVolUpCandleColor, simple color norDnCandleColor, simple color norUpCandleColor) =>
+    float avgVol = math.sum(_vol[1], 10) / 10.0
+    float volSpread = _vol * (_high - _low)
+    float highestVolSpread = ta.highest(volSpread[1], 10)
+    color vcsColor = na
+    
+    // Large volume
+    if (_vol >= 2 * avgVol or volSpread >= highestVolSpread) and vcsShowed
+        vcsColor := _close > _open ? lgVolUpCandleColor : lgVolDnCandleColor
+    // Medium volume
+    else if _vol >= 1.5 * avgVol and vcsShowed
+        vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
+    // Normal volume
+    else
+        vcsColor := _close > _open ? norUpCandleColor : norDnCandleColor
+
+    vcsColor
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+[_vol, _high, _low, _close, _open] = request.security(syminfo.tickerid, timeframe.period, [volume,high,low,close,open], barmerge.gaps_off, barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Render Vector Candles
+//-----------------------------------------------------------------------------{
+series color vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
+barcolor(vcsColor)
 
 //-----------------------------------------------------------------------------}
