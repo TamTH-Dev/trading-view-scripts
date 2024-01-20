@@ -171,6 +171,80 @@ if asiaSesShowed and sesShowed
 
 
 //-----------------------------------------------------------------------------*
+// Market Cipher A
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string mcaGrp = "Market Cipher A"
+bool mcaShowed = input.bool(true, "Show", group = mcaGrp)
+bool mcaSignalsShowed = input.bool(true, "Show Signals", group = mcaGrp)
+bool mcaRibbonsShowed = input.bool(true, "Show Ribbons", group = mcaGrp)
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
+getWtAndVwap() =>
+    float src = request.security(syminfo.tickerid, timeframe.period, hlc3)
+    float esa = ta.ema(src, 9)
+    float d = ta.ema(math.abs(src - esa), 9)
+    float ci = (src - esa) / (0.015 * d)
+    float leadingWt = ta.ema(ci, 12)
+    float laggingWt = ta.sma(leadingWt, 3)
+    float vwap = leadingWt - laggingWt
+    [leadingWt, laggingWt, vwap]
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Get values
+//-----------------------------------------------------------------------------{
+float ema1 = ta.ema(close, 5)
+float ema2 = ta.ema(close, 11)
+float ema3 = ta.ema(close, 15)
+float ema4 = ta.ema(close, 18)
+float ema5 = ta.ema(close, 21)
+float ema6 = ta.ema(close, 25)
+float ema7 = ta.ema(close, 29)
+float ema8 = ta.ema(close, 33)
+[leadingWt, laggingWt, vwap] = getWtAndVwap()
+float mcaStcRsiMod = ta.sma(ta.stoch(close, high, low, 81), 2)
+
+bool mcaYellowDiamondShowed = math.max(open, close) > ema1 and ema1 > ema2 and ema1 > ema8 and vwap > 0
+bool mcaBlueTriangleShowed = ta.crossover(ema1, ema6) and vwap > 0 and (leadingWt > - 15 or laggingWt > -25) and mcaStcRsiMod < 80 and not ta.crossover(ema2, ema8)
+bool mcaGreenDotShowed = ta.crossover(ema2, ema8) and mcaYellowDiamondShowed
+bool mcaRedXShowed = ta.crossunder(ema1, ema2)
+bool mcaRedDiamondShowed = ta.crossunder(leadingWt, laggingWt)
+bool mcaYellowXShowed = mcaRedDiamondShowed and leadingWt < -40 and mcaStcRsiMod < 20
+bool mcaBloodDiamondShowed = mcaRedXShowed and mcaRedDiamondShowed
+
+//-----------------------------------------------------------------------------*
+// Plots
+//-----------------------------------------------------------------------------{
+p1 = plot(mcaRibbonsShowed and mcaShowed ? ema1 : na, "Ribbon 1", ema1 < ema8 ? LIGHT_GRAY_COLOR : #0166CC, 2)
+p2 = plot(mcaRibbonsShowed and mcaShowed ? ema2 : na, "Ribbon 2", ema2 < ema8 ? LIGHT_GRAY_COLOR : #198CFF, 2)
+p3 = plot(mcaRibbonsShowed and mcaShowed ? ema3 : na, "Ribbon 3", ema3 < ema8 ? LIGHT_GRAY_COLOR : #4DA6FF, 2)
+p4 = plot(mcaRibbonsShowed and mcaShowed ? ema4 : na, "Ribbon 4", ema4 < ema8 ? LIGHT_GRAY_COLOR : #80BFFF, 2)
+p5 = plot(mcaRibbonsShowed and mcaShowed ? ema5 : na, "Ribbon 5", ema5 < ema8 ? LIGHT_GRAY_COLOR : #99CCFF, 2)
+p6 = plot(mcaRibbonsShowed and mcaShowed ? ema6 : na, "Ribbon 6", ema6 < ema8 ? LIGHT_GRAY_COLOR : #B4D9FF, 2)
+p7 = plot(mcaRibbonsShowed and mcaShowed ? ema7 : na, "Ribbon 7", ema7 < ema8 ? LIGHT_GRAY_COLOR : #CCE6FF, 2)
+p8 = plot(mcaRibbonsShowed and mcaShowed ? ema8 : na, "Ribbon 8", ema8 > ema7 ? LIGHT_GRAY_COLOR : #E6F2FF, 2)
+plotshape(mcaYellowDiamondShowed and mcaShowed and mcaSignalsShowed, "Yellow Diamond", shape.diamond, location.abovebar, color.new(YELLOW_COLOR, 50), size = size.tiny)
+plotshape(mcaBlueTriangleShowed and mcaShowed and mcaSignalsShowed, "Blue Triangle", shape.triangleup, location.abovebar, #4259F4, size = size.small)
+plotshape(mcaGreenDotShowed and mcaShowed and mcaSignalsShowed, "Green Dot", shape.circle, location.abovebar, GREEN_COLOR, size = size.tiny)
+plotshape(mcaRedXShowed and mcaShowed and mcaSignalsShowed, "Red X", shape.xcross, location.abovebar, RED_COLOR, size = size.tiny)
+plotshape(mcaYellowXShowed and mcaShowed and mcaSignalsShowed, "Yellow X", shape.xcross, location.abovebar, YELLOW_COLOR, size = size.small)
+plotshape(mcaRedDiamondShowed and mcaShowed and mcaSignalsShowed, "Red Diamond", shape.diamond, location.abovebar, color.new(RED_COLOR, 50), size = size.tiny)
+plotshape(mcaBloodDiamondShowed and mcaShowed and mcaSignalsShowed, "Blood Diamond", shape.diamond, location.abovebar, RED_COLOR, size = size.small)
+fill(p2, p8, color.new(DARK_GRAY_COLOR, 90))
+fill(p1, p2, color.new(DARK_GRAY_COLOR, 85))
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
 // Vector Candles
 //-----------------------------------------------------------------------------*
 // Settings
