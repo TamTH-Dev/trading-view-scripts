@@ -1,0 +1,134 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+// @version=5
+indicator(title = "UnkillableAlgo", shorttitle = "UnkillableAlgo", overlay = true, max_bars_back = 500, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR = #ffffff
+color RED_COLOR = #e91e62
+color AQUA_COLOR = #00bbf9
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+color GREEN_COLOR = #A4F233
+color YELLOW_COLOR = #F2CA63
+color PURPLE_COLOR = #764AF1
+color PINK_COLOR = #D557F2
+color TXT_COLOR = #787b86
+color BLOCK_COLOR = #5d606b19
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Vector Candles
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string vcsGrp = "Vector Candles"
+bool vcsShowed = input.bool(true, title = "Show", group = vcsGrp)
+color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
+string ncsGrp = "Normal Candles"
+color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
+getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color lgVolDnCandleColor, simple color lgVolUpCandleColor, simple color mdVolDnCandleColor, simple color mdVolUpCandleColor, simple color norDnCandleColor, simple color norUpCandleColor) =>
+    float avgVol = math.sum(_vol[1], 10) / 10.0
+    float volSpread = _vol * (_high - _low)
+    float highestVolSpread = ta.highest(volSpread[1], 10)
+    color vcsColor = na
+    
+    // Large volume
+    if (_vol >= 2 * avgVol or volSpread >= highestVolSpread) and vcsShowed
+        vcsColor := _close > _open ? lgVolUpCandleColor : lgVolDnCandleColor
+    // Medium volume
+    else if _vol >= 1.5 * avgVol and vcsShowed
+        vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
+    // Normal volume
+    else
+        vcsColor := _close > _open ? norUpCandleColor : norDnCandleColor
+
+    vcsColor
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+[_vol, _high, _low, _close, _open] = request.security(syminfo.tickerid, timeframe.period, [volume,high,low,close,open], barmerge.gaps_off, barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Render Vector Candles
+//-----------------------------------------------------------------------------{
+vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
+barcolor(vcsColor)
+
+//-----------------------------------------------------------------------------}
+
+
+
+//-----------------------------------------------------------------------------*
+// Ichimoku Kinko Hyo
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string ikhGrp = "Ichimoku Kinko Hyo"
+bool ikhShowed = input.bool(true, title = "Show", group = ikhGrp)
+int tenkanLen = input.int(9, minval = 1, title = "Tenkan-Sen Length", group = ikhGrp)
+int kijunLen = input.int(26, minval = 1, title = "Kijun-Sen Length", group = ikhGrp)
+int senkouSpanBLen = input.int(52, minval = 1, title = "Senkou-Span B Length", group = ikhGrp)
+int chikouSpanDisplacement = input.int(26, minval = 1, title = "Chikou-Span Displacement", group = ikhGrp)
+int kumoCloudDisplacement = input.int(26, minval = 1, title = "Kumo Cloud Displacement", group = ikhGrp)
+
+
+//------------------------------------------------------------------------------
+// Get lines' value
+//-----------------------------------------------------------------------------{
+getDonchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+
+float tenkan = getDonchian(tenkanLen)
+float kijun = getDonchian(kijunLen)
+float senkouSpanA = math.avg(tenkan, kijun)
+float senkouSpanB = getDonchian(senkouSpanBLen)
+
+
+//------------------------------------------------------------------------------
+// Set lines and kumo cloud
+//-----------------------------------------------------------------------------{
+plot(ikhShowed ? tenkan : na, color = AQUA_COLOR, title = "Tenkan-Sen", display = display.pane)
+plot(ikhShowed ? kijun : na, color = RED_COLOR, title = "Kijun-Sen", display = display.pane)
+plot(ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = PURPLE_COLOR, title = "Chikou-Span", display = display.pane)
+senkouSpanAPlot = plot(ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
+senkouSpanBPlot = plot(ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
+fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
+
+//-----------------------------------------------------------------------------}
