@@ -96,13 +96,15 @@ barcolor(vcsColor)
 
 
 
+
+
 //-----------------------------------------------------------------------------*
 // Ichimoku Kinko Hyo
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
 string ikhGrp = "Ichimoku Kinko Hyo"
-bool ikhShowed = input.bool(true, title = "Show", group = ikhGrp)
+bool ikhShowed = input.bool(false, title = "Show", group = ikhGrp)
 int tenkanLen = input.int(9, minval = 1, title = "Tenkan-Sen Length", group = ikhGrp)
 int kijunLen = input.int(26, minval = 1, title = "Kijun-Sen Length", group = ikhGrp)
 int senkouSpanBLen = input.int(52, minval = 1, title = "Senkou-Span B Length", group = ikhGrp)
@@ -130,5 +132,97 @@ plot(ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = PURPL
 senkouSpanAPlot = plot(ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
 senkouSpanBPlot = plot(ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
 fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
+// Sessions
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string sesGrp = "Sessions"
+bool sesShowed = input.bool(false, 'Showed', group = sesGrp)
+
+bool newYorkSesShowed = input.bool(true, '', inline = 'newYork', group = sesGrp)
+string newYorkTxt = input.string('New York', '', inline = 'newYork', group = sesGrp)
+var newYorkSesTime = input.session('1300-2200', '', inline = 'newYork', group = sesGrp)
+color newYorkSesCss = input.color(RED_COLOR, '', inline = 'newYork', group = sesGrp)
+
+bool londonSesShowed = input.bool(true, '', inline = 'london', group = sesGrp)
+string londonTxt = input.string('London', '', inline = 'london', group = sesGrp)
+var londonSesTime = input.session('0800-1700', '', inline = 'london', group = sesGrp)
+color londonSesCss = input.color(AQUA_COLOR, '', inline = 'london', group = sesGrp)
+
+bool asiaSesShowed = input.bool(true, '', inline = 'asia', group = sesGrp)
+string asiaTxt = input.string('Asia', '', inline = 'asia', group = sesGrp)
+var asiaSesTime = input.session('2000-0900', '', inline = 'asia', group = sesGrp)
+color asiaSesCss = input.color(YELLOW_COLOR, '', inline = 'asia', group = sesGrp)
+
+bool sesOutlineShowed = input.bool(true, 'Range Outline', group = sesGrp)
+bool sesTxtShowed = input.bool(true, 'Range Label', group = sesGrp)
+bool sesExchangeUsed = input.bool(false, 'Use Exchange Timezone', group = sesGrp)
+int sesTzIncr = input.int(0, 'UTC (+/-)', group = sesGrp)
+float sesBgTransp = input.float(95, 'Range Area Transparency', group = sesGrp)
+
+//-----------------------------------------------------------------------------}
+// Functions
+//-----------------------------------------------------------------------------{
+showSessions(ses, sesName, sesCss)=>
+    var t = 0 
+    var max = high
+    var min = low
+    var box bx = na
+    var label lbl = na 
+    
+    if ses > ses[1]
+        t := time
+        max := high
+        min := low
+        bx := box.new(bar_index, max, bar_index, min
+          , bgcolor = color.new(sesCss, sesBgTransp)
+          , border_color = sesOutlineShowed ? color.new(sesCss, 40) : na
+          , border_style = line.style_dotted)
+
+        if sesTxtShowed
+            lbl := label.new(t, max, sesName
+              , xloc = xloc.bar_time
+              , textcolor = sesCss
+              , style = label.style_label_down
+              , color = color.new(color.white, 100)
+              , size = size.tiny)
+
+    if ses and ses == ses[1]
+        max := math.max(high, max)
+        min := math.min(low, min)
+        box.set_top(bx, max)
+        box.set_rightbottom(bx, bar_index, min)
+
+        if sesTxtShowed
+            label.set_xy(lbl, int(math.avg(t, time)), max)
+
+//-----------------------------------------------------------------------------}
+// Sessions
+//-----------------------------------------------------------------------------{
+string tf = timeframe.period
+var tz = sesExchangeUsed ? syminfo.timezone : str.format('UTC{0}{1}', sesTzIncr >= 0 ? '+' : '-', math.abs(sesTzIncr))
+isNewYorkSes = math.sign(nz(time(tf, newYorkSesTime, tz)))
+isLondonSes = math.sign(nz(time(tf, londonSesTime, tz)))
+isAsiaSes = math.sign(nz(time(tf, asiaSesTime, tz)))
+
+//-----------------------------------------------------------------------------}
+// Overlays
+//-----------------------------------------------------------------------------{
+if newYorkSesShowed and sesShowed
+    showSessions(isNewYorkSes, newYorkTxt, newYorkSesCss)
+
+if londonSesShowed and sesShowed
+    showSessions(isLondonSes, londonTxt, londonSesCss)
+
+if asiaSesShowed and sesShowed
+    showSessions(isAsiaSes, asiaTxt, asiaSesCss)
 
 //-----------------------------------------------------------------------------}
