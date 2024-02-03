@@ -39,7 +39,7 @@ debug(simple string txt) =>
     label.set_xy(label, barIdx, ta.highest(10)[1])
     label.set_text(label, txt)
 
-getPrdWidthByPerc(int prd, int perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+getPrdWidthByPerc(int prd, float perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
 getTfTxt() =>
     string prd = timeframe.period
@@ -77,7 +77,7 @@ int srPrd = input.int(284, title = "Period", group = srGrp)
 color srSupportColor = input.color(#00bbf94d, title = "Support Color", group = srGrp)
 color srResistanceColor = input.color(#e91e624d, title = "Resistance Color", group = srGrp)
 int srStrength = input.int(2, title = "Strength", minval = 1, group = srGrp)
-int srZoneWidthPerc = input.int(2, title = "Zone Width In %", minval = 0, group = srGrp)
+float srZoneWidthPerc = input.float(1.5, title = "Zone Width In %", minval = 0, group = srGrp)
 color srValColor = input.color(#ffffff, title = "Value Color", group = srGrp)
 
 //-----------------------------------------------------------------------------}
@@ -546,9 +546,6 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
     float volSpread = _vol * (_high - _low)
     float highestVolSpread = ta.highest(volSpread[1], 10)
     color vcsColor = na
-    series float haVal = (open + high + low + close) / 4
-    series bool isHaUp = haVal >= haVal[1]
-    series bool isHaDn = haVal < haVal[1]
     
     // Large volume
     if _vol >= 2 * avgVol or volSpread >= highestVolSpread
@@ -558,7 +555,7 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
         vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
     // Normal volume
     else
-        vcsColor := isHaUp ? norUpCandleColor : norDnCandleColor
+        vcsColor := _close > _open ? norUpCandleColor : norDnCandleColor
 
     vcsColor
 
