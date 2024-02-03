@@ -12,9 +12,11 @@ color YELLOW_COLOR = #f2e40a
 color ORANGE_COLOR = #f2aa0a
 color RED_COLOR = #e91e62
 color AQUA_COLOR = #00bbf9
+color PURPLE_COLOR = #764af1
+color GREEN_COLOR = #A4F233
+color PINK_COLOR = #D557F2
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
-color PURPLE_GRAY_COLOR = #764af1
 
 //-----------------------------------------------------------------------------}
 
@@ -512,5 +514,69 @@ if gpShowed
     int gpValOffset = barIdx + 8
     float gpTopOffset = gpHeight > 0 ? level65 : level618
     gpValBox := box.new(gpValOffset, gpTopOffset + getPrdWidthByPerc(300, 1), gpValOffset + 200, gpTopOffset, bgcolor = TRANSPARENT_COLOR, border_width = 0, text = getTfTxt(), text_color = gpColor, text_size = size.small, text_valign = text.align_bottom, text_halign = text.align_left, extend = extend.right)
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
+// Vector Candles
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string vcsGrp = "Vector Candles"
+color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
+string ncsGrp = "Normal Candles"
+color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Methods
+//-----------------------------------------------------------------------------{
+getVcsColor(series float _vol, series float _high, series float _low, series float _close, series float _open, simple color lgVolDnCandleColor, simple color lgVolUpCandleColor, simple color mdVolDnCandleColor, simple color mdVolUpCandleColor, simple color norDnCandleColor, simple color norUpCandleColor) =>
+    float avgVol = math.sum(_vol[1], 10) / 10.0
+    float volSpread = _vol * (_high - _low)
+    float highestVolSpread = ta.highest(volSpread[1], 10)
+    color vcsColor = na
+    series float haVal = (open + high + low + close) / 4
+    series bool isHaUp = haVal >= haVal[1]
+    series bool isHaDn = haVal < haVal[1]
+    
+    // Large volume
+    if _vol >= 2 * avgVol or volSpread >= highestVolSpread
+        vcsColor := _close > _open ? lgVolUpCandleColor : lgVolDnCandleColor
+    // Medium volume
+    else if _vol >= 1.5 * avgVol
+        vcsColor := _close > _open ? mdVolUpCandleColor : mdVolDnCandleColor
+    // Normal volume
+    else
+        vcsColor := isHaUp ? norUpCandleColor : norDnCandleColor
+
+    vcsColor
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+[_vol, _high, _low, _close, _open] = request.security(syminfo.tickerid, timeframe.period, [volume,high,low,close,open], barmerge.gaps_off, barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Render Vector Candles
+//-----------------------------------------------------------------------------{
+vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
+barcolor(vcsColor)
 
 //-----------------------------------------------------------------------------}
