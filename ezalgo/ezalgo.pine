@@ -363,7 +363,7 @@ fill(lowerRevMdBandPlot, lowerRevLgBandPlot, color.new(AQUA_COLOR, 80))
 
 float leadingRibbon = ta.ema(close, ribbonLeadingSmoothing)
 float laggingRibbon = ta.ema(close, ribbonLaggingSmoothing)
-fill(plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane), plot(ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane), color = leadingRibbon > laggingRibbon ? color.new(AQUA_COLOR, 70) : color.new(RED_COLOR, 70), title = "Ribbon Fill Color")
+fill(plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane), plot(ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane), color = leadingRibbon > laggingRibbon ? #00bbf94d : #e91e624d, title = "Ribbon Fill Color")
 
 //-----------------------------------------------------------------------------}
 
