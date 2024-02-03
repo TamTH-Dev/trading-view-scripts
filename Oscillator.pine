@@ -1,0 +1,106 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+// @version=5
+indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR = #ffffff
+color RED_COLOR = #e91e62
+color AQUA_COLOR = #00bbf9
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+color PURPLE_COLOR = #764AF1
+color YELLOW_COLOR = #f2e40a
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string thresholdGrp = "Threshold"
+bool thresholdShowed = input.bool(true, title = "Show", group = thresholdGrp)
+int overboughtThreshold = input.int(60, title = "Overbought Threshold", group = thresholdGrp)
+int oversoldThreshold = input.int(-60, title = "Oversold Threshold", group = thresholdGrp)
+string wtGrp = "Waves Trend"
+bool wtShowed = input.bool(true, title = "Show", group = wtGrp)
+int wtChlPrd = input.int(9, title = "Channel Period", group = wtGrp)
+int wtAvgPrd = input.int(12, title = "Average Period", group = wtGrp)
+float wtMaSrc = input.source(hlc3, title = "MA Source", group = wtGrp)
+int wtMaLen = input.int(3, title = "MA Length", group = wtGrp)
+string mfoGrp = "MFO"
+bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
+bool mfoBarShowed = input.bool(false, title = "Support Bar", group = mfoGrp)
+int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
+int mfoMult = input.int(150, title = "Area Multiplier", group = mfoGrp)
+string vwapGrp = "VWAP"
+bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+
+//-----------------------------------------------------------------------------}
+// Functions
+//-----------------------------------------------------------------------------{
+getWtAndVwap() =>
+    float src = request.security(syminfo.tickerid, timeframe.period, wtMaSrc)
+    float esa = ta.ema(src, wtChlPrd)
+    float d = ta.ema(math.abs(src - esa), wtChlPrd)
+    float ci = (src - esa) / (0.015 * d)
+    float leadingWt = ta.ema(ci, wtAvgPrd)
+    float laggingWt = ta.sma(leadingWt, wtMaLen)
+    float vwap = leadingWt - laggingWt
+    [leadingWt, laggingWt, vwap]
+
+getHaVal(series float src) => request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
+
+getMfo() =>
+    series float haOpen = getHaVal(open)
+    series float haClose = getHaVal(close)
+    series float haHigh = getHaVal(high)
+    series float haLow = getHaVal(low)
+    mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
+
+//-----------------------------------------------------------------------------}
+// Get values
+//-----------------------------------------------------------------------------{
+series float _close = request.security(syminfo.tickerid, timeframe.period, close)
+series float _high = request.security(syminfo.tickerid, timeframe.period, high)
+series float _low = request.security(syminfo.tickerid, timeframe.period, low)
+float mfo = getMfo()
+[leadingWt, laggingWt, vwap] = getWtAndVwap()
+
+//-----------------------------------------------------------------------------}
+// Render values
+//-----------------------------------------------------------------------------{
+plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = #00bbf94d, display = display.pane, linewidth = 4)
+plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = #e91e624d, display = display.pane, linewidth = 4)
+
+var mfoBarTopLine = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
+var mfoBarBotLine = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
+fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? #00bbf94d : #e91e624d)
+
+plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = color.new(LIGHT_GRAY_COLOR, 0), linewidth = 1, style = plot.style_area)
+plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(DARK_GRAY_COLOR, 40), linewidth = 1, style = plot.style_area)
+
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 40), style = plot.style_area)
+
+plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? #00bbf966 : #e91e6266, linewidth = 2, style = plot.style_area)
+
+plot(0, title = "Zero Line", color = color.new(WHITE_COLOR, 50), display = display.pane)
+
+plot(ta.crossover(leadingWt, laggingWt) ? laggingWt : na, title = "Buy Signal", color = AQUA_COLOR, linewidth = 2, style = plot.style_circles, display = display.pane)
+plot(ta.crossunder(leadingWt, laggingWt) ? laggingWt : na, title = "Sell Signal", color = RED_COLOR, linewidth = 2, style = plot.style_circles, display = display.pane)
