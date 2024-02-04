@@ -133,10 +133,10 @@ plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR,
 
 plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
-color leadingWtColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 40) : color.new(PURPLE_COLOR, 40)
+color leadingWtColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 20) : color.new(PURPLE_COLOR, 20)
 var leadingWtPlot = plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = leadingWtColor, linewidth = 2, style = plot.style_line, display = display.pane)
 var laggingWtPlot = plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = TRANSPARENT_COLOR, linewidth = 1, style = plot.style_line, display = display.pane)
-color wtFillColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 80) : color.new(PURPLE_COLOR, 75)
+color wtFillColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 75) : color.new(PURPLE_COLOR, 75)
 fill(leadingWtPlot, laggingWtPlot, title = 'Wave Trend', color = wtFillColor)
 
 plot(0, title = "Zero Line", color = color.new(DARK_GRAY_COLOR, 80), display = display.pane)
