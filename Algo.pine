@@ -527,7 +527,7 @@ getGpVals(series float closeVal, series float volVal, series float highVal, seri
         if not na(lastPivot)
             var line lastLine = na
 
-            if na(lastLine) and isScalping
+            if na(lastLine) and gpShowed and isScalping
                 lastLine := line.new(lastPivot.start.unixTime, lastPivot.start.price, lastPivot.end.unixTime, lastPivot.end.price, xloc = xloc.bar_time, color = color.new(gpColor, 20), width = 1, style = line.style_dashed)
             else
                 line.set_xy1(lastLine, lastPivot.start.unixTime, lastPivot.start.price)
@@ -629,4 +629,4 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
 vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
 barcolor(vcsColor)
 
-//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------}
