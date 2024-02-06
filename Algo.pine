@@ -69,7 +69,7 @@ getTfTxt() =>
 //-----------------------------------------------------------------------------*
 // Strategy
 //-----------------------------------------------------------------------------*
-string strategy = input.string("Swing", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
+string strategy = input.string("Scalping", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
 bool isSwing = strategy == "Swing"
 bool isScalping = strategy == "Scalping"
 
@@ -125,7 +125,7 @@ fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color
 // Settings
 //-----------------------------------------------------------------------------{
 string srGrp = "S/R"
-bool srShowed = input.bool(true, title = "Show", group = srGrp)
+bool srShowed = input.bool(false, title = "Show", group = srGrp)
 int srPrd = input.int(284, title = "Period", group = srGrp)
 color srSupportColor = input.color(#00bbf94d, title = "Support Color", group = srGrp)
 color srResistanceColor = input.color(#e91e624d, title = "Resistance Color", group = srGrp)
@@ -629,4 +629,4 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
 vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
 barcolor(vcsColor)
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
