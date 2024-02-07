@@ -11,9 +11,10 @@ indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_bac
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #ffffff
 color RED_COLOR = #e91e62
-color AQUA_COLOR = #00bbf9
+color AQUA_COLOR = #1EBEE8
 color PURPLE_COLOR = #764AF1
-color YELLOW_COLOR = #f2e40a
+color GREEN_COLOR = #1EE876
+color YELLOW_COLOR = #E8D81E
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 
@@ -129,19 +130,19 @@ var mfoBarBotLineNd = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO 
 fill(mfoBarTopLineSt, mfoBarTopLineNd, title = "MFO Bar", color = mfo > 0 ? color.new(AQUA_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
 fill(mfoBarBotLineSt, mfoBarBotLineNd, title = "MFO Bar", color = mfo < 0 ? color.new(RED_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
 
-plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR, 20), style = plot.style_area)
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 50), style = plot.style_area)
 
 plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
-color leadingWtColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 20) : color.new(PURPLE_COLOR, 20)
+color leadingWtColor = leadingWt >= laggingWt ? color.new(GREEN_COLOR, 20) : color.new(PURPLE_COLOR, 20)
 var leadingWtPlot = plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = leadingWtColor, linewidth = 2, style = plot.style_line, display = display.pane)
 var laggingWtPlot = plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = TRANSPARENT_COLOR, linewidth = 1, style = plot.style_line, display = display.pane)
-color wtFillColor = leadingWt >= laggingWt ? color.new(YELLOW_COLOR, 75) : color.new(PURPLE_COLOR, 75)
+color wtFillColor = leadingWt >= laggingWt ? color.new(GREEN_COLOR, 75) : color.new(PURPLE_COLOR, 75)
 fill(leadingWtPlot, laggingWtPlot, title = 'Wave Trend', color = wtFillColor)
 
 plot(0, title = "Zero Line", color = color.new(DARK_GRAY_COLOR, 80), display = display.pane)
 
-plot(isBuySignal ? laggingWt : na, title = "Buy Signal", color = color.new(YELLOW_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
+plot(isBuySignal ? laggingWt : na, title = "Buy Signal", color = color.new(GREEN_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
 plot(isSellSignal ? laggingWt : na, title = "Sell Signal", color = color.new(PURPLE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
-plot(isDivBuySignal ? -110 : na, title = "Divergence Buy Signal", color = YELLOW_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
+plot(isDivBuySignal ? -110 : na, title = "Divergence Buy Signal", color = GREEN_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
 plot(isDivSellSignal ? 110 : na , title = "Divergence Sell Signal", color = PURPLE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
