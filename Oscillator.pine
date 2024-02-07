@@ -22,14 +22,25 @@ color DARK_GRAY_COLOR = #212d40
 
 
 //-----------------------------------------------------------------------------*
+// Common Variables
+//-----------------------------------------------------------------------------{
+series int barIdx = bar_index
+series bool confirmed = barstate.isconfirmed
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
 // Common Functions
 //-----------------------------------------------------------------------------{
 debug(simple string txt) =>
     // Create label on the first bar
-    var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
     // On next bars, update the label"s x and y position, and the text it displays
-    label.set_xy(label, bar_index, ta.highest(10)[1])
+    label.set_xy(label, barIdx, ta.highest(10)[1])
     label.set_text(label, txt)
+
+//-----------------------------------------------------------------------------}
 
 
 //-----------------------------------------------------------------------------*
@@ -142,7 +153,7 @@ fill(leadingWtPlot, laggingWtPlot, title = 'Wave Trend', color = wtFillColor)
 
 plot(0, title = "Zero Line", color = color.new(DARK_GRAY_COLOR, 80), display = display.pane)
 
-plot(isBuySignal ? laggingWt : na, title = "Buy Signal", color = color.new(GREEN_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
-plot(isSellSignal ? laggingWt : na, title = "Sell Signal", color = color.new(PURPLE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
-plot(isDivBuySignal ? -110 : na, title = "Divergence Buy Signal", color = GREEN_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
-plot(isDivSellSignal ? 110 : na , title = "Divergence Sell Signal", color = PURPLE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
+plot(isBuySignal and confirmed ? laggingWt : na, title = "Buy Signal", color = color.new(GREEN_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
+plot(isSellSignal and confirmed  ? laggingWt : na, title = "Sell Signal", color = color.new(PURPLE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
+plot(isDivBuySignal and confirmed ? -110 : na, title = "Divergence Buy Signal", color = GREEN_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
+plot(isDivSellSignal and confirmed ? 110 : na , title = "Divergence Sell Signal", color = PURPLE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
