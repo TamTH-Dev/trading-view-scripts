@@ -107,9 +107,9 @@ float senkouSpanB = getDonchian(senkouSpanBLen)
 //------------------------------------------------------------------------------
 // Set lines and kumo cloud
 //-----------------------------------------------------------------------------{
-plot(isSwing and ikhShowed ? tenkan : na, color = AQUA_COLOR, title = "Tenkan-Sen", display = display.pane)
-plot(isSwing and ikhShowed ? kijun : na, color = RED_COLOR, title = "Kijun-Sen", display = display.pane)
-plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = PURPLE_COLOR, title = "Chikou-Span", display = display.pane)
+plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? kijun : na, color = PURPLE_COLOR, title = "Kijun-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = RED_COLOR, title = "Chikou-Span", display = display.pane)
 senkouSpanAPlot = plot(isSwing and ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
 senkouSpanBPlot = plot(isSwing and ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
 fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
@@ -128,8 +128,8 @@ fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color
 string srGrp = "S/R"
 bool srShowed = input.bool(false, title = "Show", group = srGrp)
 int srPrd = input.int(284, title = "Period", group = srGrp)
-color srSupportColor = input.color(#00bbf94d, title = "Support Color", group = srGrp)
-color srResistanceColor = input.color(#e91e624d, title = "Resistance Color", group = srGrp)
+color srSupportColor = input.color(color.new(GREEN_COLOR, 60), title = "Support Color", group = srGrp)
+color srResistanceColor = input.color(color.new(RED_COLOR, 60), title = "Resistance Color", group = srGrp)
 int srStrength = input.int(2, title = "Strength", minval = 1, group = srGrp)
 float srZoneWidthPerc = input.float(1.5, title = "Zone Width In %", minval = 0, group = srGrp)
 color srValColor = input.color(#ffffff, title = "Value Color", group = srGrp)
@@ -346,27 +346,27 @@ bool hasMildBuySignal = ta.crossover(leadingWt, laggingWt) and laggingWt <= -80
 bool hasMildSellSignal = ta.crossunder(leadingWt, laggingWt) and laggingWt >= 80
 bool consistentBuySignal = isBullish and hasMildBuySignal
 bool consistentSellSignal = isBearish and hasMildSellSignal
-plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = RED_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = GREEN_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = PURPLE_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentBuySignal and confirmed, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = YELLOW_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentSellSignal and confirmed, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = ORANGE_COLOR, size = size.tiny, display = display.pane)
 
 var upperRevSmZonePlot = plot(isScalping and revZonesShowed ? upperRevSmZone : na, title = "Upper Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
 var upperRevMdZonePlot = plot(isScalping and revZonesShowed ? upperRevMdZone : na, title = "Upper Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
 var upperRevLgZonePlot = plot(isScalping and revZonesShowed ? upperRevLgZone : na, title = "Upper Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
-fill(upperRevSmZonePlot, upperRevMdZonePlot, color.new(RED_COLOR, 80))
-fill(upperRevMdZonePlot, upperRevLgZonePlot, color.new(RED_COLOR, 75))
+fill(upperRevSmZonePlot, upperRevMdZonePlot, color.new(GREEN_COLOR, 80))
+fill(upperRevMdZonePlot, upperRevLgZonePlot, color.new(GREEN_COLOR, 75))
 var lowerRevLgZonePlot = plot(isScalping and revZonesShowed ? lowerRevLgZone : na, title = "Lower Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
 var lowerRevMdZonePlot = plot(isScalping and revZonesShowed ? lowerRevMdZone : na, title = "Lower Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
 var lowerRevSmZonePlot = plot(isScalping and revZonesShowed ? lowerRevSmZone : na, title = "Lower Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
-fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(AQUA_COLOR, 80))
-fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(AQUA_COLOR, 75))
+fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(PURPLE_COLOR, 80))
+fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(PURPLE_COLOR, 75))
 
 float leadingRibbon = ta.ema(close, ribbonLeadingSmoothing)
 float laggingRibbon = ta.ema(close, ribbonLaggingSmoothing)
 var leadingRibbonPlot = plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane)
 var laggingRibbonPlot = plot(isScalping and ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane)
-fill(leadingRibbonPlot, laggingRibbonPlot, color = leadingRibbon > laggingRibbon ? color.new(GREEN_COLOR, 75) : color.new(PURPLE_COLOR, 75), title = "Ribbon Fill Color")
+fill(leadingRibbonPlot, laggingRibbonPlot, color = leadingRibbon > laggingRibbon ? color.new(AQUA_COLOR, 75) : color.new(RED_COLOR, 75), title = "Ribbon Fill Color")
 
 //-----------------------------------------------------------------------------}
 
@@ -583,13 +583,13 @@ if gpShowed and isScalping
 // Settings
 //-----------------------------------------------------------------------------{
 string vcsGrp = "Vector Candles"
-color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+color lgVolUpCandleColor = input.color(AQUA_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
 color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
-color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(RED_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
 color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
 string ncsGrp = "Normal Candles"
-color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
-color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+color norUpCandleColor = input.color(GREEN_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(PURPLE_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
 
 //-----------------------------------------------------------------------------}
 
