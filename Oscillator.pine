@@ -130,7 +130,7 @@ var mfoBarBotLineNd = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO 
 fill(mfoBarTopLineSt, mfoBarTopLineNd, title = "MFO Bar", color = mfo > 0 ? color.new(AQUA_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
 fill(mfoBarBotLineSt, mfoBarBotLineNd, title = "MFO Bar", color = mfo < 0 ? color.new(RED_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
 
-plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 50), style = plot.style_area)
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR, 10), style = plot.style_area)
 
 plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
