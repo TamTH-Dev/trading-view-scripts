@@ -8,13 +8,13 @@ indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR = #ffffff
-color YELLOW_COLOR = #f2e40a
-color ORANGE_COLOR = #f2aa0a
 color RED_COLOR = #e91e62
-color AQUA_COLOR = #00bbf9
+color AQUA_COLOR = #1EBEE8
+color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764af1
-color GREEN_COLOR = #A4F233
-color PINK_COLOR = #D557F2
+color ORANGE_COLOR = #E8AF1E
+color GREEN_COLOR = #1EE876
+color PINK_COLOR = #E81EDB
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 
@@ -25,6 +25,7 @@ color DARK_GRAY_COLOR = #212d40
 // Common Variables
 //-----------------------------------------------------------------------------{
 series int barIdx = bar_index
+series bool confirmed = barstate.isconfirmed
 
 //-----------------------------------------------------------------------------}
 
@@ -281,9 +282,9 @@ string trendRibbonGrp = "Trend Ribbon"
 bool ribbonShowed = input.bool(true, title = "Show", group = trendRibbonGrp)
 int ribbonLeadingSmoothing = input.int(9, title = "Leading Smoothing", minval = 1, group = trendRibbonGrp)
 int ribbonLaggingSmoothing = input.int(21, title = "Lagging Smoothing", minval = 1, group = trendRibbonGrp)
-string revBandsGrp = "Reversal Bands"
-bool revBandsShowed = input.bool(false, "Show", group = revBandsGrp)
-int revBandsPrd = input.int(30, "Period", group = revBandsGrp)
+string revZonesGrp = "Reversal Zones"
+bool revZonesShowed = input.bool(true, "Show", group = revZonesGrp)
+int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
 
 //-----------------------------------------------------------------------------}
 
@@ -307,9 +308,9 @@ getWt(float src, int chlPrd, int avgPrd) =>
     float laggingWt = ta.sma(leadingWt, 3)
     [leadingWt, laggingWt]
 
-getRevBands(float src, int prd, float sensitivity) =>
-    basis = ta.sma(src, prd)
-    span = ta.atr(prd)
+getRevZones(float src, int prd, float sensitivity) =>
+    series float basis = ta.sma(src, prd)
+    series float span = ta.atr(prd)
     [basis + span * sensitivity, basis - span * sensitivity]
 
 //-----------------------------------------------------------------------------}
@@ -331,9 +332,9 @@ int finalCond = 0, finalCond := bullishCond ? 1 : bearishCond ? -1 : finalCond[1
 bool isBullish = bullishCond and finalCond[1] == -1
 bool isBearish = bearishCond and finalCond[1] == 1
 [leadingWt, laggingWt] = getWt(hlc3, 9, 12)
-[upperRevSmBand, lowerRevSmBand] = getRevBands(close, revBandsPrd, 3)
-[upperRevMdBand, lowerRevMdBand] = getRevBands(close, revBandsPrd, 4)
-[upperRevLgBand, lowerRevLgBand] = getRevBands(close, revBandsPrd, 5)
+[upperRevSmZone, lowerRevSmZone] = getRevZones(close, revZonesPrd, 3)
+[upperRevMdZone, lowerRevMdZone] = getRevZones(close, revZonesPrd, 4)
+[upperRevLgZone, lowerRevLgZone] = getRevZones(close, revZonesPrd, 5)
 
 //-----------------------------------------------------------------------------}
 
@@ -345,25 +346,27 @@ bool hasMildBuySignal = ta.crossover(leadingWt, laggingWt) and laggingWt <= -80
 bool hasMildSellSignal = ta.crossunder(leadingWt, laggingWt) and laggingWt >= 80
 bool consistentBuySignal = isBullish and hasMildBuySignal
 bool consistentSellSignal = isBearish and hasMildSellSignal
-plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = RED_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and consistentBuySignal, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = YELLOW_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and consistentSellSignal, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = ORANGE_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = RED_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and consistentBuySignal and confirmed, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = YELLOW_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and consistentSellSignal and confirmed, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = ORANGE_COLOR, size = size.tiny, display = display.pane)
 
-var upperRevSmBandPlot = plot(isScalping and revBandsShowed ? upperRevSmBand : na, title = "Upper Reversal Sm Band", color = TRANSPARENT_COLOR, display = display.pane)
-var upperRevMdBandPlot = plot(isScalping and revBandsShowed ? upperRevMdBand : na, title = "Upper Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
-var upperRevLgBandPlot = plot(isScalping and revBandsShowed ? upperRevLgBand : na, title = "Upper Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
-fill(upperRevSmBandPlot, upperRevMdBandPlot, color.new(RED_COLOR, 85))
-fill(upperRevMdBandPlot, upperRevLgBandPlot, color.new(RED_COLOR, 80))
-var lowerRevLgBandPlot = plot(isScalping and revBandsShowed ? lowerRevLgBand : na, title = "Lower Reversal Lg Band", color = color.new(color.white, 97), display = display.pane)
-var lowerRevMdBandPlot = plot(isScalping and revBandsShowed ? lowerRevMdBand : na, title = "Lower Reversal Md Band", color = color.new(color.white, 97), display = display.pane)
-var lowerRevSmBandPlot = plot(isScalping and revBandsShowed ? lowerRevSmBand : na, title = "Lower Reversal Sm Band", color = TRANSPARENT_COLOR, display = display.pane)
-fill(lowerRevSmBandPlot, lowerRevMdBandPlot, color.new(AQUA_COLOR, 85))
-fill(lowerRevMdBandPlot, lowerRevLgBandPlot, color.new(AQUA_COLOR, 80))
+var upperRevSmZonePlot = plot(isScalping and revZonesShowed ? upperRevSmZone : na, title = "Upper Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
+var upperRevMdZonePlot = plot(isScalping and revZonesShowed ? upperRevMdZone : na, title = "Upper Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
+var upperRevLgZonePlot = plot(isScalping and revZonesShowed ? upperRevLgZone : na, title = "Upper Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
+fill(upperRevSmZonePlot, upperRevMdZonePlot, color.new(RED_COLOR, 80))
+fill(upperRevMdZonePlot, upperRevLgZonePlot, color.new(RED_COLOR, 75))
+var lowerRevLgZonePlot = plot(isScalping and revZonesShowed ? lowerRevLgZone : na, title = "Lower Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
+var lowerRevMdZonePlot = plot(isScalping and revZonesShowed ? lowerRevMdZone : na, title = "Lower Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
+var lowerRevSmZonePlot = plot(isScalping and revZonesShowed ? lowerRevSmZone : na, title = "Lower Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
+fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(AQUA_COLOR, 80))
+fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(AQUA_COLOR, 75))
 
 float leadingRibbon = ta.ema(close, ribbonLeadingSmoothing)
 float laggingRibbon = ta.ema(close, ribbonLaggingSmoothing)
-fill(plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane), plot(ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane), color = leadingRibbon > laggingRibbon ? #00bbf94d : #e91e624d, title = "Ribbon Fill Color")
+var leadingRibbonPlot = plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane)
+var laggingRibbonPlot = plot(isScalping and ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane)
+fill(leadingRibbonPlot, laggingRibbonPlot, color = leadingRibbon > laggingRibbon ? color.new(GREEN_COLOR, 75) : color.new(PURPLE_COLOR, 75), title = "Ribbon Fill Color")
 
 //-----------------------------------------------------------------------------}
 
@@ -377,7 +380,7 @@ fill(plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = f
 // Settings
 //-----------------------------------------------------------------------------{
 string gpGrp = "Golden Pocket"
-bool gpShowed = input.bool(true, "Show", group = gpGrp)
+bool gpShowed = input.bool(false, "Show", group = gpGrp)
 string gpDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
 int gpDepth = input.int(20, "Depth", group = gpGrp, tooltip = gpDepthTooltip)
 string gpDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
