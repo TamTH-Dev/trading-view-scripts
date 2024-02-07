@@ -107,12 +107,12 @@ float senkouSpanB = getDonchian(senkouSpanBLen)
 //------------------------------------------------------------------------------
 // Set lines and kumo cloud
 //-----------------------------------------------------------------------------{
-plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
-plot(isSwing and ikhShowed ? kijun : na, color = PURPLE_COLOR, title = "Kijun-Sen", display = display.pane)
-plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = RED_COLOR, title = "Chikou-Span", display = display.pane)
 senkouSpanAPlot = plot(isSwing and ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
 senkouSpanBPlot = plot(isSwing and ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
 fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
+plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? kijun : na, color = PURPLE_COLOR, title = "Kijun-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = RED_COLOR, title = "Chikou-Span", display = display.pane)
 
 //-----------------------------------------------------------------------------}
 
