@@ -10,11 +10,10 @@ indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_bac
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #ffffff
-color RED_COLOR = #e91e62
+color RED_COLOR = #E81E61
 color AQUA_COLOR = #1EBEE8
 color PURPLE_COLOR = #764AF1
-color GREEN_COLOR = #1EE876
-color YELLOW_COLOR = #E8D81E
+color GREEN_COLOR = #4BF2B8
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 
