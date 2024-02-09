@@ -8,15 +8,17 @@ indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR = #ffffff
-color RED_COLOR = #e91e62
+color RED_COLOR = #E81E61
 color AQUA_COLOR = #1EBEE8
 color YELLOW_COLOR = #E8D81E
-color PURPLE_COLOR = #764af1
+color PURPLE_COLOR = #764AF1
 color ORANGE_COLOR = #E8AF1E
-color GREEN_COLOR = #1EE876
-color PINK_COLOR = #E81EDB
+color GREEN_COLOR = #1EE8A3
+color BLUE_COLOR = #4B55F2
+color PINK_COLOR = #E54BF2
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
+
 
 //-----------------------------------------------------------------------------}
 
@@ -277,11 +279,9 @@ if srShowed and isScalping
 //-----------------------------------------------------------------------------{
 string buySellGrp = "Buy & Sell Signals"
 bool buySellSignalsShowed = input.bool(true, title = "Show", group = buySellGrp)
-float sensitivity = input.float(1.7, title = "Sensitivity", minval = 1, maxval = 6, group = buySellGrp)
-string trendRibbonGrp = "Trend Ribbon"
-bool ribbonShowed = input.bool(true, title = "Show", group = trendRibbonGrp)
-int ribbonLeadingSmoothing = input.int(9, title = "Leading Smoothing", minval = 1, group = trendRibbonGrp)
-int ribbonLaggingSmoothing = input.int(21, title = "Lagging Smoothing", minval = 1, group = trendRibbonGrp)
+float sensitivity = input.float(2.5, title = "Sensitivity", minval = 1, maxval = 6, group = buySellGrp)
+string trGrp = "Trend Ribbon"
+bool trShowed = input.bool(true, title = "Show", group = trGrp)
 string revZonesGrp = "Reversal Zones"
 bool revZonesShowed = input.bool(true, "Show", group = revZonesGrp)
 int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
@@ -347,26 +347,36 @@ bool hasMildSellSignal = ta.crossunder(leadingWt, laggingWt) and laggingWt >= 80
 bool consistentBuySignal = isBullish and hasMildBuySignal
 bool consistentSellSignal = isBearish and hasMildSellSignal
 plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = GREEN_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = PURPLE_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = RED_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentBuySignal and confirmed, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = YELLOW_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentSellSignal and confirmed, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = ORANGE_COLOR, size = size.tiny, display = display.pane)
 
 var upperRevSmZonePlot = plot(isScalping and revZonesShowed ? upperRevSmZone : na, title = "Upper Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
 var upperRevMdZonePlot = plot(isScalping and revZonesShowed ? upperRevMdZone : na, title = "Upper Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
 var upperRevLgZonePlot = plot(isScalping and revZonesShowed ? upperRevLgZone : na, title = "Upper Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
-fill(upperRevSmZonePlot, upperRevMdZonePlot, color.new(GREEN_COLOR, 80))
-fill(upperRevMdZonePlot, upperRevLgZonePlot, color.new(GREEN_COLOR, 75))
+fill(upperRevSmZonePlot, upperRevMdZonePlot, color.new(PINK_COLOR, 85))
+fill(upperRevMdZonePlot, upperRevLgZonePlot, color.new(PINK_COLOR, 75))
 var lowerRevLgZonePlot = plot(isScalping and revZonesShowed ? lowerRevLgZone : na, title = "Lower Reversal Lg Zone", color = color.new(color.white, 97), display = display.pane)
 var lowerRevMdZonePlot = plot(isScalping and revZonesShowed ? lowerRevMdZone : na, title = "Lower Reversal Md Zone", color = color.new(color.white, 97), display = display.pane)
 var lowerRevSmZonePlot = plot(isScalping and revZonesShowed ? lowerRevSmZone : na, title = "Lower Reversal Sm Zone", color = TRANSPARENT_COLOR, display = display.pane)
-fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(PURPLE_COLOR, 80))
-fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(PURPLE_COLOR, 75))
+fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(BLUE_COLOR, 85))
+fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(BLUE_COLOR, 75))
 
-float leadingRibbon = ta.ema(close, ribbonLeadingSmoothing)
-float laggingRibbon = ta.ema(close, ribbonLaggingSmoothing)
-var leadingRibbonPlot = plot(isScalping and ribbonShowed ? leadingRibbon : na, "", na, editable = false, display = display.pane)
-var laggingRibbonPlot = plot(isScalping and ribbonShowed ? laggingRibbon : na, "", na, editable = false, display = display.pane)
-fill(leadingRibbonPlot, laggingRibbonPlot, color = leadingRibbon > laggingRibbon ? color.new(AQUA_COLOR, 75) : color.new(RED_COLOR, 75), title = "Ribbon Fill Color")
+int trLineWidth = 2
+float tr1 = ta.ema(close, 9)
+float tr2 = ta.ema(close, 13)
+float tr3 = ta.ema(close, 17)
+float tr4 = ta.ema(close, 21)
+float tr5 = ta.ema(close, 25)
+float tr6 = ta.ema(close, 29)
+float tr7 = ta.ema(close, 33)
+plot(isScalping and trShowed ? tr1 : na, title = "Trend Ribbon 1", color = tr1 < tr7 ? color.new(RED_COLOR, 76) : color.new(AQUA_COLOR, 76), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr2 : na, title = "Trend Ribbon 2", color = tr2 < tr7 ? color.new(RED_COLOR, 70) : color.new(AQUA_COLOR, 70), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr3 : na, title = "Trend Ribbon 3", color = tr3 < tr7 ? color.new(RED_COLOR, 64) : color.new(AQUA_COLOR, 64), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr4 : na, title = "Trend Ribbon 4", color = tr4 < tr7 ? color.new(RED_COLOR, 58) : color.new(AQUA_COLOR, 58), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr5 : na, title = "Trend Ribbon 5", color = tr5 < tr7 ? color.new(RED_COLOR, 52) : color.new(AQUA_COLOR, 52), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr6 : na, title = "Trend Ribbon 6", color = tr6 < tr7 ? color.new(RED_COLOR, 46) : color.new(AQUA_COLOR, 46), linewidth = trLineWidth, display = display.pane)
+plot(isScalping and trShowed ? tr7 : na, title = "Trend Ribbon 7", color = tr7 > tr6 ? color.new(RED_COLOR, 40) : color.new(AQUA_COLOR, 40), linewidth = trLineWidth, display = display.pane)
 
 //-----------------------------------------------------------------------------}
 
@@ -585,11 +595,11 @@ if gpShowed and isScalping
 string vcsGrp = "Vector Candles"
 color lgVolUpCandleColor = input.color(AQUA_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
 color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
-color lgVolDnCandleColor = input.color(RED_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
+color lgVolDnCandleColor = input.color(PURPLE_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
 color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
-string ncsGrp = "Normal Candles"
+string ncsGrp = "Normal Candleexs"
 color norUpCandleColor = input.color(GREEN_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
-color norDnCandleColor = input.color(PURPLE_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(RED_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
 
 //-----------------------------------------------------------------------------}
 
