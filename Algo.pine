@@ -112,9 +112,9 @@ float senkouSpanB = getDonchian(senkouSpanBLen)
 senkouSpanAPlot = plot(isSwing and ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
 senkouSpanBPlot = plot(isSwing and ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
 fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
-plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = AQUA_COLOR, title = "Chikou-Span", display = display.pane)
 plot(isSwing and ikhShowed ? kijun : na, color = PURPLE_COLOR, title = "Kijun-Sen", display = display.pane)
-plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = RED_COLOR, title = "Chikou-Span", display = display.pane)
+plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
 
 //-----------------------------------------------------------------------------}
 
@@ -285,6 +285,8 @@ bool trShowed = input.bool(false, title = "Show", group = trGrp)
 string revZonesGrp = "Reversal Zones"
 bool revZonesShowed = input.bool(true, "Show", group = revZonesGrp)
 int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
+string smaGrp = "SMAs"
+bool smaShowed = input.bool(false, title = "Show", group = smaGrp)
 
 //-----------------------------------------------------------------------------}
 
@@ -335,6 +337,9 @@ bool isBearish = bearishCond and finalCond[1] == 1
 [upperRevSmZone, lowerRevSmZone] = getRevZones(close, revZonesPrd, 3)
 [upperRevMdZone, lowerRevMdZone] = getRevZones(close, revZonesPrd, 4)
 [upperRevLgZone, lowerRevLgZone] = getRevZones(close, revZonesPrd, 5)
+series float sma21 = ta.sma(close, 21)
+series float sma50 = ta.sma(close, 50)
+series float sma200 = ta.sma(close, 200)
 
 //-----------------------------------------------------------------------------}
 
@@ -378,6 +383,10 @@ plot(isScalping and trShowed ? tr5 : na, title = "Trend Ribbon 5", color = tr5 <
 plot(isScalping and trShowed ? tr6 : na, title = "Trend Ribbon 6", color = tr6 < tr7 ? color.new(RED_COLOR, 46) : color.new(AQUA_COLOR, 46), linewidth = trLineWidth, display = display.pane)
 plot(isScalping and trShowed ? tr7 : na, title = "Trend Ribbon 7", color = tr7 > tr6 ? color.new(RED_COLOR, 40) : color.new(AQUA_COLOR, 40), linewidth = trLineWidth, display = display.pane)
 
+plot(smaShowed and isScalping ? sma21 : na, title = "SMA 21", color = AQUA_COLOR, linewidth = 1, display = display.pane)
+plot(smaShowed and isScalping ? sma50 : na, title = "SMA 50", color = YELLOW_COLOR, linewidth = 1, display = display.pane)
+plot(smaShowed and isScalping ? sma200 : na, title = "SMA 200", color = RED_COLOR, linewidth = 1, display = display.pane)
+
 //-----------------------------------------------------------------------------}
 
 
@@ -390,7 +399,7 @@ plot(isScalping and trShowed ? tr7 : na, title = "Trend Ribbon 7", color = tr7 >
 // Settings
 //-----------------------------------------------------------------------------{
 string gpGrp = "Golden Pocket"
-bool gpShowed = input.bool(true, "Show", group = gpGrp)
+bool gpShowed = input.bool(false, "Show", group = gpGrp)
 string gpDepthTooltip = "The minimum number of bars that will be taken into account when calculating the indicator."
 int gpDepth = input.int(20, "Depth", group = gpGrp, tooltip = gpDepthTooltip)
 string gpDevTooltip = "Deviation is a multiplier that affects how much the price should deviate from the previous pivot in order for the bar to become a new pivot."
