@@ -128,7 +128,7 @@ plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-S
 // Settings
 //-----------------------------------------------------------------------------{
 string srGrp = "S/R"
-bool srShowed = input.bool(true, title = "Show", group = srGrp)
+bool srShowed = input.bool(false, title = "Show", group = srGrp)
 int srPrd = input.int(284, title = "Period", group = srGrp)
 color srSupportColor = input.color(color.new(AQUA_COLOR, 80), title = "Support Color", group = srGrp)
 color srResistanceColor = input.color(color.new(RED_COLOR, 80), title = "Resistance Color", group = srGrp)
@@ -281,7 +281,7 @@ string buySellGrp = "Buy & Sell Signals"
 bool buySellSignalsShowed = input.bool(true, title = "Show", group = buySellGrp)
 float sensitivity = input.float(2.5, title = "Sensitivity", minval = 1, maxval = 6, group = buySellGrp)
 string trGrp = "Trend Ribbon"
-bool trShowed = input.bool(true, title = "Show", group = trGrp)
+bool trShowed = input.bool(false, title = "Show", group = trGrp)
 string revZonesGrp = "Reversal Zones"
 bool revZonesShowed = input.bool(true, "Show", group = revZonesGrp)
 int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
@@ -362,17 +362,58 @@ var lowerRevSmZonePlot = plot(isScalping and revZonesShowed ? lowerRevSmZone : n
 fill(lowerRevSmZonePlot, lowerRevMdZonePlot, color.new(BLUE_COLOR, 85))
 fill(lowerRevMdZonePlot, lowerRevLgZonePlot, color.new(BLUE_COLOR, 75))
 
+series float ema21 = ta.ema(close, 21)
 series float ema50 = ta.ema(close, 50)
-series float ema100 = ta.ema(close, 100)
-color trColor = ema50 > ema100 ? color.new(AQUA_COLOR, 80) : ema50 < ema100 ? color.new(RED_COLOR, 80) : TRANSPARENT_COLOR
-var trShortPlot = plot(isScalping and trShowed ? ema50 : na, title = "Short Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
-var trLongPlot = plot(isScalping and trShowed ? ema100 : na, title = "Long Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
+color trColor = ema21 > ema50 ? color.new(AQUA_COLOR, 80) : ema21 < ema50 ? color.new(RED_COLOR, 80) : TRANSPARENT_COLOR
+var trShortPlot = plot(isScalping and trShowed ? ema21 : na, title = "Short Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
+var trLongPlot = plot(isScalping and trShowed ? ema50 : na, title = "Long Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
 fill(trShortPlot, trLongPlot, title = "Trend Ribbon", color = trColor)
 
 //-----------------------------------------------------------------------------}
 
 
 
+
+//-----------------------------------------------------------------------------*
+// Signals
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string shaGrp = "Smoothed Heikin Ashi"
+bool shaShowed = input.bool(true, title = "Show", group = shaGrp)
+int shaPrd = input.int(10, title = "Period", group = shaGrp)
+int shaSmoothedLen = input.int(10, title = "Smoothed Length", group = shaGrp)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Calculate Values
+//-----------------------------------------------------------------------------{
+series float emaOpen = ta.ema(open, shaPrd)
+series float emaClose = ta.ema(close, shaPrd)
+series float emaHigh = ta.ema(high, shaPrd)
+series float emaLow = ta.ema(low, shaPrd)
+series float shaClose = (emaOpen + emaHigh + emaLow + emaClose) / 4
+series float shaOpen = na
+shaOpen := na(shaOpen[1]) ? (emaOpen + emaClose) / 2 : (shaOpen[1] + shaClose[1]) / 2
+series float shaHigh = math.max(emaHigh, math.max(shaOpen, shaClose))
+series float shaLow = math.min(emaLow, math.min(shaOpen, shaClose))
+series float shaSmoothedOpen = ta.ema(shaOpen, shaSmoothedLen)
+series float shaSmoothedClose = ta.ema(shaClose, shaSmoothedLen)
+series float shaSmoothedHigh = ta.ema(shaHigh, shaSmoothedLen)
+series float shaSmoothedLow = ta.ema(shaLow, shaSmoothedLen)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Render
+//-----------------------------------------------------------------------------{
+color shaColor = shaSmoothedOpen > shaSmoothedClose ? RED_COLOR : AQUA_COLOR
+plotcandle(shaSmoothedOpen, shaSmoothedHigh, shaSmoothedLow, shaSmoothedClose, title = "Smoothed Heikin Ashi", color = color.new(shaColor, 60), bordercolor = color.new(shaColor, 20), wickcolor = TRANSPARENT_COLOR, display = isScalping and shaShowed ? display.pane : display.none)
+
+//-----------------------------------------------------------------------------}
 
 
 //-----------------------------------------------------------------------------*
