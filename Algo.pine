@@ -7,15 +7,15 @@ indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max
 //  Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR = #ffffff
+color WHITE_COLOR = #EFEFEF
 color RED_COLOR = #E81E61
 color AQUA_COLOR = #1EBEE8
-color YELLOW_COLOR = #F2E44B
+color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764AF1
-color ORANGE_COLOR = #F26B4B
-color GREEN_COLOR = #4BF2B8
-color BLUE_COLOR = #4B55F2
-color PINK_COLOR = #E54BF2
+color ORANGE_COLOR = #E8AF1E
+color GREEN_COLOR = #1EE8A3
+color BLUE_COLOR = #1E53E8
+color PINK_COLOR = #C31EE8
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 
@@ -72,7 +72,7 @@ getTfTxt() =>
 //-----------------------------------------------------------------------------*
 // Strategy
 //-----------------------------------------------------------------------------*
-string strategy = input.string("Scalping", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
+string strategy = input.string("Swing", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
 bool isSwing = strategy == "Swing"
 bool isScalping = strategy == "Scalping"
 
@@ -112,8 +112,8 @@ float senkouSpanB = getDonchian(senkouSpanBLen)
 senkouSpanBPlot = plot(isSwing and ikhShowed ? senkouSpanB : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span B", display = display.pane)
 senkouSpanAPlot = plot(isSwing and ikhShowed ? senkouSpanA : na, offset = kumoCloudDisplacement - 1, color = LIGHT_GRAY_COLOR, title = "Senkou-Span A", display = display.pane)
 fill(senkouSpanAPlot, senkouSpanBPlot, color = senkouSpanA > senkouSpanB ? color.new(DARK_GRAY_COLOR, 60) : color.new(LIGHT_GRAY_COLOR, 0))
-plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = AQUA_COLOR, title = "Chikou-Span", display = display.pane)
-plot(isSwing and ikhShowed ? kijun : na, color = PURPLE_COLOR, title = "Kijun-Sen", display = display.pane)
+plot(isSwing and ikhShowed ? close : na, offset = -chikouSpanDisplacement + 1, color = PURPLE_COLOR, title = "Chikou-Span", display = display.pane)
+plot(isSwing and ikhShowed ? kijun : na, color = RED_COLOR, title = "Kijun-Sen", display = display.pane)
 plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-Sen", display = display.pane)
 
 //-----------------------------------------------------------------------------}
@@ -128,10 +128,10 @@ plot(isSwing and ikhShowed ? tenkan : na, color = GREEN_COLOR, title = "Tenkan-S
 // Settings
 //-----------------------------------------------------------------------------{
 string srGrp = "S/R"
-bool srShowed = input.bool(false, title = "Show", group = srGrp)
+bool srShowed = input.bool(true, title = "Show", group = srGrp)
 int srPrd = input.int(284, title = "Period", group = srGrp)
 color srSupportColor = input.color(color.new(AQUA_COLOR, 80), title = "Support Color", group = srGrp)
-color srResistanceColor = input.color(color.new(RED_COLOR, 80), title = "Resistance Color", group = srGrp)
+color srResistanceColor = input.color(color.new(LIGHT_GRAY_COLOR, 80), title = "Resistance Color", group = srGrp)
 int srStrength = input.int(2, title = "Strength", minval = 1, group = srGrp)
 float srZoneWidthPerc = input.float(1.5, title = "Zone Width In %", minval = 0, group = srGrp)
 color srValColor = input.color(color.new(WHITE_COLOR, 20), title = "Value Color", group = srGrp)
@@ -346,8 +346,8 @@ bool hasMildBuySignal = ta.crossover(leadingWt, laggingWt) and laggingWt <= -80
 bool hasMildSellSignal = ta.crossunder(leadingWt, laggingWt) and laggingWt >= 80
 bool consistentBuySignal = isBullish and hasMildBuySignal
 bool consistentSellSignal = isBearish and hasMildSellSignal
-plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = GREEN_COLOR, size = size.tiny, display = display.pane)
-plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = PURPLE_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBullish and not consistentBuySignal and confirmed, title = "Bullish Buy Signal" , style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
+plotshape(isScalping and buySellSignalsShowed and isBearish and not consistentSellSignal and confirmed, title = "Bearish Sell Signal", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentBuySignal and confirmed, title = "Consistent Buy Signal" , style = shape.triangleup, location = location.belowbar, color = YELLOW_COLOR, size = size.tiny, display = display.pane)
 plotshape(isScalping and buySellSignalsShowed and consistentSellSignal and confirmed, title = "Consistent Sell Signal", style = shape.triangledown, location = location.abovebar, color = ORANGE_COLOR, size = size.tiny, display = display.pane)
 
@@ -410,7 +410,7 @@ series float shaSmoothedLow = ta.ema(shaLow, shaSmoothedLen)
 //-----------------------------------------------------------------------------*
 // Render
 //-----------------------------------------------------------------------------{
-color shaColor = shaSmoothedOpen > shaSmoothedClose ? RED_COLOR : AQUA_COLOR
+color shaColor = shaSmoothedOpen > shaSmoothedClose ? RED_COLOR : GREEN_COLOR
 plotcandle(shaSmoothedOpen, shaSmoothedHigh, shaSmoothedLow, shaSmoothedClose, title = "Smoothed Heikin Ashi", color = color.new(shaColor, 60), bordercolor = color.new(shaColor, 20), wickcolor = TRANSPARENT_COLOR, display = isScalping and shaShowed ? display.pane : display.none)
 
 //-----------------------------------------------------------------------------}
@@ -625,13 +625,14 @@ if gpShowed and isScalping
 // Settings
 //-----------------------------------------------------------------------------{
 string vcsGrp = "Vector Candles"
-color lgVolUpCandleColor = input.color(AQUA_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
+bool vcsShowed = input.bool(false, title = "Show", group = vcsGrp)
+color lgVolUpCandleColor = input.color(GREEN_COLOR, title = "Large Volume Up Candle Color", group = vcsGrp)
 color mdVolUpCandleColor = input.color(YELLOW_COLOR, title = "Medium Volume Up Candle Color", group = vcsGrp)
 color lgVolDnCandleColor = input.color(RED_COLOR, title = "Large Volume Down Candle Color", group = vcsGrp)
-color mdVolDnCandleColor = input.color(PINK_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
+color mdVolDnCandleColor = input.color(PURPLE_COLOR, title = "Medium Volume Down Candle Color", group = vcsGrp)
 string ncsGrp = "Normal Candleexs"
-color norUpCandleColor = input.color(GREEN_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
-color norDnCandleColor = input.color(PURPLE_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
+color norUpCandleColor = input.color(AQUA_COLOR, title = "Normal Up Candle Color", group = ncsGrp)
+color norDnCandleColor = input.color(WHITE_COLOR, title = "Normal Down Candle Color", group = ncsGrp)
 
 //-----------------------------------------------------------------------------}
 
@@ -672,6 +673,6 @@ getVcsColor(series float _vol, series float _high, series float _low, series flo
 // Render Vector Candles
 //-----------------------------------------------------------------------------{
 vcsColor = getVcsColor(_vol, _high, _low, _close, _open, lgVolDnCandleColor, lgVolUpCandleColor, mdVolDnCandleColor, mdVolUpCandleColor, norDnCandleColor, norUpCandleColor)
-barcolor(vcsColor)
+barcolor(vcsColor, display = vcsShowed and isScalping ? display.all : display.none)
 
 //-----------------------------------------------------------------------------}
