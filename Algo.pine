@@ -9,7 +9,7 @@ indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max
 color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR = #EFEFEF
 color RED_COLOR = #E81E61
-color AQUA_COLOR = #1EBEE8
+color AQUA_COLOR = #04ADBF
 color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764AF1
 color ORANGE_COLOR = #E8AF1E
