@@ -72,7 +72,7 @@ getTfTxt() =>
 //-----------------------------------------------------------------------------*
 // Strategy
 //-----------------------------------------------------------------------------*
-string strategy = input.string("Swing", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
+string strategy = input.string("Scalping", title = "Strategy", options = ["Swing", "Scalping"], group = "General")
 bool isSwing = strategy == "Swing"
 bool isScalping = strategy == "Scalping"
 
@@ -319,15 +319,15 @@ getRevZones(float src, int prd, float sensitivity) =>
 //-----------------------------------------------------------------------------*
 // Get Values
 //-----------------------------------------------------------------------------{
-float src = close
-float leadingRange = smoothRng(src, 27, 1.5)
-float laggingRange = smoothRng(src, 55, sensitivity)
+float wtSrc = close
+float leadingRange = smoothRng(wtSrc, 27, 1.5)
+float laggingRange = smoothRng(wtSrc, 55, sensitivity)
 float avgRange = (leadingRange + laggingRange) / 2
-float clearnRange = filterRng(src, avgRange)
+float clearnRange = filterRng(wtSrc, avgRange)
 float upSignal = 0.0, upSignal := clearnRange > clearnRange[1] ? nz(upSignal[1]) + 1 : clearnRange < clearnRange[1] ? 0 : nz(upSignal[1])
 float dnSignal = 0.0, dnSignal := clearnRange < clearnRange[1] ? nz(dnSignal[1]) + 1 : clearnRange > clearnRange[1] ? 0 : nz(dnSignal[1])
-bool bullishCond = bool(na), bullishCond := src > clearnRange and src > src[1] and upSignal > 0 or src > clearnRange and src < src[1] and upSignal > 0
-bool bearishCond = bool(na), bearishCond := src < clearnRange and src < src[1] and dnSignal > 0 or src < clearnRange and src > src[1] and dnSignal > 0
+bool bullishCond = bool(na), bullishCond := wtSrc > clearnRange and wtSrc > wtSrc[1] and upSignal > 0 or wtSrc > clearnRange and wtSrc < wtSrc[1] and upSignal > 0
+bool bearishCond = bool(na), bearishCond := wtSrc < clearnRange and wtSrc < wtSrc[1] and dnSignal > 0 or wtSrc < clearnRange and wtSrc > wtSrc[1] and dnSignal > 0
 int finalCond = 0, finalCond := bullishCond ? 1 : bearishCond ? -1 : finalCond[1]
 bool isBullish = bullishCond and finalCond[1] == -1
 bool isBearish = bearishCond and finalCond[1] == 1
