@@ -285,6 +285,10 @@ bool trShowed = input.bool(false, title = "Show", group = trGrp)
 string revZonesGrp = "Reversal Zones"
 bool revZonesShowed = input.bool(false, "Show", group = revZonesGrp)
 int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
+string emasGrp = "EMAs"
+bool emasShowed = input.bool(true, "Show", group = emasGrp)
+int leadingEmaPrd = input.int(100, "Leading EMA", group = emasGrp)
+int laggingEmaPrd = input.int(200, "Lagging EMA", group = emasGrp)
 
 //-----------------------------------------------------------------------------}
 
@@ -368,6 +372,11 @@ color trColor = ema21 > ema50 ? color.new(AQUA_COLOR, 80) : ema21 < ema50 ? colo
 var trShortPlot = plot(isScalping and trShowed ? ema21 : na, title = "Short Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
 var trLongPlot = plot(isScalping and trShowed ? ema50 : na, title = "Long Trend Ribbon", color = trColor, linewidth = 1, display = display.pane)
 fill(trShortPlot, trLongPlot, title = "Trend Ribbon", color = trColor)
+
+series float laggingEma = ta.ema(close, laggingEmaPrd)
+series float leadingEma = ta.ema(close, leadingEmaPrd)
+plot(laggingEma, title = "Lagging EMA", color = PURPLE_COLOR, linewidth = 1, display = isScalping and emasShowed ? display.pane : display.none)
+plot(leadingEma, title = "Leading EMA", color = YELLOW_COLOR, linewidth = 1, display = isScalping and emasShowed ? display.pane : display.none)
 
 //-----------------------------------------------------------------------------}
 
