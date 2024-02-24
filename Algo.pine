@@ -278,12 +278,12 @@ if srShowed and isScalping
 // Settings
 //-----------------------------------------------------------------------------{
 string buySellGrp = "Buy & Sell Signals"
-bool buySellSignalsShowed = input.bool(true, title = "Show", group = buySellGrp)
+bool buySellSignalsShowed = input.bool(false, title = "Show", group = buySellGrp)
 float sensitivity = input.float(2.5, title = "Sensitivity", minval = 1, maxval = 6, group = buySellGrp)
 string trGrp = "Trend Ribbon"
 bool trShowed = input.bool(false, title = "Show", group = trGrp)
 string revZonesGrp = "Reversal Zones"
-bool revZonesShowed = input.bool(true, "Show", group = revZonesGrp)
+bool revZonesShowed = input.bool(false, "Show", group = revZonesGrp)
 int revZonesPrd = input.int(30, "Period", group = revZonesGrp)
 
 //-----------------------------------------------------------------------------}
@@ -380,7 +380,7 @@ fill(trShortPlot, trLongPlot, title = "Trend Ribbon", color = trColor)
 // Settings
 //-----------------------------------------------------------------------------{
 string shaGrp = "Smoothed Heikin Ashi"
-bool shaShowed = input.bool(true, title = "Show", group = shaGrp)
+bool shaShowed = input.bool(false, title = "Show", group = shaGrp)
 int shaPrd = input.int(10, title = "Period", group = shaGrp)
 int shaSmoothedLen = input.int(10, title = "Smoothed Length", group = shaGrp)
 
