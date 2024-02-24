@@ -161,5 +161,5 @@ plot(isDivSellSignal and confirmed ? 110 : na , title = "Divergence Sell Signal"
 //-----------------------------------------------------------------------------}
 // Alert Conditions
 //-----------------------------------------------------------------------------{
-bool hasTradeSignal = confirmed and (isDivBuySignal or isDivSellSignal or (isBuySignal and leadingWt <= oversoldThreshold) or (isSellSignal and leadingWt >= overboughtThreshold))
+bool hasTradeSignal = isDivBuySignal or isDivSellSignal or (isBuySignal and laggingWt <= oversoldThreshold) or (isSellSignal and laggingWt >= overboughtThreshold)
 alertcondition(hasTradeSignal, 'Trade Signal', 'Take money 💰💰💰')
