@@ -156,3 +156,10 @@ plot(isBuySignal and confirmed ? laggingWt : na, title = "Buy Signal", color = c
 plot(isSellSignal and confirmed  ? laggingWt : na, title = "Sell Signal", color = color.new(WHITE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
 plot(isDivBuySignal and confirmed ? -110 : na, title = "Divergence Buy Signal", color = AQUA_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
 plot(isDivSellSignal and confirmed ? 110 : na , title = "Divergence Sell Signal", color = WHITE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
+
+
+//-----------------------------------------------------------------------------}
+// Alert Conditions
+//-----------------------------------------------------------------------------{
+bool hasTradeSignal = confirmed and (isDivBuySignal or isDivSellSignal or (isBuySignal and leadingWt <= oversoldThreshold) or (isSellSignal and leadingWt >= overboughtThreshold))
+alertcondition(hasTradeSignal, 'Trade Signal', 'Take money 💰💰💰')
