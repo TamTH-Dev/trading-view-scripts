@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+indicator("Sniper Algo", shorttitle = "Sniper Algo", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
 
 
 //-----------------------------------------------------------------------------*
