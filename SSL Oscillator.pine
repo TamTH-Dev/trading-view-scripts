@@ -1,0 +1,205 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+// @version=5
+indicator("SSL Oscillator", shorttitle = "SSL Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR = #EFEFEF
+color RED_COLOR = #E81E61
+color AQUA_COLOR = #04ADBF
+color YELLOW_COLOR = #E8D81E
+color PURPLE_COLOR = #764AF1
+color ORANGE_COLOR = #E8AF1E
+color GREEN_COLOR = #1EE8A3
+color BLUE_COLOR = #1E53E8
+color PINK_COLOR = #C31EE8
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Variables
+//-----------------------------------------------------------------------------{
+series int barIdx = bar_index
+series bool confirmed = barstate.isconfirmed
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, barIdx, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Volume Explosion
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string veGrp = "Volume Explosion"
+int veSensitivity = input.int(180, title = "Sensitivity", group = veGrp)
+int veLeadingLen = input.int(20, title = "Leading Length", group = veGrp)
+int veLaggingLen = input.int(40, title = "Lagging Length", group = veGrp)
+int veChannelLen = input.int(20, title = "Channel Length", group = veGrp)
+float veChannelMult = input.float(2.0, title = "Channel Multiplier", group = veGrp)
+
+//-----------------------------------------------------------------------------}
+// Functions
+//-----------------------------------------------------------------------------{
+getMaWt(src, leadingLen, laggingLen) =>
+	series float leadingMa = ta.ema(src, leadingLen)
+	series float laggingMa = ta.ema(src, laggingLen)
+	leadingMa - laggingMa
+
+getChannelUpper(src, len, mult) => 
+	series float basis = ta.sma(src, len)
+	series float dev = mult * ta.stdev(src, len)
+	basis + dev
+
+getChannelLower(src, len, mult) => 
+	series float basis = ta.sma(src, len)
+	series float dev = mult * ta.stdev(src, len)
+	basis - dev
+
+//-----------------------------------------------------------------------------}
+// Get Values
+//-----------------------------------------------------------------------------{
+series float veVol = (getMaWt(close, veLeadingLen, veLaggingLen) - getMaWt(close[1], veLeadingLen, veLaggingLen)) * veSensitivity
+series float veExplosionVol = getChannelUpper(close, veChannelLen, veChannelMult) - getChannelLower(close, veChannelLen, veChannelMult)
+series float veIsUpTrend = veVol >= 0 ? veVol : 0
+series float veIsDnTrend = veVol < 0 ? (-1 * veVol) : 0
+
+//-----------------------------------------------------------------------------}
+// Plots
+//-----------------------------------------------------------------------------{
+color veTopBarColor = veIsUpTrend > veExplosionVol ? (veIsUpTrend < veIsUpTrend[1] ? color.new(GREEN_COLOR, 50) : GREEN_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+color veBotBarColor = veIsDnTrend > veExplosionVol ? (veIsDnTrend < veIsDnTrend[1] ? color.new(RED_COLOR, 50) : RED_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+var veTopLineSt = plot(55, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veTopLineNd = plot(50, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineSt = plot(-50, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineNd = plot(-55, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+fill(veTopLineSt, veTopLineNd, title = "Top Explosion Bar Color", color = veTopBarColor)
+fill(veBotLineSt, veBotLineNd, title = "Bottom Explosion Bar Color", color = veBotBarColor)
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
+// QQE MOD
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string qmGrp = "QQE MOD"
+int qmRsiPrd = input.int(6, title = "QQE RSI Length", group = qmGrp)
+int qmSf = input.int(6, title = "QQE RSI Smoothing", group = qmGrp)
+series float qmRsiSrc = input(close, title = "QQE RSI Source", group = qmGrp)
+int qmFactor = input.int(3, title = "QQE Fast Factor", group = qmGrp)
+int qmThreshold = input.int(3, title = "QQE Threshhold", group = qmGrp)
+
+int qmRsiPrd2 = input.int(6, title = "QQE2 RSI Length", group = qmGrp)
+int qmSf2 = input.int(5, title = "QQE2 RSI Smoothing", group = qmGrp)
+series float qmRsiSrc2 = input(close, title = "QQE2 RSI Source", group = qmGrp)
+float qmFactor2 = input.float(1.61, title = "QQE2 Fast Factor", group = qmGrp)
+int qmThreshold2 = input.int(3, title = "QQE2 Threshhold", group = qmGrp)
+
+int qmBBLen = input.int(50, title = "Bollinger Length", minval = 1, group = qmGrp)
+float qmBBMult = input.float(0.35, title = "BB Multiplier", minval = 0.001, maxval = 5, step = 0.1, group = qmGrp)
+
+//-----------------------------------------------------------------------------}
+// Get Values
+//-----------------------------------------------------------------------------{
+int qmWildersPrd = qmRsiPrd * 2 - 1
+series float qmRsi = ta.rsi(qmRsiSrc, qmRsiPrd)
+series float qmRsiMa = ta.ema(qmRsi, qmSf)
+series float qmAtrRsi = math.abs(qmRsiMa[1] - qmRsiMa)
+series float qmMaAtrRsi = ta.ema(qmAtrRsi, qmWildersPrd)
+series float qmDar = ta.ema(qmMaAtrRsi, qmWildersPrd) * qmFactor
+
+var qmLongBand = 0.0
+var qmShortBand = 0.0
+var qmTrend = 0
+
+series float qmDeltaFastAtrRsi = qmDar
+series float qmRsiIdx = qmRsiMa
+series float qmNewShortBand = qmRsiIdx + qmDeltaFastAtrRsi
+series float qmNewLongBand = qmRsiIdx - qmDeltaFastAtrRsi
+qmLongBand := qmRsiIdx[1] > qmLongBand[1] and qmRsiIdx > qmLongBand[1] ? math.max(qmLongBand[1], qmNewLongBand) : qmNewLongBand
+qmShortBand := qmRsiIdx[1] < qmShortBand[1] and qmRsiIdx < qmShortBand[1] ? math.min(qmShortBand[1], qmNewShortBand) : qmNewShortBand
+series bool qmCross = ta.cross(qmLongBand[1], qmRsiIdx)
+qmTrend := ta.cross(qmRsiIdx, qmShortBand[1]) ? 1 : qmCross ? -1 : nz(qmTrend[1], 1)
+series float qmFastAtrRsiTL = qmTrend == 1 ? qmLongBand : qmShortBand
+
+series float qmBasis = ta.sma(qmFastAtrRsiTL - 50, qmBBLen)
+series float qmDev = qmBBMult * ta.stdev(qmFastAtrRsiTL - 50, qmBBLen)
+series float qmUpper = qmBasis + qmDev
+series float qmLower = qmBasis - qmDev
+
+var qmQqeZLong = 0
+qmQqeZLong := nz(qmQqeZLong[1])
+qmQqeZLong := qmRsiIdx >= 50 ? qmQqeZLong + 1 : 0
+var qmQqeZShort = 0
+qmQqeZShort := nz(qmQqeZShort[1])
+qmQqeZShort := qmRsiIdx < 50 ? qmQqeZShort + 1 : 0
+
+int qmWildersPrd2 = qmRsiPrd2 * 2 - 1
+series float qmRsi2 = ta.rsi(qmRsiSrc2, qmRsiPrd2)
+series float qmRsiMa2 = ta.ema(qmRsi2, qmSf2)
+series float qmAtrRsi2 = math.abs(qmRsiMa2[1] - qmRsiMa2)
+series float qmMaAtrRsi2 = ta.ema(qmAtrRsi2, qmWildersPrd2)
+series float qmDar2 = ta.ema(qmMaAtrRsi2, qmWildersPrd2) * qmFactor2
+
+var qmLongBand2 = 0.0
+var qmShortBand2 = 0.0
+var qmTrend2 = 0
+
+series float qmDeltaFastAtrRsi2 = qmDar2
+series float qmRsiIdx2 = qmRsiMa2
+series float qmNewShortBand2 = qmRsiIdx2 + qmDeltaFastAtrRsi2
+series float qmNewLongBand2 = qmRsiIdx2 - qmDeltaFastAtrRsi2
+qmLongBand2 := qmRsiIdx2[1] > qmLongBand2[1] and qmRsiIdx2 > qmLongBand2[1] ? math.max(qmLongBand2[1], qmNewLongBand2) : qmNewLongBand2
+qmShortBand2 := qmRsiIdx2[1] < qmShortBand2[1] and qmRsiIdx2 < qmShortBand2[1] ? math.min(qmShortBand2[1], qmNewShortBand2) : qmNewShortBand2
+series bool qmCross2 = ta.cross(qmLongBand2[1], qmRsiIdx2)
+qmTrend2 := ta.cross(qmRsiIdx2, qmShortBand2[1]) ? 1 : qmCross2 ? -1 : nz(qmTrend2[1], 1)
+series float qmFastAtrRsi2TL = qmTrend2 == 1 ? qmLongBand2 : qmShortBand2
+
+var qmQqe2ZLong = 0
+qmQqe2ZLong := nz(qmQqe2ZLong[1])
+qmQqe2ZLong := qmRsiIdx2 >= 50 ? qmQqe2ZLong + 1 : 0
+var qmQqe2ZShort = 0
+qmQqe2ZShort := nz(qmQqe2ZShort[1])
+qmQqe2ZShort := qmRsiIdx2 < 50 ? qmQqe2ZShort + 1 : 0
+
+bool qmIsUpTrend1 = qmRsiMa2 - 50 > qmThreshold2
+bool qmIsUpTrend2 = qmRsiMa - 50 > qmUpper
+bool qmIsDnTrend1 = qmRsiMa2 - 50 < 0 - qmThreshold2
+bool qmIsDnTrend2 = qmRsiMa - 50 < qmLower
+color qmHistColor2 = qmRsiMa2 - 50 > qmThreshold2 ? LIGHT_GRAY_COLOR : qmRsiMa2 - 50 < 0 - qmThreshold2 ? LIGHT_GRAY_COLOR : na
+
+//-----------------------------------------------------------------------------}
+// Plots
+//-----------------------------------------------------------------------------{
+hline(0, color = DARK_GRAY_COLOR, linestyle = hline.style_solid, linewidth = 1)
+plot(qmFastAtrRsi2TL - 50, title = "QQE Line", color = color.new(PURPLE_COLOR, 20), linewidth = 2)
+plot(qmRsiMa2 - 50, color = qmHistColor2, title = "Histogram", style = plot.style_columns)
+plot(qmIsUpTrend1 and qmIsUpTrend2 ? qmRsiMa2 - 50 : na, title = "QQE Up", style = plot.style_columns, color = AQUA_COLOR)
+plot(qmIsDnTrend1 and qmIsDnTrend2 ? qmRsiMa2 - 50 : na, title = "QQE Down", style = plot.style_columns, color = WHITE_COLOR)
+
+//-----------------------------------------------------------------------------}

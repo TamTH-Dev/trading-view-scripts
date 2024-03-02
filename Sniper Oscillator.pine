@@ -2,7 +2,7 @@
 // © tamth_
 
 // @version=5
-indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+indicator("Sniper Oscillator", shorttitle = "Sniper Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
 
 
 //-----------------------------------------------------------------------------*
