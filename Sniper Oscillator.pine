@@ -57,11 +57,17 @@ float wtMaSrc = input.source(hlc3, title = "MA Source", group = wtGrp)
 int wtMaLen = input.int(3, title = "MA Length", group = wtGrp)
 string mfoGrp = "MFO"
 bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
-bool mfoBarShowed = input.bool(true, title = "Support Bar", group = mfoGrp)
+// bool mfoBarShowed = input.bool(true, title = "Support Bar", group = mfoGrp)
 int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
 int mfoMult = input.int(150, title = "Area Multiplier", group = mfoGrp)
 string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+string veGrp = "Volume Explosion"
+int veSensitivity = input.int(180, title = "Sensitivity", group = veGrp)
+int veLeadingLen = input.int(20, title = "Leading Length", group = veGrp)
+int veLaggingLen = input.int(40, title = "Lagging Length", group = veGrp)
+int veChannelLen = input.int(20, title = "Channel Length", group = veGrp)
+float veChannelMult = input.float(2.0, title = "Channel Multiplier", group = veGrp)
 
 //-----------------------------------------------------------------------------}
 // Functions
@@ -108,6 +114,22 @@ getMfo() =>
     series float haLow = getHaVal(low)
     mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
 
+getMaWt(src, leadingLen, laggingLen) =>
+	series float leadingMa = ta.ema(src, leadingLen)
+	series float laggingMa = ta.ema(src, laggingLen)
+	leadingMa - laggingMa
+
+getChannelUpper(src, len, mult) => 
+	series float basis = ta.sma(src, len)
+	series float dev = mult * ta.stdev(src, len)
+	basis + dev
+
+getChannelLower(src, len, mult) => 
+	series float basis = ta.sma(src, len)
+	series float dev = mult * ta.stdev(src, len)
+	basis - dev
+
+
 //-----------------------------------------------------------------------------}
 // Get values
 //-----------------------------------------------------------------------------{
@@ -127,18 +149,32 @@ bool isSellSignal = ta.crossunder(leadingWt, laggingWt)
 bool isDivBuySignal = isWtLongBullishDiv or isWtShortBullishDiv
 bool isDivSellSignal = isWtLongBearishDiv or isWtShortBearishDiv
 
+series float veVol = (getMaWt(close, veLeadingLen, veLaggingLen) - getMaWt(close[1], veLeadingLen, veLaggingLen)) * veSensitivity
+series float veExplosionVol = getChannelUpper(close, veChannelLen, veChannelMult) - getChannelLower(close, veChannelLen, veChannelMult)
+series float veIsUpTrend = veVol >= 0 ? veVol : 0
+series float veIsDnTrend = veVol < 0 ? (-1 * veVol) : 0
+
 //-----------------------------------------------------------------------------}
 // Render values
 //-----------------------------------------------------------------------------{
+color veTopBarColor = veIsUpTrend > veExplosionVol ? (veIsUpTrend < veIsUpTrend[1] ? color.new(GREEN_COLOR, 50) : GREEN_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+color veBotBarColor = veIsDnTrend > veExplosionVol ? (veIsDnTrend < veIsDnTrend[1] ? color.new(RED_COLOR, 50) : RED_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+var veTopLineSt = plot(105, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veTopLineNd = plot(100, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineSt = plot(-100, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineNd = plot(-105, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+fill(veTopLineSt, veTopLineNd, title = "Top Explosion Bar Color", color = veTopBarColor)
+fill(veBotLineSt, veBotLineNd, title = "Bottom Explosion Bar Color", color = veBotBarColor)
+
 plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
 
-var mfoBarTopLineSt = plot(mfoShowed and mfoBarShowed ? 105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var mfoBarTopLineNd = plot(mfoShowed and mfoBarShowed ? 100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var mfoBarBotLineSt = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var mfoBarBotLineNd = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-fill(mfoBarTopLineSt, mfoBarTopLineNd, title = "MFO Bar", color = mfo > 0 ? color.new(GREEN_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
-fill(mfoBarBotLineSt, mfoBarBotLineNd, title = "MFO Bar", color = mfo < 0 ? color.new(RED_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
+// var mfoBarTopLineSt = plot(mfoShowed and mfoBarShowed ? 105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+// var mfoBarTopLineNd = plot(mfoShowed and mfoBarShowed ? 100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+// var mfoBarBotLineSt = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+// var mfoBarBotLineNd = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+// fill(mfoBarTopLineSt, mfoBarTopLineNd, title = "MFO Bar", color = mfo > 0 ? color.new(GREEN_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
+// fill(mfoBarBotLineSt, mfoBarBotLineNd, title = "MFO Bar", color = mfo < 0 ? color.new(RED_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
 
 plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR, 10), style = plot.style_area)
 
@@ -156,7 +192,6 @@ plot(isBuySignal and confirmed ? laggingWt : na, title = "Buy Signal", color = c
 plot(isSellSignal and confirmed  ? laggingWt : na, title = "Sell Signal", color = color.new(WHITE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
 plot(isDivBuySignal and confirmed ? -110 : na, title = "Divergence Buy Signal", color = AQUA_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
 plot(isDivSellSignal and confirmed ? 110 : na , title = "Divergence Sell Signal", color = WHITE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
-
 
 //-----------------------------------------------------------------------------}
 // Alert Conditions
