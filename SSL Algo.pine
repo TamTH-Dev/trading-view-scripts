@@ -70,6 +70,8 @@ float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", ste
 
 float atrCrit = input.float(0.9, title = "Continuation ATR Criteria", step = 0.1)
 
+int spEmaLen = input.int(200, "Support EMA Length")
+
 //-----------------------------------------------------------------------------*
 // Methods
 //-----------------------------------------------------------------------------{
@@ -158,6 +160,8 @@ bool hasAtrSellSignal = upperHalf > sslDown2 and close < bbmc and close < sslDow
 bool hasAtrBuySignal = lowerHalf < sslDown2 and close > bbmc and close > sslDown2
 color atrColor = hasAtrBuySignal ? YELLOW_COLOR : hasAtrSellSignal ? PURPLE_COLOR : color.new(WHITE_COLOR, 20)
 
+series float spEma = ta.ema(close, spEmaLen)
+
 //-----------------------------------------------------------------------------*
 // Plots
 //-----------------------------------------------------------------------------{
@@ -172,3 +176,5 @@ fill(upChannel, lowChannel, color = color.new(baseColor, 80))
 plot(atrShowed ? sslDown2 : na, title = "SSL2", linewidth = 2, color = atrColor, style = plot.style_circles, display = display.pane)
 plot(atrShowed ? upperBand : na, "+ATR", color = LIGHT_GRAY_COLOR, display = display.pane)
 plot(atrShowed ? lowerBand : na, "-ATR", color = LIGHT_GRAY_COLOR, display = display.pane)
+
+plot(spEma, "Support EMA", color = PURPLE_COLOR, display = display.pane)
