@@ -53,8 +53,8 @@ int atrLen = input.int(14, title = "ATR Period")
 float atrMult = input.float(1, title = "ATR Multiplier", step = 0.1)
 string atrSmooth = input.string("WMA", title = "ATR Smooth", options = ["RMA", "SMA", "EMA", "WMA"])
 
-string ssl1Type = input.string("HMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"])
-int ssl1Len = input.int(60, title = "SSL1 / Baseline Length")
+string ssl1Type = input.string("EMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"])
+int ssl1Len = input.int(200, title = "SSL1 / Baseline Length")
 
 string ssl2Type = input.string("JMA", title = "SSL2 / Continuation Type", options = ["SMA", "EMA", "WMA", "TMA", "HMA", "JMA"])
 int ssl2Len = input.int(5, title = "SSL 2 Length")
@@ -70,8 +70,9 @@ float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", ste
 
 float atrCrit = input.float(0.9, title = "Continuation ATR Criteria", step = 0.1)
 
-int leadingSpEmaLen = input.int(50, "Leading Support EMA Length")
-int laggingSpEmaLen = input.int(200, "Lagging Support EMA Length")
+bool spEmaShowed = input.bool(true, "Support EMAs")
+int leadingSpEmaLen = input.int(12, "Leading Support EMA Length")
+int laggingSpEmaLen = input.int(25, "Lagging Support EMA Length")
 
 //-----------------------------------------------------------------------------*
 // Methods
@@ -179,5 +180,5 @@ plot(atrShowed ? sslDown2 : na, title = "SSL2", linewidth = 2, color = atrColor,
 plot(atrShowed ? upperBand : na, "+ATR", color = LIGHT_GRAY_COLOR, display = display.pane)
 plot(atrShowed ? lowerBand : na, "-ATR", color = LIGHT_GRAY_COLOR, display = display.pane)
 
-plot(leadingSpEma, "Leading Support EMA", color = YELLOW_COLOR, display = display.pane)
-plot(laggingSpEma, "Lagging Support EMA", color = PURPLE_COLOR, display = display.pane)
+plot(spEmaShowed ? leadingSpEma : na, "Leading Support EMA", color = YELLOW_COLOR, display = display.pane)
+plot(spEmaShowed ? laggingSpEma : na, "Lagging Support EMA", color = PURPLE_COLOR, display = display.pane)
