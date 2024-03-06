@@ -71,8 +71,8 @@ float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", ste
 float atrCrit = input.float(0.9, title = "Continuation ATR Criteria", step = 0.1)
 
 bool spEmaShowed = input.bool(true, "Support EMAs")
-int leadingSpEmaLen = input.int(12, "Leading Support EMA Length")
-int laggingSpEmaLen = input.int(25, "Lagging Support EMA Length")
+int leadingSpEmaLen = input.int(13, "Leading Support EMA Length")
+int laggingSpEmaLen = input.int(34, "Lagging Support EMA Length")
 
 //-----------------------------------------------------------------------------*
 // Methods
@@ -170,11 +170,11 @@ series float laggingSpEma = ta.ema(close, laggingSpEmaLen)
 //-----------------------------------------------------------------------------{
 plotshape(hasBuySignal, title = "Buy Signals", style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
 plotshape(hasSellSignal, title = "Sell Signals", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
-plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = color.new(baseColor, 20), linewidth = 3, display = display.pane)
+plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = color.new(baseColor, 20), linewidth = 4, display = display.pane)
 plot(ssl1Showed ? sslDown1 : na, title = "SSL1", color = ssl1Color, linewidth = 3, display = display.pane)
-var upChannel = plot(baselineShowed ? upperk : na, title = "Baseline Upper Channel", color = color.new(baseColor, 20), display = display.pane)
-var lowChannel = plot(baselineShowed ? lowerk : na, title = "Basiline Lower Channel", color = color.new(baseColor, 20), display = display.pane)
-fill(upChannel, lowChannel, color = color.new(baseColor, 80))
+// var upChannel = plot(baselineShowed ? upperk : na, title = "Baseline Upper Channel", color = color.new(baseColor, 20), display = display.pane)
+// var lowChannel = plot(baselineShowed ? lowerk : na, title = "Basiline Lower Channel", color = color.new(baseColor, 20), display = display.pane)
+// fill(upChannel, lowChannel, color = color.new(baseColor, 80))
 
 plot(atrShowed ? sslDown2 : na, title = "SSL2", linewidth = 2, color = atrColor, style = plot.style_circles, display = display.pane)
 plot(atrShowed ? upperBand : na, "+ATR", color = LIGHT_GRAY_COLOR, display = display.pane)
