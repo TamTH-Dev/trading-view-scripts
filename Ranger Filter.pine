@@ -1,0 +1,187 @@
+// © tamth_
+// @version=5
+indicator("Range Filter", shorttitle = "Range Filter", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR = #EFEFEF
+color RED_COLOR = #E81E61
+color AQUA_COLOR = #04ADBF
+color YELLOW_COLOR = #E8D81E
+color PURPLE_COLOR = #764AF1
+color ORANGE_COLOR = #E8AF1E
+color GREEN_COLOR = #1EE8A3
+color BLUE_COLOR = #1E53E8
+color PINK_COLOR = #C31EE8
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR = #212d40
+
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Variables
+//-----------------------------------------------------------------------------{
+series int barIdx = bar_index
+series bool confirmed = barstate.isconfirmed
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Methods
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    // Create label on the first bar
+    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    // On next bars, update the label"s x and y position, and the text it displays
+    label.set_xy(label, barIdx, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001)
+string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"])
+int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1)
+bool smoothRange = input.bool(true, title = "Smooth Range")
+int smoothPer = input.int(27, title = "Smoothing Period", minval = 1)
+bool baselineShowed = input.bool(true, title = "Show Baseline")
+string ssl1Type = input.string("EMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"])
+int ssl1Len = input.int(50, title = "SSL1 / Baseline Length")
+int jurikPhase = input.int(3, title = "Jurik (JMA) Only - Phase")
+int jurikPower = input.int(1, title = "Jurik (JMA) Only - Power")
+float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", step = 0.05)
+string ssl3Type = input.string("HMA", title = "EXIT Type", options = ["LSMA", "TMA", "HMA", "JMA"])
+int ssl3Len = input.int(15, title = "EXIT Length")
+series float ssl3Src = input(close, title = "Source")
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
+getCondEma(x, cond, n)=>
+    var val = array.new_float(0)
+    var emaVal = array.new_float(1)
+    if cond
+        array.push(val, x)
+        if array.size(val) > 1
+            array.remove(val, 0)
+        if na(array.get(emaVal, 0))
+            array.fill(emaVal, array.get(val, 0))
+        array.set(emaVal, 0, (array.get(val, 0) - array.get(emaVal, 0)) * (2 / (n + 1)) + array.get(emaVal, 0))
+    series float ema = array.get(emaVal, 0)
+    ema
+
+getCondSma(x, cond, n)=>
+    var vals = array.new_float(0)
+    if cond
+        array.push(vals, x)
+        if array.size(vals) > n
+            array.remove(vals, 0)
+    series float sma = array.avg(vals)
+    sma
+
+getStdev(x, n)=>
+    math.sqrt(getCondSma(math.pow(x, 2), 1, n) - math.pow(getCondSma(x, 1, n), 2))
+
+getRngSize(x, scale, qty, n)=> 
+    series float atr = getCondEma(ta.tr(true), 1, n)
+    series float ac = getCondEma(math.abs(x - x[1]), 1, n)
+    series float sd = getStdev(x, n)
+    rngSize = scale == "Pips" ? qty * 0.0001 : scale == "Points" ? qty * syminfo.pointvalue : scale == "% of Price" ? close * qty / 100 : scale == "ATR" ? qty * atr :
+               scale == "Average Change" ? qty * ac : scale == "Standard Deviation" ? qty * sd : scale == "Ticks" ? qty * syminfo.mintick : qty   
+
+getRngFilt(h, l, _rng, n, smooth, sn)=>
+    series float rngSmooth = getCondEma(_rng, 1, sn)
+    series float r = smooth ? rngSmooth : _rng
+    var rfilt = array.new_float(2, (h + l) / 2)
+    array.set(rfilt, 1, array.get(rfilt, 0))
+    if h - r > array.get(rfilt, 1)
+        array.set(rfilt, 0, h - r)
+    if l + r < array.get(rfilt, 1)
+        array.set(rfilt, 0, l + r)
+    series float rngFilt = array.get(rfilt, 0)
+    series float hiBand = rngFilt + r
+    series float loBand = rngFilt - r
+    [hiBand, loBand, rngFilt]
+
+getMa(type, src, len) =>
+    float result = 0
+    if type=="TMA"
+        result := ta.sma(ta.sma(src, math.ceil(len / 2)), math.floor(len / 2) + 1)
+    if type=="LSMA"
+        result := ta.linreg(src, len, 0)
+    if type=="SMA"
+        result := ta.sma(src, len)
+    if type=="EMA"
+        result := ta.ema(src, len)
+    if type=="WMA"
+        result := ta.wma(src, len)
+    if type=="HMA"
+        result := ta.wma(2 * ta.wma(src, len / 2) - ta.wma(src, len), math.round(math.sqrt(len)))
+    if type=="JMA"
+        float phaseRatio = jurikPhase < -100 ? 0.5 : jurikPhase > 100 ? 2.5 : jurikPhase / 100 + 1.5
+        float beta = 0.45 * (len - 1) / (0.45 * (len - 1) + 2)
+        float alpha = math.pow(beta, jurikPower)
+        var jma = 0.0
+        var e0 = 0.0
+        e0 := (1 - alpha) * src + alpha * nz(e0[1])
+        var e1 = 0.0
+        e1 := (src - e0) * (1 - beta) + beta * nz(e1[1])
+        var e2 = 0.0
+        e2 := (e0 + phaseRatio * e1 - nz(jma[1])) * math.pow(1 - alpha, 2) + math.pow(alpha, 2) * nz(e2[1])
+        jma := e2 + nz(jma[1])
+        result := jma
+    result
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+series float hiVal = close
+series float loVal = close
+
+[hiBand, loBand, filt] = getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal)/2, rngScale, rngQty, rngPer), rngPer, smoothRange, smoothPer)
+
+var fdir = 0.0
+fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
+bool isUpward = fdir == 1
+bool isDnward = fdir == -1
+
+color filtColor = isUpward ? AQUA_COLOR : isDnward ? RED_COLOR : LIGHT_GRAY_COLOR
+// color barColor = isUpward and (close > filt) ? (close > close[1] ? AQUA_COLOR: AQUA_COLOR) : isDnward and (close < filt) ? (close < close[1] ? RED_COLOR : RED_COLOR) : LIGHT_GRAY_COLOR
+
+series float bbmc = getMa(ssl1Type, close, ssl1Len)
+series float keltma = getMa(ssl1Type, ssl3Src, ssl1Len)
+series float ssl1Range = ta.ema(ta.tr, ssl1Len)
+series float upperk = keltma + ssl1Range * baseChannelMult
+series float lowerk = keltma - ssl1Range * baseChannelMult
+
+color baseColor = close > upperk ? AQUA_COLOR : close < lowerk ? RED_COLOR : LIGHT_GRAY_COLOR
+
+series float exitPointHigh = getMa(ssl3Type, high, ssl3Len)
+series float exitPointLow = getMa(ssl3Type, low, ssl3Len)
+var hlv3 = int(na)
+hlv3 := close > exitPointHigh ? 1 : close < exitPointLow ? -1 : hlv3[1]
+series float SSLExitPoint = hlv3 < 0 ? exitPointHigh : exitPointLow
+bool hasBuySignal = barstate.isconfirmed and ta.crossover(close, SSLExitPoint)
+bool hasSellSignal = barstate.isconfirmed and ta.crossover(SSLExitPoint, close)
+
+//-----------------------------------------------------------------------------*
+// Plots
+//-----------------------------------------------------------------------------{
+var filtPlot = plot(filt, title = "Filter", color = filtColor, linewidth = 3, display = display.pane)
+plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = LIGHT_GRAY_COLOR, linewidth = 2, display = display.pane)
+plotshape(hasBuySignal, title = "Buy Signals", style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
+plotshape(hasSellSignal, title = "Sell Signals", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
+// var hiBandPlot = plot(hiBand, title = "High Band", color = TRANSPARENT_COLOR, display = display.pane)
+// var loBandPlot = plot(loBand, title = "Low Band", color = TRANSPARENT_COLOR, display = display.pane)
+// fill(hiBandPlot, filtPlot, title = "High Band Fill", color = color.new(AQUA_COLOR, 90))
+// fill(loBandPlot, filtPlot, title = "Low Band Fill", color = color.new(RED_COLOR, 90))
+// barcolor(barColor)
+
+//-----------------------------------------------------------------------------}
