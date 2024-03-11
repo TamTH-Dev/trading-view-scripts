@@ -1,6 +1,6 @@
 // © tamth_
 // @version=5
-indicator("Range Filter", shorttitle = "Range Filter", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
 
 
 //-----------------------------------------------------------------------------*
@@ -42,24 +42,21 @@ debug(simple string txt) =>
     label.set_xy(label, barIdx, ta.highest(10)[1])
     label.set_text(label, txt)
 
+//-----------------------------------------------------------------------------}
 
+
+//-----------------------------------------------------------------------------*
+// Range Filter
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001)
-string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"])
-int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1)
-bool smoothRange = input.bool(true, title = "Smooth Range")
-int smoothPer = input.int(27, title = "Smoothing Period", minval = 1)
-bool baselineShowed = input.bool(true, title = "Show Baseline")
-string ssl1Type = input.string("EMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"])
-int ssl1Len = input.int(50, title = "SSL1 / Baseline Length")
-int jurikPhase = input.int(3, title = "Jurik (JMA) Only - Phase")
-int jurikPower = input.int(1, title = "Jurik (JMA) Only - Power")
-float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", step = 0.05)
-string ssl3Type = input.string("HMA", title = "EXIT Type", options = ["LSMA", "TMA", "HMA", "JMA"])
-int ssl3Len = input.int(15, title = "EXIT Length")
-series float ssl3Src = input(close, title = "Source")
+string rfGrp = "Range Filter"
+float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001, group = rfGrp)
+string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"], group = rfGrp)
+int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1, group = rfGrp)
+bool smoothRange = input.bool(true, title = "Smooth Range", group = rfGrp)
+int smoothPer = input.int(27, title = "Smoothing Period", minval = 1, group = rfGrp)
+bool barColorStyled = input.bool(false, title = "Use Custom Bar Color", group = rfGrp)
 
 //-----------------------------------------------------------------------------*
 // Functions
@@ -110,6 +107,46 @@ getRngFilt(h, l, _rng, n, smooth, sn)=>
     series float loBand = rngFilt - r
     [hiBand, loBand, rngFilt]
 
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+series float haOpen = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, open)
+series float haClose = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
+series float hiVal = close
+series float loVal = close
+[hiBand, loBand, filt] = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal) / 2, rngScale, rngQty, rngPer), rngPer, smoothRange, smoothPer))
+
+var fdir = 0.0
+fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
+bool isUpward = fdir == 1
+bool isDnward = fdir == -1
+
+color filtColor = isUpward ? AQUA_COLOR : isDnward ? RED_COLOR : LIGHT_GRAY_COLOR
+color barColor = haOpen > haClose ? WHITE_COLOR : AQUA_COLOR
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// MA
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string maGrp = "MAs"
+bool baselineShowed = input.bool(true, title = "Show Baseline", group = maGrp)
+string ssl1Type = input.string("HMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"], group = maGrp)
+int ssl1Len = input.int(60, title = "SSL1 / Baseline Length", group = maGrp)
+int jurikPhase = input.int(3, title = "Jurik (JMA) Only - Phase", group = maGrp)
+int jurikPower = input.int(1, title = "Jurik (JMA) Only - Power", group = maGrp)
+float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", step = 0.05, group = maGrp)
+string ssl3Type = input.string("HMA", title = "EXIT Type", options = ["LSMA", "TMA", "HMA", "JMA"], group = maGrp)
+int ssl3Len = input.int(15, title = "EXIT Length", group = maGrp)
+series float ssl3Src = input(close, title = "Source", group = maGrp)
+bool signalsShowed = input.bool(false, "Show Buy/Sell Signals", group = maGrp)
+
+//-----------------------------------------------------------------------------*
+// Functions
+//-----------------------------------------------------------------------------{
 getMa(type, src, len) =>
     float result = 0
     if type=="TMA"
@@ -142,26 +179,11 @@ getMa(type, src, len) =>
 //-----------------------------------------------------------------------------*
 // Get Values
 //-----------------------------------------------------------------------------{
-series float hiVal = close
-series float loVal = close
-
-[hiBand, loBand, filt] = getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal)/2, rngScale, rngQty, rngPer), rngPer, smoothRange, smoothPer)
-
-var fdir = 0.0
-fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
-bool isUpward = fdir == 1
-bool isDnward = fdir == -1
-
-color filtColor = isUpward ? AQUA_COLOR : isDnward ? RED_COLOR : LIGHT_GRAY_COLOR
-// color barColor = isUpward and (close > filt) ? (close > close[1] ? AQUA_COLOR: AQUA_COLOR) : isDnward and (close < filt) ? (close < close[1] ? RED_COLOR : RED_COLOR) : LIGHT_GRAY_COLOR
-
 series float bbmc = getMa(ssl1Type, close, ssl1Len)
 series float keltma = getMa(ssl1Type, ssl3Src, ssl1Len)
 series float ssl1Range = ta.ema(ta.tr, ssl1Len)
 series float upperk = keltma + ssl1Range * baseChannelMult
 series float lowerk = keltma - ssl1Range * baseChannelMult
-
-color baseColor = close > upperk ? AQUA_COLOR : close < lowerk ? RED_COLOR : LIGHT_GRAY_COLOR
 
 series float exitPointHigh = getMa(ssl3Type, high, ssl3Len)
 series float exitPointLow = getMa(ssl3Type, low, ssl3Len)
@@ -170,18 +192,21 @@ hlv3 := close > exitPointHigh ? 1 : close < exitPointLow ? -1 : hlv3[1]
 series float SSLExitPoint = hlv3 < 0 ? exitPointHigh : exitPointLow
 bool hasBuySignal = barstate.isconfirmed and ta.crossover(close, SSLExitPoint)
 bool hasSellSignal = barstate.isconfirmed and ta.crossover(SSLExitPoint, close)
+color baseColor = close > upperk ? AQUA_COLOR : close < lowerk ? RED_COLOR : LIGHT_GRAY_COLOR
+
+series float ema200 = ta.ema(close, 200)
+
+//-----------------------------------------------------------------------------}
+
 
 //-----------------------------------------------------------------------------*
 // Plots
 //-----------------------------------------------------------------------------{
-var filtPlot = plot(filt, title = "Filter", color = filtColor, linewidth = 3, display = display.pane)
-plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = LIGHT_GRAY_COLOR, linewidth = 2, display = display.pane)
-plotshape(hasBuySignal, title = "Buy Signals", style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
-plotshape(hasSellSignal, title = "Sell Signals", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
-// var hiBandPlot = plot(hiBand, title = "High Band", color = TRANSPARENT_COLOR, display = display.pane)
-// var loBandPlot = plot(loBand, title = "Low Band", color = TRANSPARENT_COLOR, display = display.pane)
-// fill(hiBandPlot, filtPlot, title = "High Band Fill", color = color.new(AQUA_COLOR, 90))
-// fill(loBandPlot, filtPlot, title = "Low Band Fill", color = color.new(RED_COLOR, 90))
-// barcolor(barColor)
+plot(baselineShowed ? ema200 : na, title = 'EMA 200', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
+plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
+plot(filt, title = "Filter", color = filtColor, linewidth = 3, display = display.pane)
+plotshape(hasBuySignal and signalsShowed, title = "Buy Signals", style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
+plotshape(hasSellSignal and signalsShowed, title = "Sell Signals", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
+barcolor(barColorStyled ? barColor : na)
 
 //-----------------------------------------------------------------------------}
