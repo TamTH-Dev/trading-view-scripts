@@ -51,6 +51,7 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------{
 string rfGrp = "Range Filter"
+bool rfShowed = input.bool(true, title = "Show Range Filter", group = rfGrp)
 float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001, group = rfGrp)
 string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"], group = rfGrp)
 int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1, group = rfGrp)
@@ -128,73 +129,17 @@ color barColor = haOpen > haClose ? WHITE_COLOR : AQUA_COLOR
 
 
 //-----------------------------------------------------------------------------*
-// MA
+// VWAP
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-string maGrp = "MAs"
-bool baselineShowed = input.bool(true, title = "Show Baseline", group = maGrp)
-string ssl1Type = input.string("HMA", title = "SSL1 / Baseline Type", options = ["SMA", "EMA", "LSMA", "WMA", "TMA", "HMA", "JMA"], group = maGrp)
-int ssl1Len = input.int(60, title = "SSL1 / Baseline Length", group = maGrp)
-int jurikPhase = input.int(3, title = "Jurik (JMA) Only - Phase", group = maGrp)
-int jurikPower = input.int(1, title = "Jurik (JMA) Only - Power", group = maGrp)
-float baseChannelMult = input.float(0.15, title = "Base Channel Multiplier", step = 0.05, group = maGrp)
-string ssl3Type = input.string("HMA", title = "EXIT Type", options = ["LSMA", "TMA", "HMA", "JMA"], group = maGrp)
-int ssl3Len = input.int(15, title = "EXIT Length", group = maGrp)
-series float ssl3Src = input(close, title = "Source", group = maGrp)
-bool signalsShowed = input.bool(false, "Show Buy/Sell Signals", group = maGrp)
-
-//-----------------------------------------------------------------------------*
-// Functions
-//-----------------------------------------------------------------------------{
-getMa(type, src, len) =>
-    float result = 0
-    if type=="TMA"
-        result := ta.sma(ta.sma(src, math.ceil(len / 2)), math.floor(len / 2) + 1)
-    if type=="LSMA"
-        result := ta.linreg(src, len, 0)
-    if type=="SMA"
-        result := ta.sma(src, len)
-    if type=="EMA"
-        result := ta.ema(src, len)
-    if type=="WMA"
-        result := ta.wma(src, len)
-    if type=="HMA"
-        result := ta.wma(2 * ta.wma(src, len / 2) - ta.wma(src, len), math.round(math.sqrt(len)))
-    if type=="JMA"
-        float phaseRatio = jurikPhase < -100 ? 0.5 : jurikPhase > 100 ? 2.5 : jurikPhase / 100 + 1.5
-        float beta = 0.45 * (len - 1) / (0.45 * (len - 1) + 2)
-        float alpha = math.pow(beta, jurikPower)
-        var jma = 0.0
-        var e0 = 0.0
-        e0 := (1 - alpha) * src + alpha * nz(e0[1])
-        var e1 = 0.0
-        e1 := (src - e0) * (1 - beta) + beta * nz(e1[1])
-        var e2 = 0.0
-        e2 := (e0 + phaseRatio * e1 - nz(jma[1])) * math.pow(1 - alpha, 2) + math.pow(alpha, 2) * nz(e2[1])
-        jma := e2 + nz(jma[1])
-        result := jma
-    result
+string vwapGrp = "VWAP"
+bool vwapShowed = input.bool(true, title = "Show VWAP", group = vwapGrp)
 
 //-----------------------------------------------------------------------------*
 // Get Values
 //-----------------------------------------------------------------------------{
-series float bbmc = getMa(ssl1Type, close, ssl1Len)
-series float keltma = getMa(ssl1Type, ssl3Src, ssl1Len)
-series float ssl1Range = ta.ema(ta.tr, ssl1Len)
-series float upperk = keltma + ssl1Range * baseChannelMult
-series float lowerk = keltma - ssl1Range * baseChannelMult
-
-series float exitPointHigh = getMa(ssl3Type, high, ssl3Len)
-series float exitPointLow = getMa(ssl3Type, low, ssl3Len)
-var hlv3 = int(na)
-hlv3 := close > exitPointHigh ? 1 : close < exitPointLow ? -1 : hlv3[1]
-series float SSLExitPoint = hlv3 < 0 ? exitPointHigh : exitPointLow
-bool hasBuySignal = barstate.isconfirmed and ta.crossover(close, SSLExitPoint)
-bool hasSellSignal = barstate.isconfirmed and ta.crossover(SSLExitPoint, close)
-color baseColor = close > upperk ? AQUA_COLOR : close < lowerk ? RED_COLOR : LIGHT_GRAY_COLOR
-
-series float ema200 = ta.ema(close, 200)
+series float vwap = ta.vwap(close)
 
 //-----------------------------------------------------------------------------}
 
@@ -202,11 +147,8 @@ series float ema200 = ta.ema(close, 200)
 //-----------------------------------------------------------------------------*
 // Plots
 //-----------------------------------------------------------------------------{
-plot(baselineShowed ? ema200 : na, title = 'EMA 200', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
-plot(baselineShowed ? bbmc : na, title = 'MA Baseline', color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
-plot(filt, title = "Filter", color = filtColor, linewidth = 3, display = display.pane)
-plotshape(hasBuySignal and signalsShowed, title = "Buy Signals", style = shape.circle, location = location.belowbar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
-plotshape(hasSellSignal and signalsShowed, title = "Sell Signals", style = shape.circle, location = location.abovebar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
+plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
+plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
 barcolor(barColorStyled ? barColor : na)
 
 //-----------------------------------------------------------------------------}
