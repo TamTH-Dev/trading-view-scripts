@@ -134,12 +134,13 @@ color barColor = haOpen > haClose ? WHITE_COLOR : AQUA_COLOR
 // Settings
 //-----------------------------------------------------------------------------{
 string vwapGrp = "VWAP"
-bool vwapShowed = input.bool(true, title = "Show VWAP", group = vwapGrp)
+bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
 
 //-----------------------------------------------------------------------------*
 // Get Values
 //-----------------------------------------------------------------------------{
-series float vwap = ta.vwap(close)
+series float vwap = ta.vwap(vwapSrc)
 
 //-----------------------------------------------------------------------------}
 
