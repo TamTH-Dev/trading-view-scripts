@@ -51,7 +51,7 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------{
 string rfGrp = "Range Filter"
-bool rfShowed = input.bool(true, title = "Show Range Filter", group = rfGrp)
+bool rfShowed = input.bool(false, title = "Show Range Filter", group = rfGrp)
 float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001, group = rfGrp)
 string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"], group = rfGrp)
 int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1, group = rfGrp)
@@ -146,9 +146,30 @@ series float vwap = ta.vwap(vwapSrc)
 
 
 //-----------------------------------------------------------------------------*
+// EMAs
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string emasGrp = "EMAs"
+bool emasShowed = input.bool(true, title = "Show", group = emasGrp)
+int leadingEmaLen = input.int(9, title = "Leading EMA Length", group = emasGrp)
+int laggingEmaLen = input.int(21, title = "Lagging EMA Length", group = emasGrp)
+
+//-----------------------------------------------------------------------------*
+// Get Values
+//-----------------------------------------------------------------------------{
+series float leadingEma = ta.ema(close, leadingEmaLen)
+series float laggingEma = ta.ema(close, laggingEmaLen)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
 // Plots
 //-----------------------------------------------------------------------------{
 plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
+plot(emasShowed ? laggingEma : na, title = "Lagging EMA", color = PURPLE_COLOR, linewidth = 1, display = display.pane)
+plot(emasShowed ? leadingEma : na, title = "Leading EMA", color = YELLOW_COLOR, linewidth = 1, display = display.pane)
 plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
 barcolor(barColorStyled ? barColor : na)
 
