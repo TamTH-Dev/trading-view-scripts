@@ -55,9 +55,8 @@ bool rfShowed = input.bool(false, title = "Show Range Filter", group = rfGrp)
 float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001, group = rfGrp)
 string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"], group = rfGrp)
 int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1, group = rfGrp)
-bool smoothRange = input.bool(true, title = "Smooth Range", group = rfGrp)
-int smoothPer = input.int(27, title = "Smoothing Period", minval = 1, group = rfGrp)
-bool barColorStyled = input.bool(false, title = "Use Custom Bar Color", group = rfGrp)
+bool rngSmoothRange = input.bool(true, title = "Smooth Range", group = rfGrp)
+int rngSmoothPrd = input.int(27, title = "Smoothing Period", minval = 1, group = rfGrp)
 
 //-----------------------------------------------------------------------------*
 // Functions
@@ -115,15 +114,14 @@ series float haOpen = request.security(ticker.heikinashi(syminfo.tickerid), time
 series float haClose = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
 series float hiVal = close
 series float loVal = close
-[hiBand, loBand, filt] = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal) / 2, rngScale, rngQty, rngPer), rngPer, smoothRange, smoothPer))
+[hiBand, loBand, filt] = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal) / 2, rngScale, rngQty, rngPer), rngPer, rngSmoothRange, rngSmoothPrd))
 
 var fdir = 0.0
 fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
 bool isUpward = fdir == 1
 bool isDnward = fdir == -1
 
-color filtColor = isUpward ? AQUA_COLOR : isDnward ? RED_COLOR : LIGHT_GRAY_COLOR
-color barColor = haOpen > haClose ? WHITE_COLOR : AQUA_COLOR
+color filtColor = isUpward ? AQUA_COLOR : isDnward ? WHITE_COLOR : LIGHT_GRAY_COLOR
 
 //-----------------------------------------------------------------------------}
 
@@ -135,12 +133,33 @@ color barColor = haOpen > haClose ? WHITE_COLOR : AQUA_COLOR
 //-----------------------------------------------------------------------------{
 string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
 
 //-----------------------------------------------------------------------------*
 // Get Values
 //-----------------------------------------------------------------------------{
-series float vwap = ta.vwap(vwapSrc)
+series float vwapNewEarnings = request.earnings(syminfo.tickerid, earnings.actual, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+series float vwapNewDividends = request.dividends(syminfo.tickerid, dividends.gross, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+series float vwapNewSplit = request.splits(syminfo.tickerid, splits.denominator, barmerge.gaps_on, barmerge.lookahead_on, ignore_invalid_symbol = true)
+series bool vwapPrd = switch vwapAnchor
+	"Earnings"  => not na(vwapNewEarnings)
+	"Dividends" => not na(vwapNewDividends)
+	"Splits"    => not na(vwapNewSplit)
+	"Session"   => timeframe.change("D")
+	"Week"      => timeframe.change("W")
+	"Month"     => timeframe.change("M")
+	"Quarter"   => timeframe.change("3M")
+	"Year"      => timeframe.change("12M")
+	"Decade"    => timeframe.change("12M") and year % 10 == 0
+	"Century"   => timeframe.change("12M") and year % 100 == 0
+	=> false
+
+bool vwapIsEsdAnchor = vwapAnchor == "Earnings" or vwapAnchor == "Dividends" or vwapAnchor == "Splits"
+if na(vwapSrc[1]) and not vwapIsEsdAnchor
+	vwapPrd := true
+
+[vwap, _, __] = ta.vwap(vwapSrc, vwapPrd, 1)
 
 //-----------------------------------------------------------------------------}
 
@@ -168,9 +187,8 @@ series float laggingEma = ta.ema(close, laggingEmaLen)
 // Plots
 //-----------------------------------------------------------------------------{
 plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
-plot(emasShowed ? laggingEma : na, title = "Lagging EMA", color = RED_COLOR, linewidth = 1, display = display.pane)
+plot(emasShowed ? laggingEma : na, title = "Lagging EMA", color = WHITE_COLOR, linewidth = 1, display = display.pane)
 plot(emasShowed ? leadingEma : na, title = "Leading EMA", color = AQUA_COLOR, linewidth = 1, display = display.pane)
 plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
-barcolor(barColorStyled ? barColor : na)
 
 //-----------------------------------------------------------------------------}
