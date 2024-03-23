@@ -269,6 +269,7 @@ string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
 string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
+bool vwapBandsShowed = input.bool(true, title = "Reversal Bands", group = vwapGrp)
 
 //-----------------------------------------------------------------------------}
 // Get Values
@@ -293,26 +294,31 @@ bool vwapIsEsdAnchor = vwapAnchor == "Earnings" or vwapAnchor == "Dividends" or 
 if na(vwapSrc[1]) and not vwapIsEsdAnchor
 	vwapPrd := true
 
-[vwap, _, __] = ta.vwap(vwapSrc, vwapPrd, 1)
+[vwap, vwapStDev, _] = ta.vwap(vwapSrc, vwapPrd, 1)
+series float vwapBasis = vwapStDev - vwap
+float vwapUpperBand1 = vwap + vwapBasis * 1.0
+float vwapLowerBand1 = vwap - vwapBasis * 1.0
+float vwapUpperBand2 = vwap + vwapBasis * 2.0
+float vwapLowerBand2 = vwap - vwapBasis * 2.0
 
 //-----------------------------------------------------------------------------}
 
 
 //-----------------------------------------------------------------------------*
-// EMAs
+// Trend Ribbon
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-string emasGrp = "EMAs"
-bool emasShowed = input.bool(true, title = "Show", group = emasGrp)
-int leadingEmaLen = input.int(8, title = "Leading EMA Length", group = emasGrp)
-int laggingEmaLen = input.int(21, title = "Lagging EMA Length", group = emasGrp)
+string trGrp = "EMAs"
+bool trShowed = input.bool(true, title = "Show", group = trGrp)
+int leadingTrLen = input.int(8, title = "Leading Length", group = trGrp)
+int laggingTrLen = input.int(21, title = "Lagging Length", group = trGrp)
 
 //-----------------------------------------------------------------------------}
 // Get Values
 //-----------------------------------------------------------------------------{
-series float leadingEma = ta.ema(close, leadingEmaLen)
-series float laggingEma = ta.ema(close, laggingEmaLen)
+series float leadingTr = ta.ema(close, leadingTrLen)
+series float laggingTr = ta.ema(close, laggingTrLen)
 
 //-----------------------------------------------------------------------------}
 
@@ -359,10 +365,15 @@ if srShowed
 
 // VWAP
 plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
+plot(vwapUpperBand1, title = "Upper Reversal Band #1", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
+plot(vwapLowerBand1, title = "Lower Reversal Band #1", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
+plot(vwapUpperBand2, title = "Upper Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
+plot(vwapLowerBand2, title = "Lower Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 
 // EMAs
-plot(emasShowed ? laggingEma : na, title = "Lagging EMA", color = WHITE_COLOR, linewidth = 1, display = display.pane)
-plot(emasShowed ? leadingEma : na, title = "Leading EMA", color = AQUA_COLOR, linewidth = 1, display = display.pane)
+var laggingTrPlot = plot(trShowed ? laggingTr : na, title = "Lagging EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
+var leadingTrPlot = plot(trShowed ? leadingTr : na, title = "Leading EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
+fill(leadingTrPlot, laggingTrPlot, title = "Trend Ribbon", color = color.new(leadingTr > laggingTr ? AQUA_COLOR : laggingTr > leadingTr ? RED_COLOR : TRANSPARENT_COLOR, 70), display = trShowed ? display.all : display.none)
 
 // Range Filter
 plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
