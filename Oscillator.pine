@@ -2,7 +2,7 @@
 // © tamth_
 
 // @version=5
-indicator("Sniper Oscillator", shorttitle = "Sniper Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
 
 
 //-----------------------------------------------------------------------------*
@@ -62,12 +62,9 @@ int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
 int mfoMult = input.int(150, title = "Area Multiplier", group = mfoGrp)
 string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
-string veGrp = "Volume Explosion"
-int veSensitivity = input.int(180, title = "Sensitivity", group = veGrp)
-int veLeadingLen = input.int(20, title = "Leading Length", group = veGrp)
-int veLaggingLen = input.int(40, title = "Lagging Length", group = veGrp)
-int veChannelLen = input.int(20, title = "Channel Length", group = veGrp)
-float veChannelMult = input.float(2.0, title = "Channel Multiplier", group = veGrp)
+string vaGrp = "Volume Analysis"
+int vaLen = input.int(14, "Length", group = vaGrp)
+float vaBreakoutFactor = input.float(3.1, title = "Breakout Factor", group = vaGrp)
 
 //-----------------------------------------------------------------------------}
 // Functions
@@ -114,22 +111,6 @@ getMfo() =>
     series float haLow = getHaVal(low)
     mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
 
-getMaWt(src, leadingLen, laggingLen) =>
-	series float leadingMa = ta.ema(src, leadingLen)
-	series float laggingMa = ta.ema(src, laggingLen)
-	leadingMa - laggingMa
-
-getChannelUpper(src, len, mult) => 
-	series float basis = ta.sma(src, len)
-	series float dev = mult * ta.stdev(src, len)
-	basis + dev
-
-getChannelLower(src, len, mult) => 
-	series float basis = ta.sma(src, len)
-	series float dev = mult * ta.stdev(src, len)
-	basis - dev
-
-
 //-----------------------------------------------------------------------------}
 // Get values
 //-----------------------------------------------------------------------------{
@@ -149,22 +130,34 @@ bool isSellSignal = ta.crossunder(leadingWt, laggingWt)
 bool isDivBuySignal = isWtLongBullishDiv or isWtShortBullishDiv
 bool isDivSellSignal = isWtLongBearishDiv or isWtShortBearishDiv
 
-series float veVol = (getMaWt(close, veLeadingLen, veLaggingLen) - getMaWt(close[1], veLeadingLen, veLaggingLen)) * veSensitivity
-series float veExplosionVol = getChannelUpper(close, veChannelLen, veChannelMult) - getChannelLower(close, veChannelLen, veChannelMult)
-series float veIsUpTrend = veVol >= 0 ? veVol : 0
-series float veIsDnTrend = veVol < 0 ? (-1 * veVol) : 0
+series float vaAvg = ta.sma(volume, vaLen)
+series float vaMultHigh = vaAvg * 3
+series float vaMultMid = vaMultHigh / 2
+series float vaMultLow  = vaAvg / 2
+series float vaBullish = close > open ? volume : 0
+series float vaBearish = open > close ? volume : 0
+series float vaSmoothBullish = ta.sma(vaBullish, vaLen)
+series float vaSmoothBearish = ta.sma(vaBearish, vaLen)
+series float vaExt = ta.crossover(volume, vaMultHigh) ? volume : na
+series float vaHigh = ta.crossover(volume, vaMultMid) ? volume : na
+series bool vaGsig = not na(ta.crossover(vaBullish, vaSmoothBullish * vaBreakoutFactor) ? volume : na)
+series bool vaRsig = not na(ta.crossover(vaBearish, vaSmoothBearish * vaBreakoutFactor) ? volume : na)
+series bool vaGsigHigh = ta.crossover(vaBullish, vaSmoothBullish * vaBreakoutFactor) and not na(vaHigh)
+series bool vaRsigHigh = ta.crossover(vaBearish, vaSmoothBearish * vaBreakoutFactor) and not na(vaHigh)
+series bool vaGsigExt = ta.crossover(vaBullish, vaSmoothBullish * vaBreakoutFactor) and not na(vaExt)
+series bool vaRsigExt = ta.crossover(vaBearish, vaSmoothBearish * vaBreakoutFactor) and not na(vaExt)
 
 //-----------------------------------------------------------------------------}
 // Render values
 //-----------------------------------------------------------------------------{
-color veTopBarColor = veIsUpTrend > veExplosionVol ? (veIsUpTrend < veIsUpTrend[1] ? color.new(GREEN_COLOR, 50) : GREEN_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
-color veBotBarColor = veIsDnTrend > veExplosionVol ? (veIsDnTrend < veIsDnTrend[1] ? color.new(RED_COLOR, 50) : RED_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
-var veTopLineSt = plot(105, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var veTopLineNd = plot(100, title = "Top Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var veBotLineSt = plot(-100, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-var veBotLineNd = plot(-105, title = "Bottom Explosion Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-fill(veTopLineSt, veTopLineNd, title = "Top Explosion Bar Color", color = veTopBarColor)
-fill(veBotLineSt, veBotLineNd, title = "Bottom Explosion Bar Color", color = veBotBarColor)
+color vaTopBarColor = vaGsig or vaGsigHigh or vaGsigExt ? (vaGsig or vaGsigHigh ? color.new(GREEN_COLOR, 20) : GREEN_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+color vaBotBarColor = vaRsig or vaRsigHigh or vaRsigExt ? (vaRsig or vaRsigHigh ? color.new(RED_COLOR, 20) : RED_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+var vaTopLineSt = plot(105, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var vaTopLineNd = plot(100, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var vaBotLineSt = plot(-100, title = "Bottom Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineNd = plot(-105, title = "Bottom Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+fill(vaTopLineSt, vaTopLineNd, title = "Top Volume Bar Color", color = vaTopBarColor)
+fill(vaBotLineSt, veBotLineNd, title = "Bottom Volume Bar Color", color = vaBotBarColor)
 
 plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
