@@ -269,7 +269,7 @@ string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
 string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
-bool vwapBandsShowed = input.bool(true, title = "Reversal Bands", group = vwapGrp)
+bool vwapBandsShowed = input.bool(false, title = "Reversal Bands", group = vwapGrp)
 
 //-----------------------------------------------------------------------------}
 // Get Values
