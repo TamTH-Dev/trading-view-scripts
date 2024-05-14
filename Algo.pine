@@ -1,6 +1,7 @@
 // © tamth_
 // @version=5
 indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+import loxx/loxxexpandedsourcetypes/4
 
 
 //-----------------------------------------------------------------------------*
@@ -266,7 +267,7 @@ color filtColor = isUpward ? AQUA_COLOR : isDnward ? WHITE_COLOR : LIGHT_GRAY_CO
 // Settings
 //-----------------------------------------------------------------------------{
 string vwapGrp = "VWAP"
-bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+bool vwapShowed = input.bool(false, title = "Show", group = vwapGrp)
 string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
 bool vwapBandsShowed = input.bool(false, title = "Reversal Bands", group = vwapGrp)
@@ -310,7 +311,7 @@ float vwapLowerBand2 = vwap - vwapBasis * 2.0
 // Settings
 //-----------------------------------------------------------------------------{
 string trGrp = "EMAs"
-bool trShowed = input.bool(true, title = "Show", group = trGrp)
+bool trShowed = input.bool(false, title = "Show", group = trGrp)
 int leadingTrLen = input.int(8, title = "Leading Length", group = trGrp)
 int laggingTrLen = input.int(21, title = "Lagging Length", group = trGrp)
 
@@ -319,6 +320,7 @@ int laggingTrLen = input.int(21, title = "Lagging Length", group = trGrp)
 //-----------------------------------------------------------------------------{
 series float leadingTr = ta.ema(close, leadingTrLen)
 series float laggingTr = ta.ema(close, laggingTrLen)
+series float ema200 = ta.ema(close, 200)
 
 //-----------------------------------------------------------------------------}
 
@@ -374,8 +376,101 @@ plot(vwapLowerBand2, title = "Lower Reversal Band #2", color = LIGHT_GRAY_COLOR,
 var laggingTrPlot = plot(trShowed ? laggingTr : na, title = "Lagging EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
 var leadingTrPlot = plot(trShowed ? leadingTr : na, title = "Leading EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
 fill(leadingTrPlot, laggingTrPlot, title = "Trend Ribbon", color = color.new(leadingTr > laggingTr ? AQUA_COLOR : laggingTr > leadingTr ? RED_COLOR : TRANSPARENT_COLOR, 70), display = trShowed ? display.all : display.none)
+plot(ema200, title = "EMA 200", color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
 
 // Range Filter
 plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Signals
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string sigGrp = "Signals"
+bool sigShowed = input.bool(true, "Show", group = sigGrp)
+int sigPrd = input.int(25, "Period", group = sigGrp)
+int sigOrder = input.int(5, "Order", group = sigGrp, minval = 1)
+string sigFilterOp = input.string("Gaussian Filter", "Filter Options", options = ["Price", "Gaussian Filter", "Both", "None"], group = sigGrp)
+float sigFilter = input.float(1, "Filter Devaitions", minval = 0, group = sigGrp)
+int sigFilterPrd = input.int(10, "Filter Period", minval = 0, group = sigGrp)
+
+//-----------------------------------------------------------------------------}
+// Methods
+//-----------------------------------------------------------------------------{
+getFact(int n)=>
+    float a = 1
+    for i = 1 to n 
+        a *= i
+    a
+
+getSigAlpha(int period, int poles)=>
+    w = 2.0 * math.pi / period
+    float b = (1.0 - math.cos(w)) / (math.pow(1.414, 2.0 / poles) - 1.0)
+    float a = - b + math.sqrt(b * b + 2.0 * b)
+    a
+    
+makeSigCoeffs(simple int period, simple int order)=>
+    coeffs = matrix.new<float>(order + 1, 3, 0.)
+    float a = getSigAlpha(period, order)
+    for r = 0 to order 
+        out = nz(getFact(order) / (getFact(order - r) * getFact(r)), 1)
+        matrix.set(coeffs, r, 0, out)
+        matrix.set(coeffs, r, 1, math.pow(a, r))
+        matrix.set(coeffs, r, 2, math.pow(1.0 - a, r))
+    coeffs
+    
+getNpolegf(float src, simple int period, simple int order)=>
+    var coeffs = makeSigCoeffs(period, order)
+    float filt = src * matrix.get(coeffs, order, 1)
+    int sign = 1
+    for r = 1 to order 
+        filt += sign * matrix.get(coeffs, r, 0) * matrix.get(coeffs, r, 2) * nz(filt[r])
+        sign *= -1
+    filt
+
+getSigFilt(float src, int len, float filter)=>
+    float price = src
+    float filtdev = filter * ta.stdev(src, len)
+    price := math.abs(price - nz(price[1])) < filtdev ? nz(price[1]) : price
+    price
+
+//-----------------------------------------------------------------------------}
+// Get Values
+//-----------------------------------------------------------------------------{
+float sigSrc = loxxexpandedsourcetypes.rclose()
+sigSrc := sigFilterOp == "Both" or sigFilterOp == "Price" and sigFilter > 0 ? getSigFilt(sigSrc, sigFilterPrd, sigFilter) : sigSrc
+
+sigOut = getNpolegf(sigSrc, sigPrd, sigOrder)
+sigOut := sigFilterOp == "Both" or sigFilterOp == "Gaussian Filter" and sigFilter > 0 ? getSigFilt(sigOut, sigFilterPrd, sigFilter) : sigOut
+
+sig = nz(sigOut[1])
+
+sigState = 0
+if (sigOut > sig) 
+    sigState := 1
+if (sigOut < sig) 
+    sigState := -1
+
+sigPreGoLong = sigOut > sig and (nz(sigOut[1]) < nz(sig[1]) or nz(sigOut[1]) == nz(sig[1]))
+sigPreGoShort = sigOut < sig and (nz(sigOut[1]) > nz(sig[1]) or nz(sigOut[1]) == nz(sig[1]))
+
+sigContSw = 0
+sigContSw := nz(sigContSw[1])
+sigContSw := sigPreGoLong ? 1 : sigPreGoShort ? -1 : nz(sigContSw[1])
+
+sigGoLong = sigPreGoLong and nz(sigContSw[1]) == -1
+sigGoShort = sigPreGoShort and nz(sigContSw[1]) == 1 
+
+var color sigBarColor = na
+sigBarColor := sigState == -1 ? RED_COLOR : sigState == 1 ? GREEN_COLOR : nz(sigBarColor[1])
+
+//-----------------------------------------------------------------------------}
+// Plots
+//-----------------------------------------------------------------------------{
+// plot(sigOut, "N-Pole GF", color = sigBarColor, linewidth = 3)
+plotshape(sigShowed and sigGoLong, title = "Long", color = AQUA_COLOR, style = shape.circle, location = location.belowbar, size = size.tiny)
+plotshape(sigShowed and sigGoShort, title = "Short", color = WHITE_COLOR, style = shape.circle, location = location.abovebar, size = size.tiny)
 
 //-----------------------------------------------------------------------------}
