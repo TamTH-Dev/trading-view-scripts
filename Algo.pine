@@ -390,11 +390,11 @@ plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth 
 //-----------------------------------------------------------------------------{
 string sigGrp = "Signals"
 bool sigShowed = input.bool(true, "Show", group = sigGrp)
-int sigPrd = input.int(25, "Period", group = sigGrp)
-int sigOrder = input.int(5, "Order", group = sigGrp, minval = 1)
+int sigPrd = input.int(45, "Period", group = sigGrp)
+int sigOrder = input.int(7, "Order", group = sigGrp, minval = 1)
 string sigFilterOp = input.string("Gaussian Filter", "Filter Options", options = ["Price", "Gaussian Filter", "Both", "None"], group = sigGrp)
-float sigFilter = input.float(1, "Filter Devaitions", minval = 0, group = sigGrp)
-int sigFilterPrd = input.int(10, "Filter Period", minval = 0, group = sigGrp)
+float sigFilter = input.float(3, "Filter Devaitions", minval = 0, group = sigGrp)
+int sigFilterPrd = input.int(9, "Filter Period", minval = 0, group = sigGrp)
 
 //-----------------------------------------------------------------------------}
 // Methods
