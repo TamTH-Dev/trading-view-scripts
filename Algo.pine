@@ -267,7 +267,7 @@ color filtColor = isUpward ? AQUA_COLOR : isDnward ? WHITE_COLOR : LIGHT_GRAY_CO
 // Settings
 //-----------------------------------------------------------------------------{
 string vwapGrp = "VWAP"
-bool vwapShowed = input.bool(false, title = "Show", group = vwapGrp)
+bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
 string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
 bool vwapBandsShowed = input.bool(false, title = "Reversal Bands", group = vwapGrp)
@@ -366,17 +366,17 @@ if srShowed
                 array.set(srValBoxes, i, buildSrValBox(top, bot, level, srZoneWidth))
 
 // VWAP
-plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 3, display = display.pane)
+plot(vwapShowed ? vwap : na, title = 'VWAP', color = LIGHT_GRAY_COLOR, linewidth = 2, display = display.pane)
 plot(vwapUpperBand1, title = "Upper Reversal Band #1", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 plot(vwapLowerBand1, title = "Lower Reversal Band #1", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 plot(vwapUpperBand2, title = "Upper Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 plot(vwapLowerBand2, title = "Lower Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 
 // EMAs
-var laggingTrPlot = plot(trShowed ? laggingTr : na, title = "Lagging EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
-var leadingTrPlot = plot(trShowed ? leadingTr : na, title = "Leading EMA", color = TRANSPARENT_COLOR, linewidth = 0, display = display.pane)
+var laggingTrPlot = plot(trShowed ? laggingTr : na, title = "Lagging EMA", color = TRANSPARENT_COLOR, display = display.pane)
+var leadingTrPlot = plot(trShowed ? leadingTr : na, title = "Leading EMA", color = TRANSPARENT_COLOR, display = display.pane)
 fill(leadingTrPlot, laggingTrPlot, title = "Trend Ribbon", color = color.new(leadingTr > laggingTr ? AQUA_COLOR : laggingTr > leadingTr ? RED_COLOR : TRANSPARENT_COLOR, 70), display = trShowed ? display.all : display.none)
-plot(ema200, title = "EMA 200", color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
+// plot(ema200, title = "EMA 200", color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
 
 // Range Filter
 plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
@@ -389,7 +389,7 @@ plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth 
 // Settings
 //-----------------------------------------------------------------------------{
 string sigGrp = "Signals"
-bool sigShowed = input.bool(true, "Show", group = sigGrp)
+bool sigShowed = input.bool(false, "Show", group = sigGrp)
 int sigPrd = input.int(45, "Period", group = sigGrp)
 int sigOrder = input.int(7, "Order", group = sigGrp, minval = 1)
 string sigFilterOp = input.string("Gaussian Filter", "Filter Options", options = ["Price", "Gaussian Filter", "Both", "None"], group = sigGrp)
