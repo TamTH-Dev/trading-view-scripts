@@ -10,10 +10,11 @@ indicator("Oscillator", shorttitle = "Oscillator", overlay = false, max_bars_bac
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR = #EFEFEF
-color RED_COLOR = #E81E61
+color RED_COLOR = #DD326B
 color AQUA_COLOR = #04ADBF
+color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764AF1
-color GREEN_COLOR = #1EE8A3
+color GREEN_COLOR = #17DFAD
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 
@@ -150,8 +151,8 @@ series bool vaRsigExt = ta.crossover(vaBearish, vaSmoothBearish * vaBreakoutFact
 //-----------------------------------------------------------------------------}
 // Render values
 //-----------------------------------------------------------------------------{
-color vaTopBarColor = vaGsig or vaGsigHigh or vaGsigExt ? (vaGsig or vaGsigHigh ? color.new(GREEN_COLOR, 20) : GREEN_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
-color vaBotBarColor = vaRsig or vaRsigHigh or vaRsigExt ? (vaRsig or vaRsigHigh ? color.new(RED_COLOR, 20) : RED_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+color vaTopBarColor = vaGsig or vaGsigHigh or vaGsigExt ? (vaGsig or vaGsigHigh ? GREEN_COLOR : YELLOW_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
+color vaBotBarColor = vaRsig or vaRsigHigh or vaRsigExt ? (vaRsig or vaRsigHigh ? RED_COLOR : PURPLE_COLOR) : color.new(LIGHT_GRAY_COLOR, 50)
 var vaTopLineSt = plot(105, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
 var vaTopLineNd = plot(100, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
 var vaBotLineSt = plot(-100, title = "Bottom Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
@@ -161,17 +162,8 @@ fill(vaBotLineSt, veBotLineNd, title = "Bottom Volume Bar Color", color = vaBotB
 
 plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
-
-// var mfoBarTopLineSt = plot(mfoShowed and mfoBarShowed ? 105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-// var mfoBarTopLineNd = plot(mfoShowed and mfoBarShowed ? 100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-// var mfoBarBotLineSt = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-// var mfoBarBotLineNd = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
-// fill(mfoBarTopLineSt, mfoBarTopLineNd, title = "MFO Bar", color = mfo > 0 ? color.new(GREEN_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
-// fill(mfoBarBotLineSt, mfoBarBotLineNd, title = "MFO Bar", color = mfo < 0 ? color.new(RED_COLOR, 50) : color.new(LIGHT_GRAY_COLOR, 50))
-
 plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR, 10), style = plot.style_area)
-
-plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(GREEN_COLOR, 70) : color.new(RED_COLOR, 70), linewidth = 2, style = plot.style_area)
+plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80), linewidth = 2, style = plot.style_area)
 
 color leadingWtColor = leadingWt >= laggingWt ? color.new(AQUA_COLOR, 20) : color.new(WHITE_COLOR, 20)
 var leadingWtPlot = plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = leadingWtColor, linewidth = 2, style = plot.style_line, display = display.pane)
@@ -185,9 +177,3 @@ plot(isBuySignal and confirmed ? laggingWt : na, title = "Buy Signal", color = c
 plot(isSellSignal and confirmed  ? laggingWt : na, title = "Sell Signal", color = color.new(WHITE_COLOR, 20), linewidth = 2, style = plot.style_circles, display = display.pane)
 plot(isDivBuySignal and confirmed ? -110 : na, title = "Divergence Buy Signal", color = AQUA_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
 plot(isDivSellSignal and confirmed ? 110 : na , title = "Divergence Sell Signal", color = WHITE_COLOR, linewidth = 2, style = plot.style_circles, offset = -2, display = display.pane)
-
-//-----------------------------------------------------------------------------}
-// Alert Conditions
-//-----------------------------------------------------------------------------{
-bool hasTradeSignal = isDivBuySignal or isDivSellSignal or (isBuySignal and laggingWt <= oversoldThreshold) or (isSellSignal and laggingWt >= overboughtThreshold)
-alertcondition(hasTradeSignal, 'Trade Signal', 'Take money 💰💰💰')
