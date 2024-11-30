@@ -1,7 +1,6 @@
 // © tamth_
 // @version=5
 indicator("Algo", shorttitle = "Algo", overlay = true, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
-import loxx/loxxexpandedsourcetypes/4
 
 
 //-----------------------------------------------------------------------------*
@@ -9,16 +8,15 @@ import loxx/loxxexpandedsourcetypes/4
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR = #EFEFEF
-color RED_COLOR = #E81E61
+color RED_COLOR = #DD326B
 color AQUA_COLOR = #04ADBF
 color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764AF1
 color ORANGE_COLOR = #E8AF1E
-color GREEN_COLOR = #1EE8A3
-color BLUE_COLOR = #1E53E8
-color PINK_COLOR = #C31EE8
+color GREEN_COLOR = #17DFAD
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
+color TEXT_COLOR = #CCCCCC
 
 
 //-----------------------------------------------------------------------------}
@@ -78,22 +76,23 @@ getTfTxt() =>
 string srGrp = "S/R"
 bool srShowed = input.bool(true, title = "Show", group = srGrp)
 int srPrd = input.int(284, title = "Period", group = srGrp)
-color srSupportColor = input.color(color.new(AQUA_COLOR, 80), title = "Support Color", group = srGrp)
-color srResistanceColor = input.color(color.new(LIGHT_GRAY_COLOR, 80), title = "Resistance Color", group = srGrp)
+color srSupportColor = input.color(color.new(LIGHT_GRAY_COLOR, 85), title = "Support Color", group = srGrp)
+color srResistanceColor = input.color(color.new(LIGHT_GRAY_COLOR, 85), title = "Resistance Color", group = srGrp)
 int srStrength = input.int(2, title = "Strength", minval = 1, group = srGrp)
 float srZoneWidthPerc = input.float(1.5, title = "Zone Width In %", minval = 0, group = srGrp)
-color srValColor = input.color(color.new(WHITE_COLOR, 20), title = "Value Color", group = srGrp)
+color srValColor = input.color(TEXT_COLOR, title = "Value Color", group = srGrp)
 
 //-----------------------------------------------------------------------------}
 // Methods
 //-----------------------------------------------------------------------------{
 getSrValTxt(float val) =>
     string tf = getTfTxt()
-    str.format("{0} | {1}", tf, val)
+    // str.format("{0} | {1}", tf, val)
+    str.format("{0}", val)
 
 buildSrValBox(float top, float bot, float val, float padding) =>
-    int txtOffset = barIdx + 24
-    box.new(txtOffset, top - padding / 5, txtOffset + 150, bot + padding / 5, bgcolor = TRANSPARENT_COLOR, border_width = 0, text = getSrValTxt(val), text_color = srValColor, text_size = size.small, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
+    int txtOffset = barIdx + 28
+    box.new(txtOffset, top - padding / 5, txtOffset + 150, bot + padding / 5, bgcolor = TRANSPARENT_COLOR, border_width = 0, text = getSrValTxt(val), text_color = srValColor, text_size = size.tiny, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
 
 //-----------------------------------------------------------------------------}
 // Get Values
@@ -181,93 +180,12 @@ if (not na(srPh) or not na(srPl)) and confirmed and srShowed
 
 
 //-----------------------------------------------------------------------------*
-// Range Filter
-//-----------------------------------------------------------------------------*
-// Settings
-//-----------------------------------------------------------------------------{
-string rfGrp = "Range Filter"
-bool rfShowed = input.bool(false, title = "Show Range Filter", group = rfGrp)
-float rngQty = input.float(2.618, title = "Range Size", minval = 0.0000001, group = rfGrp)
-string rngScale = input.string("Average Change", title = "Range Scale", options = ["Points", "Pips", "Ticks", "% of Price", "ATR", "Average Change", "Standard Deviation", "Absolute"], group = rfGrp)
-int rngPer = input.int(14, title = "Range Period (for ATR, Average Change, and Standard Deviation)", minval = 1, group = rfGrp)
-bool rngSmoothRange = input.bool(true, title = "Smooth Range", group = rfGrp)
-int rngSmoothPrd = input.int(27, title = "Smoothing Period", minval = 1, group = rfGrp)
-
-//-----------------------------------------------------------------------------}
-// Functions
-//-----------------------------------------------------------------------------{
-getCondEma(x, cond, n)=>
-    var val = array.new_float(0)
-    var emaVal = array.new_float(1)
-    if cond
-        array.push(val, x)
-        if array.size(val) > 1
-            array.remove(val, 0)
-        if na(array.get(emaVal, 0))
-            array.fill(emaVal, array.get(val, 0))
-        array.set(emaVal, 0, (array.get(val, 0) - array.get(emaVal, 0)) * (2 / (n + 1)) + array.get(emaVal, 0))
-    series float ema = array.get(emaVal, 0)
-    ema
-
-getCondSma(x, cond, n)=>
-    var vals = array.new_float(0)
-    if cond
-        array.push(vals, x)
-        if array.size(vals) > n
-            array.remove(vals, 0)
-    series float sma = array.avg(vals)
-    sma
-
-getStdev(x, n)=>
-    math.sqrt(getCondSma(math.pow(x, 2), 1, n) - math.pow(getCondSma(x, 1, n), 2))
-
-getRngSize(x, scale, qty, n)=> 
-    series float atr = getCondEma(ta.tr(true), 1, n)
-    series float ac = getCondEma(math.abs(x - x[1]), 1, n)
-    series float sd = getStdev(x, n)
-    rngSize = scale == "Pips" ? qty * 0.0001 : scale == "Points" ? qty * syminfo.pointvalue : scale == "% of Price" ? close * qty / 100 : scale == "ATR" ? qty * atr :
-               scale == "Average Change" ? qty * ac : scale == "Standard Deviation" ? qty * sd : scale == "Ticks" ? qty * syminfo.mintick : qty   
-
-getRngFilt(h, l, _rng, n, smooth, sn)=>
-    series float rngSmooth = getCondEma(_rng, 1, sn)
-    series float r = smooth ? rngSmooth : _rng
-    var rfilt = array.new_float(2, (h + l) / 2)
-    array.set(rfilt, 1, array.get(rfilt, 0))
-    if h - r > array.get(rfilt, 1)
-        array.set(rfilt, 0, h - r)
-    if l + r < array.get(rfilt, 1)
-        array.set(rfilt, 0, l + r)
-    series float rngFilt = array.get(rfilt, 0)
-    series float hiBand = rngFilt + r
-    series float loBand = rngFilt - r
-    [hiBand, loBand, rngFilt]
-
-//-----------------------------------------------------------------------------}
-// Get Values
-//-----------------------------------------------------------------------------{
-series float haOpen = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, open)
-series float haClose = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, close)
-series float hiVal = close
-series float loVal = close
-[hiBand, loBand, filt] = request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, getRngFilt(hiVal, loVal, getRngSize((hiVal + loVal) / 2, rngScale, rngQty, rngPer), rngPer, rngSmoothRange, rngSmoothPrd))
-
-var fdir = 0.0
-fdir := filt > filt[1] ? 1 : filt < filt[1] ? -1 : fdir
-bool isUpward = fdir == 1
-bool isDnward = fdir == -1
-
-color filtColor = isUpward ? AQUA_COLOR : isDnward ? WHITE_COLOR : LIGHT_GRAY_COLOR
-
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
 // VWAP
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
 string vwapGrp = "VWAP"
-bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+bool vwapShowed = input.bool(false, title = "Show", group = vwapGrp)
 string vwapAnchor = input.string("Week", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group="VWAP Settings")
 float vwapSrc = input(hlc3, title = "Source", group = vwapGrp)
 bool vwapBandsShowed = input.bool(false, title = "Reversal Bands", group = vwapGrp)
@@ -306,21 +224,22 @@ float vwapLowerBand2 = vwap - vwapBasis * 2.0
 
 
 //-----------------------------------------------------------------------------*
-// Trend Ribbon
+// EMAs
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-string trGrp = "EMAs"
-bool trShowed = input.bool(false, title = "Show", group = trGrp)
-int leadingTrLen = input.int(8, title = "Leading Length", group = trGrp)
-int laggingTrLen = input.int(21, title = "Lagging Length", group = trGrp)
+string emasGrp = "EMAs"
+bool emasShowed = input.bool(false, title = "Show", group = emasGrp)
+int ema1Len = input.int(20, title = "EMA 1", group = emasGrp)
+int ema2Len = input.int(50, title = "EMA 2", group = emasGrp)
+int ema3Len = input.int(200, title = "EMA 3", group = emasGrp)
 
 //-----------------------------------------------------------------------------}
 // Get Values
 //-----------------------------------------------------------------------------{
-series float leadingTr = ta.ema(close, leadingTrLen)
-series float laggingTr = ta.ema(close, laggingTrLen)
-series float ema200 = ta.ema(close, 200)
+series float ema1 = ta.ema(close, ema1Len)
+series float ema2 = ta.ema(close, ema2Len)
+series float ema3 = ta.ema(close, ema3Len)
 
 //-----------------------------------------------------------------------------}
 
@@ -373,104 +292,9 @@ plot(vwapUpperBand2, title = "Upper Reversal Band #2", color = LIGHT_GRAY_COLOR,
 plot(vwapLowerBand2, title = "Lower Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 
 // EMAs
-var laggingTrPlot = plot(trShowed ? laggingTr : na, title = "Lagging EMA", color = TRANSPARENT_COLOR, display = display.pane)
-var leadingTrPlot = plot(trShowed ? leadingTr : na, title = "Leading EMA", color = TRANSPARENT_COLOR, display = display.pane)
-fill(leadingTrPlot, laggingTrPlot, title = "Trend Ribbon", color = color.new(leadingTr > laggingTr ? AQUA_COLOR : laggingTr > leadingTr ? RED_COLOR : TRANSPARENT_COLOR, 70), display = trShowed ? display.all : display.none)
-// plot(ema200, title = "EMA 200", color = LIGHT_GRAY_COLOR, linewidth = 1, display = display.pane)
+plot(emasShowed ? ema1 : na, title = "EMA 1", color = GREEN_COLOR, display = display.pane)
+plot(emasShowed ? ema2 : na, title = "EMA 2", color = RED_COLOR, display = display.pane)
+plot(emasShowed ? ema3 : na, title = "EMA 3", color = YELLOW_COLOR, display = display.pane)
 
-// Range Filter
-plot(rfShowed ? filt : na, title = "Range Filter", color = filtColor, linewidth = 2, display = display.pane)
-
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
-// Signals
-//-----------------------------------------------------------------------------*
-// Settings
-//-----------------------------------------------------------------------------{
-string sigGrp = "Signals"
-bool sigShowed = input.bool(false, "Show", group = sigGrp)
-int sigPrd = input.int(45, "Period", group = sigGrp)
-int sigOrder = input.int(7, "Order", group = sigGrp, minval = 1)
-string sigFilterOp = input.string("Gaussian Filter", "Filter Options", options = ["Price", "Gaussian Filter", "Both", "None"], group = sigGrp)
-float sigFilter = input.float(3, "Filter Devaitions", minval = 0, group = sigGrp)
-int sigFilterPrd = input.int(9, "Filter Period", minval = 0, group = sigGrp)
-
-//-----------------------------------------------------------------------------}
-// Methods
-//-----------------------------------------------------------------------------{
-getFact(int n)=>
-    float a = 1
-    for i = 1 to n 
-        a *= i
-    a
-
-getSigAlpha(int period, int poles)=>
-    w = 2.0 * math.pi / period
-    float b = (1.0 - math.cos(w)) / (math.pow(1.414, 2.0 / poles) - 1.0)
-    float a = - b + math.sqrt(b * b + 2.0 * b)
-    a
-    
-makeSigCoeffs(simple int period, simple int order)=>
-    coeffs = matrix.new<float>(order + 1, 3, 0.)
-    float a = getSigAlpha(period, order)
-    for r = 0 to order 
-        out = nz(getFact(order) / (getFact(order - r) * getFact(r)), 1)
-        matrix.set(coeffs, r, 0, out)
-        matrix.set(coeffs, r, 1, math.pow(a, r))
-        matrix.set(coeffs, r, 2, math.pow(1.0 - a, r))
-    coeffs
-    
-getNpolegf(float src, simple int period, simple int order)=>
-    var coeffs = makeSigCoeffs(period, order)
-    float filt = src * matrix.get(coeffs, order, 1)
-    int sign = 1
-    for r = 1 to order 
-        filt += sign * matrix.get(coeffs, r, 0) * matrix.get(coeffs, r, 2) * nz(filt[r])
-        sign *= -1
-    filt
-
-getSigFilt(float src, int len, float filter)=>
-    float price = src
-    float filtdev = filter * ta.stdev(src, len)
-    price := math.abs(price - nz(price[1])) < filtdev ? nz(price[1]) : price
-    price
-
-//-----------------------------------------------------------------------------}
-// Get Values
-//-----------------------------------------------------------------------------{
-float sigSrc = loxxexpandedsourcetypes.rclose()
-sigSrc := sigFilterOp == "Both" or sigFilterOp == "Price" and sigFilter > 0 ? getSigFilt(sigSrc, sigFilterPrd, sigFilter) : sigSrc
-
-sigOut = getNpolegf(sigSrc, sigPrd, sigOrder)
-sigOut := sigFilterOp == "Both" or sigFilterOp == "Gaussian Filter" and sigFilter > 0 ? getSigFilt(sigOut, sigFilterPrd, sigFilter) : sigOut
-
-sig = nz(sigOut[1])
-
-sigState = 0
-if (sigOut > sig) 
-    sigState := 1
-if (sigOut < sig) 
-    sigState := -1
-
-sigPreGoLong = sigOut > sig and (nz(sigOut[1]) < nz(sig[1]) or nz(sigOut[1]) == nz(sig[1]))
-sigPreGoShort = sigOut < sig and (nz(sigOut[1]) > nz(sig[1]) or nz(sigOut[1]) == nz(sig[1]))
-
-sigContSw = 0
-sigContSw := nz(sigContSw[1])
-sigContSw := sigPreGoLong ? 1 : sigPreGoShort ? -1 : nz(sigContSw[1])
-
-sigGoLong = sigPreGoLong and nz(sigContSw[1]) == -1
-sigGoShort = sigPreGoShort and nz(sigContSw[1]) == 1 
-
-var color sigBarColor = na
-sigBarColor := sigState == -1 ? RED_COLOR : sigState == 1 ? GREEN_COLOR : nz(sigBarColor[1])
-
-//-----------------------------------------------------------------------------}
-// Plots
-//-----------------------------------------------------------------------------{
-// plot(sigOut, "N-Pole GF", color = sigBarColor, linewidth = 3)
-plotshape(sigShowed and sigGoLong, title = "Long", color = AQUA_COLOR, style = shape.circle, location = location.belowbar, size = size.tiny)
-plotshape(sigShowed and sigGoShort, title = "Short", color = WHITE_COLOR, style = shape.circle, location = location.abovebar, size = size.tiny)
 
 //-----------------------------------------------------------------------------}
