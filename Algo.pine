@@ -229,9 +229,12 @@ float vwapLowerBand2 = vwap - vwapBasis * 2.0
 // Settings
 //-----------------------------------------------------------------------------{
 string emasGrp = "EMAs"
-bool emasShowed = input.bool(false, title = "Show", group = emasGrp)
+bool emasShowed = input.bool(true, title = "Show", group = emasGrp)
+bool ema1Showed = input.bool(false, title = "Show EMA 1", group = emasGrp)
 int ema1Len = input.int(20, title = "EMA 1", group = emasGrp)
+bool ema2Showed = input.bool(true, title = "Show EMA 2", group = emasGrp)
 int ema2Len = input.int(50, title = "EMA 2", group = emasGrp)
+bool ema3Showed = input.bool(false, title = "Show EMA 3", group = emasGrp)
 int ema3Len = input.int(200, title = "EMA 3", group = emasGrp)
 
 //-----------------------------------------------------------------------------}
@@ -240,6 +243,96 @@ int ema3Len = input.int(200, title = "EMA 3", group = emasGrp)
 series float ema1 = ta.ema(close, ema1Len)
 series float ema2 = ta.ema(close, ema2Len)
 series float ema3 = ta.ema(close, ema3Len)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Volumatic
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string volGrp = "Volumatic"
+bool volShowed = input.bool(true, title = "Showed", group = volGrp)
+int volLen = input.int(10, "Volumatic Length", group = volGrp)
+int volMomentum = input.int(20, "Volumatic Momentum", group = volGrp)
+float volBandDistance = input.float(2, "Distance factor for upper/lower bands", step = 0.1, group = volGrp)
+
+int volPivotLeftBars = 3
+int volPivotRightBars = volPivotLeftBars
+
+float volSrc = input.source(close, "Source", group = volGrp)
+color volUpTrendColor = input(LIGHT_GRAY_COLOR, "+", group = volGrp, inline = "c")
+color volDnTrendColor = input(LIGHT_GRAY_COLOR, "-", group = volGrp, inline = "c")
+bool volShadow = input.bool(true, "Shadow", group = volGrp, inline = "c")
+
+var float volVolumeVal = na
+float volSmoothedVal = na
+var bool volIsTrendUp = na
+
+var float volUpTrendVolume = na
+var float volDnTrendVolume = na
+
+//-----------------------------------------------------------------------------}
+// Methods
+//-----------------------------------------------------------------------------{
+calcVol(src, volLen, volMomentum) =>
+    float momentum = ta.change(src)
+    float sumPosMomentum = math.sum((momentum >= 0) ? momentum : 0.0, volMomentum)
+    float sumNegMomentum = math.sum((momentum >= 0) ? 0.0 : -momentum, volMomentum)
+    float absCmo = math.abs(100 * (sumPosMomentum - sumNegMomentum) / (sumPosMomentum + sumNegMomentum))
+    float alpha = 2 / (volLen + 1)
+    var float val = 0.0
+    val := alpha * absCmo / 100 * src + (1 - alpha * absCmo / 100) * nz(val[1])
+    ta.sma(val, 15)
+
+//-----------------------------------------------------------------------------}
+// Get values
+//-----------------------------------------------------------------------------{
+float volAtrVal = ta.atr(200)
+volVal = calcVol(volSrc, volLen, volMomentum)
+float volUpperBand = volVal + volAtrVal * volBandDistance
+float volLowerBand = volVal - volAtrVal * volBandDistance
+
+if ta.crossover(volSrc, volUpperBand)
+    volIsTrendUp := true 
+if ta.crossunder(volSrc, volLowerBand)
+    volIsTrendUp := false 
+
+if volIsTrendUp
+    volSmoothedVal := volLowerBand
+if not volIsTrendUp
+    volSmoothedVal := volUpperBand
+if ta.change(volIsTrendUp)
+    volSmoothedVal := na
+
+float volPivotHigh = ta.pivothigh(volPivotLeftBars, volPivotRightBars)
+float volPivotLow = ta.pivotlow(close, volPivotLeftBars, volPivotRightBars)
+
+if low[volPivotRightBars] > volSmoothedVal and volPivotLow 
+    volVolumeVal := math.sum(volume, volPivotRightBars + volPivotLeftBars) / (volPivotRightBars + volPivotLeftBars)
+
+if high[volPivotRightBars] < volSmoothedVal and volPivotHigh 
+    volVolumeVal := math.sum(-volume, volPivotRightBars + volPivotLeftBars) / (volPivotRightBars + volPivotLeftBars)
+
+bool volTrendCrossUp = not volIsTrendUp[1] and volIsTrendUp
+bool volTrendCrossDn = not volIsTrendUp and volIsTrendUp[1]
+
+if ta.change(volTrendCrossUp) or ta.change(volTrendCrossDn)
+    volUpTrendVolume := 0
+    volDnTrendVolume := 0
+if not(ta.change(volTrendCrossUp) or ta.change(volTrendCrossDn))
+    volUpTrendVolume += (close > open ? volume : 0)
+    volDnTrendVolume += (close < open ? volume : 0)
+
+float volAvgVolumeDelta = (volUpTrendVolume + volDnTrendVolume) / 2
+color volTrendColor = volIsTrendUp ? volUpTrendColor 
+                       : not volIsTrendUp ? volDnTrendColor
+                       : chart.fg_color
+string volDelta = 
+                   str.tostring(((volUpTrendVolume - volDnTrendVolume) / volAvgVolumeDelta) * 100, format.percent) == "NaN%" 
+                   ? "0%" 
+                   : str.tostring(((volUpTrendVolume - volDnTrendVolume) / volAvgVolumeDelta) * 100, format.percent)
 
 //-----------------------------------------------------------------------------}
 
@@ -292,9 +385,22 @@ plot(vwapUpperBand2, title = "Upper Reversal Band #2", color = LIGHT_GRAY_COLOR,
 plot(vwapLowerBand2, title = "Lower Reversal Band #2", color = LIGHT_GRAY_COLOR, display = vwapBandsShowed ? display.pane : display.none)
 
 // EMAs
-plot(emasShowed ? ema1 : na, title = "EMA 1", color = GREEN_COLOR, display = display.pane)
-plot(emasShowed ? ema2 : na, title = "EMA 2", color = RED_COLOR, display = display.pane)
-plot(emasShowed ? ema3 : na, title = "EMA 3", color = YELLOW_COLOR, display = display.pane)
+plot(emasShowed and ema1Showed ? ema1 : na, title = "EMA 1", color = LIGHT_GRAY_COLOR, display = display.pane)
+plot(emasShowed and ema2Showed ? ema2 : na, title = "EMA 2", color = LIGHT_GRAY_COLOR, display = display.pane)
+plot(emasShowed and ema3Showed ? ema3 : na, title = "EMA 3", color = LIGHT_GRAY_COLOR, display = display.pane)
 
+// Volumatic
+var table volTableDisplayer = table.new(position.bottom_right, 2, 3, bgcolor = DARK_GRAY_COLOR, frame_width = 1, frame_color = LIGHT_GRAY_COLOR, border_color = LIGHT_GRAY_COLOR, border_width = 1)
+if barstate.islast and volShowed
+    table.cell(volTableDisplayer, 0, 0, "Buy Vol", text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+    table.cell(volTableDisplayer, 1, 0, str.tostring(volUpTrendVolume, format.volume), text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+    table.cell(volTableDisplayer, 0, 1, "Sell Vol", text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+    table.cell(volTableDisplayer, 1, 1, str.tostring(volDnTrendVolume, format.volume), text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+    table.cell(volTableDisplayer, 0, 2, "Delta Vol", text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+    table.cell(volTableDisplayer, 1, 2, str.tostring(volDelta[0]), text_color = TEXT_COLOR, text_halign = text.align_left, text_size = size.small)
+
+// p1 = plot(volShowed ? volSmoothedVal : na, color = volTrendColor, linewidth = 2, style = plot.style_linebr, display = display.pane)
+// p2 = plot(volShowed ? hl2 : na, display = display.none)
+// fill(p1, p2, volSmoothedVal, hl2, color.new(volTrendColor, volShadow ? 80 : 100), na)
 
 //-----------------------------------------------------------------------------}
