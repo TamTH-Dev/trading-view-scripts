@@ -1,0 +1,38 @@
+// @version=6
+indicator(title = "EMAs", shorttitle = "EMAs", overlay = true)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR = #F2F2F233
+color AQUA_COLOR = #0A8CBF33
+color YELLOW_COLOR = #E8D81E
+color PURPLE_COLOR = #764AF1
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+src = input.source(close, title = "Source")
+ema1Len = input.int(20, title = "EMA 1")
+ema2Len = input.int(50, title = "EMA 2")
+ema3Len = input.int(200, title = "EMA 3")
+
+
+//-----------------------------------------------------------------------------*
+// Value
+//-----------------------------------------------------------------------------{
+ema1 = ta.ema(src, ema1Len)
+ema2 = ta.ema(src, ema2Len)
+ema3 = ta.ema(src, ema3Len)
+
+
+//-----------------------------------------------------------------------------*
+// Plots
+//-----------------------------------------------------------------------------{
+ema1Plot = plot(ema1, color = color.rgb(0, 0, 0, 100), linewidth = 1, display = display.pane)
+ema2Plot = plot(ema2, color = color.rgb(0, 0, 0, 100), linewidth = 1, display = display.pane)
+fill(ema1Plot, ema2Plot, color = ema1 > ema2 ? WHITE_COLOR : AQUA_COLOR)
+plot(ema3, color = PURPLE_COLOR, linewidth = 1, display = display.pane)
