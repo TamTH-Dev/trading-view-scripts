@@ -10,20 +10,23 @@ up = ta.rma(math.max(change, 0), rsiLengthInput)
 down = ta.rma(-math.min(change, 0), rsiLengthInput)
 rsi = down == 0 ? 100 : up == 0 ? 0 : 100 - (100 / (1 + up / down))
 
-rsiUpperBand = hline(70, "RSI Upper Band", color=color.new(#ffffff, 100))
-midline = hline(50, "RSI Middle Band", color=color.new(#ffffff, 80))
-rsiLowerBand = hline(30, "RSI Lower Band", color=color.new(#ffffff, 100))
-fill(rsiUpperBand, rsiLowerBand, color=#7042bf20, title="RSI Background Fill")
+rsiPlot = plot(rsi, "RSI", color=#764AF1)
+rsiUpperBand = hline(70, "RSI Upper Band", color=color.new(color.white, 100))
+midline = hline(50, "RSI Middle Band", color=color.new(#79818c, 40))
+rsiLowerBand = hline(30, "RSI Lower Band", color=color.new(color.white, 100))
+fill(rsiUpperBand, rsiLowerBand, color=#764AF120, title="RSI Background Fill")
 midLinePlot = plot(50, color = na, editable = false, display = display.none)
+fill(rsiPlot, midLinePlot, 100, 70, top_color = color.new(color.white, 100), bottom_color = color.new(color.white, 100), title = "Overbought Gradient Fill")
+fill(rsiPlot, midLinePlot, 30,  0,  top_color = color.new(color.white, 100), bottom_color = color.new(color.white, 100), title = "Oversold Gradient Fill")
 
 // Smoothing MA inputs
 GRP = "Smoothing"
 TT_BB = "Only applies when 'SMA + Bollinger Bands' is selected. Determines the distance between the SMA and the bands."
-maTypeInput = input.string("SMA", "Type", options = ["None", "SMA"], group = GRP, display = display.data_window)
-maLengthInput1 = input.int(9, "Length 1", group = GRP, display = display.data_window)
-maLengthInput2 = input.int(45, "Length 2", group = GRP, display = display.data_window)
+maTypeInput = input.string("SMA", "Type", options = ["None", "SMA", "SMA + Bollinger Bands", "EMA", "SMMA (RMA)", "WMA", "VWMA"], group = GRP, display = display.data_window)
+maLengthInput = input.int(14, "Length", group = GRP, display = display.data_window)
 bbMultInput = input.float(2.0, "BB StdDev", minval = 0.001, maxval = 50, step = 0.5, tooltip = TT_BB, group = GRP, display = display.data_window)
 var enableMA = maTypeInput != "None"
+var isBB = maTypeInput == "SMA + Bollinger Bands"
 
 // Smoothing MA Calculation
 ma(source, length, MAtype) =>
@@ -36,19 +39,20 @@ ma(source, length, MAtype) =>
 		"VWMA"                  => ta.vwma(source, length)
 
 // Smoothing MA plots
-smoothingMA1 = enableMA ? ma(rsi, maLengthInput1, maTypeInput) : na
-smoothingMA2 = enableMA ? ma(rsi, maLengthInput2, maTypeInput) : na
-plot(smoothingMA2, "RSI-based MA 2", color=#0a8cbf, display = enableMA ? display.all : display.none, editable = enableMA)
-plot(smoothingMA1, "RSI-based MA 1", color=#f2f2f2, display = enableMA ? display.all : display.none, editable = enableMA)
-rsiPlot = plot(rsi, "RSI", color=#7042bf)
+smoothingMA = enableMA ? ma(rsi, maLengthInput, maTypeInput) : na
+smoothingStDev = isBB ? ta.stdev(rsi, maLengthInput) * bbMultInput : na
+plot(smoothingMA, "RSI-based MA", color=#E8D81E, display = enableMA ? display.all : display.none, editable = enableMA)
+bbUpperBand = plot(smoothingMA + smoothingStDev, title = "Upper Bollinger Band", color=color.green, display = isBB ? display.all : display.none, editable = isBB)
+bbLowerBand = plot(smoothingMA - smoothingStDev, title = "Lower Bollinger Band", color=color.green, display = isBB ? display.all : display.none, editable = isBB)
+fill(bbUpperBand, bbLowerBand, color= isBB ? color.new(color.white, 100) : na, title="Bollinger Bands Background Fill", display = isBB ? display.all : display.none, editable = isBB)
 
 // Divergence
 lookbackRight = 5
 lookbackLeft = 5
 rangeUpper = 60
 rangeLower = 5
-bearColor = color.red
-bullColor = color.green
+bearColor = color.new(color.white, 100)
+bullColor = color.new(color.white, 100)
 textColor = color.white
 noneColor = color.new(color.white, 100)
 
