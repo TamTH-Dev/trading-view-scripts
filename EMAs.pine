@@ -6,8 +6,8 @@ indicator(title = "EMAs", shorttitle = "EMAs", overlay = true)
 //  Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR = #F2F2F233
-color AQUA_COLOR = #0A8CBF33
+color WHITE_COLOR = #F2F2F225
+color AQUA_COLOR = #227FA325
 color YELLOW_COLOR = #E8D81E
 color PURPLE_COLOR = #764AF1
 
