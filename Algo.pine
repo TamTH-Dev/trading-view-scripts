@@ -35,6 +35,8 @@ calcLot(pips, risk) => math.round(risk / pips, 1)
 
 getNearestMinLow() => math.min(low[0], low[1], low[2])
 
+getNearestMaxHigh() => math.max(high[0], high[1], high[2])
+
 //-----------------------------------------------------------------------------*
 // Values
 //-----------------------------------------------------------------------------{
@@ -45,10 +47,10 @@ ema3 = ta.ema(emasSrc, ema3Len)
 calcTable = table.new(position.top_right, 2, 2, border_color = WHITE_COLOR, border_width = 1)
 string lot = na
 if barstate.isconfirmed
-    pips = getPips(high[0], getNearestMinLow())
+    pips = getPips(high[0], low[0])
     lot := str.tostring(calcLot(pips, risk))
 else
-    pips = getPips(high[1], getNearestMinLow())
+    pips = getPips(high[1], low[1])
     lot := str.tostring(calcLot(pips, risk))
 
 //-----------------------------------------------------------------------------*
