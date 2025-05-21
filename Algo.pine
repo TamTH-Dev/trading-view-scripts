@@ -6,61 +6,59 @@ indicator(title = "Algo", shorttitle = "Algo", overlay = true)
 //  Constants
 //-----------------------------------------------------------------------------{
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR = #F2F2F225
-color AQUA_COLOR = #227FA325
-color YELLOW_COLOR = #E8D81E
-color PURPLE_COLOR = #764AF1
-color TEXT_COLOR = #F2F2F2CC
+color RED_COLOR = #FF525225
+color GREEN_COLOR = #26A69A25
+color BLUE_COLOR = #2962ff
+color ORANGE_COLOR = #ff6d00
 
 
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
-emasGrp = "EMAs"
-emasShowed = input.bool(false, title = "Show", group = emasGrp)
-emasSrc = input.source(close, title = "Source", group = emasGrp)
-ema1Len = input.int(20, title = "EMA 1", group = emasGrp)
-ema2Len = input.int(50, title = "EMA 2", group = emasGrp)
-ema3Len = input.int(200, title = "EMA 3", group = emasGrp)
 
-lotCalcGrp = "Lot Calculator"
-risk = input.int(100, title = "Risk", group = lotCalcGrp)
+// EMAs
+emaGrp = "EMAs"
+emaSrc = input.source(close, title = "Source", group = emaGrp)
+emaFastLen = input.int(9, title = "Fast EMA", group = emaGrp)
+emaMediumLen = input.int(21, title = "Medium EMA", group = emaGrp)
+emaSlowLen = input.int(200, title = "Slow EMA", group = emaGrp)
 
-//-----------------------------------------------------------------------------*
-// Methods
-//-----------------------------------------------------------------------------{
-getPips(_high, _low) => (_high - _low) / syminfo.mintick
+// VWAP
+vwapGrp = "VWAP"
+vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+vwapAnchor = input.string("Session", title = "Anchor Period", options = ["Session", "Week", "Month", "Quarter", "Year", "Decade", "Century", "Earnings", "Dividends", "Splits"], group = vwapGrp)
 
-calcLot(pips, risk) => math.round(risk / pips, 1)
-
-getNearestMinLow() => math.min(low[0], low[1], low[2])
-
-getNearestMaxHigh() => math.max(high[0], high[1], high[2])
 
 //-----------------------------------------------------------------------------*
 // Values
 //-----------------------------------------------------------------------------{
-ema1 = ta.ema(emasSrc, ema1Len)
-ema2 = ta.ema(emasSrc, ema2Len)
-ema3 = ta.ema(emasSrc, ema3Len)
+// EMAs
+emaFast = ta.ema(emaSrc, emaFastLen)
+emaMedium = ta.ema(emaSrc, emaMediumLen)
+emaSlow = ta.ema(emaSrc, emaSlowLen)
 
-calcTable = table.new(position.top_right, 2, 2, border_color = WHITE_COLOR, border_width = 1)
-string lot = na
-if barstate.isconfirmed
-    pips = getPips(high[0], low[0])
-    lot := str.tostring(calcLot(pips, risk))
-else
-    pips = getPips(high[1], low[1])
-    lot := str.tostring(calcLot(pips, risk))
+// VWAP
+vwapPeriod = switch vwapAnchor
+	"Session"   => timeframe.change("D")
+	"Week"      => timeframe.change("W")
+	"Month"     => timeframe.change("M")
+	"Quarter"   => timeframe.change("3M")
+	"Year"      => timeframe.change("12M")
+	"Decade"    => timeframe.change("12M") and year % 10 == 0
+	"Century"   => timeframe.change("12M") and year % 100 == 0
+	=> false
+[vwap, _, _] = ta.vwap(close, vwapPeriod, 1)
+
 
 //-----------------------------------------------------------------------------*
 // Plots
 //-----------------------------------------------------------------------------{
-ema1Plot = plot(emasShowed ? ema1 : na, color = color.rgb(0, 0, 0, 100), linewidth = 1, display = display.pane)
-ema2Plot = plot(emasShowed ? ema2 : na, color = color.rgb(0, 0, 0, 100), linewidth = 1, display = display.pane)
-fill(ema1Plot, ema2Plot, color = ema1 > ema2 ? WHITE_COLOR : AQUA_COLOR)
-plot(emasShowed ? ema3 : na, color = PURPLE_COLOR, linewidth = 1, display = display.pane)
-table.cell(calcTable, 0, 0, "Risk", width = 6, bgcolor = color.rgb(0, 0, 0, 87), text_halign = text.align_left, text_color = TEXT_COLOR, text_size = size.normal)
-table.cell(calcTable, 1, 0, str.tostring(risk) + "$", width = 6, bgcolor = color.rgb(0, 0, 0, 87), text_halign = text.align_left, text_color = TEXT_COLOR, text_size = size.normal)
-table.cell(calcTable, 0, 1, "Lot", width = 6, bgcolor = color.rgb(0, 0, 0, 87), text_halign = text.align_left, text_color = TEXT_COLOR, text_size = size.normal)
-table.cell(calcTable, 1, 1, lot, width = 6, bgcolor = color.rgb(0, 0, 0, 87), text_halign = text.align_left, text_color = TEXT_COLOR, text_size = size.normal)
+
+// VWAP
+plot(vwapShowed ? vwap : na, color = BLUE_COLOR, linewidth = 1, display = display.pane)
+
+// EMAs
+emaFastPlot = plot(emaFast, color = TRANSPARENT_COLOR, linewidth = 1, display = display.pane)
+emaMediumPlot = plot(emaMedium, color = TRANSPARENT_COLOR, linewidth = 1, display = display.pane)
+fill(emaFastPlot, emaMediumPlot, emaFast > emaMedium ? GREEN_COLOR : RED_COLOR, title = "EMA Cloud", editable = false, fillgaps = false)
+plot(emaSlow, color = ORANGE_COLOR, linewidth = 1, display = display.pane)
