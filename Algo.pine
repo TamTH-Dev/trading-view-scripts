@@ -38,28 +38,6 @@ debug(simple string txt) =>
 
 getPrdWidthByPerc(int prd, float perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
-getTfTxt() =>
-    string prd = timeframe.period
-    string tf = na
-
-    if str.contains(prd, "S")
-        tf := str.length(prd) == 1 ? "1S" : prd
-    else if str.contains(prd, "D")
-        tf := str.length(prd) == 1 ? "1D" : prd
-    else if str.contains(prd, "W")
-        tf := str.length(prd) == 1 ? "1W" : prd
-    else if str.contains(prd, "M")
-        tf := str.length(prd) == 1 ? "1M" : prd
-    else
-        float mins = str.tonumber(prd)
-
-        if mins >= 60
-            tf := str.format("{0}H",  mins / 60)
-        else
-            tf := str.format("{0}M",  mins)
-
-    tf
-
 //-----------------------------------------------------------------------------}
 
 
@@ -102,12 +80,9 @@ if barstate.islast and vpShowed
 
     for i = 0 to vpLevelsSize - 1
         series float sum = 0.
-
         for j = 0 to vpLen - 1
             sum := high[j] > array.get(vpLevels, i) and low[j] < array.get(vpLevels, i + 1) ? sum + volume[j] : sum
-
         array.push(vpSumv, sum)
-
 
     for i = 0 to vpLevelsSize - 1
         series float mult = array.get(vpSumv, i) / array.max(vpSumv)
@@ -116,7 +91,6 @@ if barstate.islast and vpShowed
     
     series int maxVol = array.max(vpVols)
     int shift = barIdx + maxVol + vpOffset
-
     for i = 0 to vpLevelsSize - 1
         series int vol = array.get(vpVols, i)
         series float level = array.get(vpLevels, i)
@@ -152,9 +126,7 @@ srValColor = input.color(TEXT_COLOR, title = "Value Color", group = srGrp)
 // Methods
 //-----------------------------------------------------------------------------{
 getSrValTxt(float val) =>
-    // string tf = getTfTxt()
-    // str.format("{0} | {1}", tf, val)
-    str.format("{0}", val)
+    str.tostring(val, "#.#####")
 
 buildSrValBox(float top, float bot, float val, float padding) =>
     int txtOffset = barIdx + 24
