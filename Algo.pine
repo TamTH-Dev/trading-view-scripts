@@ -10,7 +10,8 @@ color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR = #ffffff
 color ORANGE_COLOR = #f2aa0a
 color RED_COLOR = #e91e62
-color AQUA_COLOR = #00bbf9
+color AQUA_COLOR = #1EBEE8
+color BLUE_COLOR = #1E53E8
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR = #212d40
 color TEXT_COLOR = #ced4da
@@ -112,7 +113,7 @@ if barstate.islast and vpShowed
 // Settings
 //-----------------------------------------------------------------------------{
 srGrp = "S/R"
-srShowed = input.bool(true, title = "Show", group = srGrp)
+srShowed = input.bool(false, title = "Show", group = srGrp)
 srPrd = input.int(284, title = "Period", group = srGrp)
 srSupportColor = input.color(#212d4080, title = "Support Color", group = srGrp)
 srResistanceColor = input.color(#212d4080, title = "Resistance Color", group = srGrp)
@@ -264,7 +265,7 @@ if srShowed
 // Settings
 //-----------------------------------------------------------------------------{
 emaGrp = "EMAs"
-emaShowed = input.bool(false, title = "Show", group = emaGrp)
+emaShowed = input.bool(true, title = "Show", group = emaGrp)
 emaSrc = input.source(close, title = "Source", group = emaGrp)
 emaFastLen = input.int(9, title = "Fast EMA", group = emaGrp)
 emaMediumLen = input.int(21, title = "Medium EMA", group = emaGrp)
@@ -282,8 +283,8 @@ emaSlow = ta.ema(emaSrc, emaSlowLen)
 //-----------------------------------------------------------------------------*
 // Render
 //-----------------------------------------------------------------------------{
-plot(emaShowed ? emaFast : na, color = AQUA_COLOR, linewidth = 1, display = display.pane)
-plot(emaShowed ? emaMedium : na, color = RED_COLOR, linewidth = 1, display = display.pane)
-plot(emaShowed ? emaSlow : na, color = ORANGE_COLOR, linewidth = 1, display = display.pane)
+plot(emaShowed ? emaFast : na, color = BLUE_COLOR, linewidth = 1, display = display.pane)
+plot(emaShowed ? emaMedium : na, color = BLUE_COLOR, linewidth = 1, display = display.pane)
+plot(emaShowed ? emaSlow : na, color = RED_COLOR, linewidth = 1, display = display.pane)
 
 //-----------------------------------------------------------------------------}
