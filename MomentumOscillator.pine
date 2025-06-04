@@ -1,38 +1,57 @@
-// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © tamth_
 
 //@version=6
-indicator("Momentum Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count = 500, max_labels_count = 500)
+indicator("Momentum Oscillator", overlay = false, precision = 2)
 
+length = input.int(20, "TTM Squeeze Length")
 
-length = input.int(20, title = "BB Length")
-mult = input.float(2.0, title = "BB MultFactor")
-lengthKC = input.int(20, title = "KC Length")
-multKC = input.float(1.5, title = "KC MultFactor")
-useTrueRange = input.bool(true, title = "Use TrueRange (KC)")
+// BOLLINGER BANDS
+BB_mult = input.float(2.0, "Bollinger Band STD Multiplier")
+BB_basis = ta.sma(close, length)
+dev = BB_mult * ta.stdev(close, length)
+BB_upper = BB_basis + dev
+BB_lower = BB_basis - dev
 
-// Calculate BB
-source = close
-basis = ta.sma(source, length)
-dev = multKC * ta.stdev(source, length)
-upperBB = basis + dev
-lowerBB = basis - dev
+// KELTNER CHANNELS
+KC_mult_high = input.float(1.0, "Keltner Channel #1")
+KC_mult_mid = input.float(1.5, "Keltner Channel #2")
+KC_mult_low = input.float(2.0, "Keltner Channel #3")
+KC_basis = ta.sma(close, length)
+devKC = ta.sma(ta.tr, length)
+KC_upper_high = KC_basis + devKC * KC_mult_high
+KC_lower_high = KC_basis - devKC * KC_mult_high
+KC_upper_mid = KC_basis + devKC * KC_mult_mid
+KC_lower_mid = KC_basis - devKC * KC_mult_mid
+KC_upper_low = KC_basis + devKC * KC_mult_low
+KC_lower_low = KC_basis - devKC * KC_mult_low
 
-// Calculate KC
-ma = ta.sma(source, lengthKC)
-calcRange = useTrueRange ? ta.tr : (high - low)
-rangema = ta.sma(calcRange, lengthKC)
-upperKC = ma + rangema * multKC
-lowerKC = ma - rangema * multKC
+//SQUEEZE CONDITIONS
+NoSqz = BB_lower < KC_lower_low or BB_upper > KC_upper_low
+LowSqz = BB_lower >= KC_lower_low or BB_upper <= KC_upper_low
+MidSqz = BB_lower >= KC_lower_mid or BB_upper <= KC_upper_mid
+HighSqz = BB_lower >= KC_lower_high or BB_upper <= KC_upper_high
 
-sqzOn  = (lowerBB > lowerKC) and (upperBB < upperKC)
-sqzOff = (lowerBB < lowerKC) and (upperBB > upperKC)
-noSqz  = (sqzOn == false) and (sqzOff == false)
+// MOMENTUM OSCILLATOR
+mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, length), ta.lowest(low, length)), ta.sma(close, length)), length, 0)
 
-val = ta.linreg(source - math.avg(math.avg(ta.highest(high, lengthKC), ta.lowest(low, lengthKC)), ta.sma(close, lengthKC)), lengthKC, 0)
+// MOMENTUM HISTOGRAM COLOR
+iff_1 = mom > nz(mom[1]) ? #f8f9fa : #adb5bd
+iff_2 = mom < nz(mom[1]) ? #6c757d : #495057
+mom_color = mom > 0 ? iff_1 : iff_2
 
-bcolor = val > 0 ? (val > nz(val[1]) ? #f8f9fa : #adb5bd) : (val < nz(val[1]) ? #6c757d : #495057)
-scolor = noSqz ? #a9d6e5 : sqzOn ? #013a63 : #2c7da0 
-plot(val, color = bcolor, style = plot.style_histogram, linewidth = 4)
-plot(0, color = scolor, style = plot.style_cross, linewidth = 2)
+// SQUEEZE DOTS COLOR
+sq_color = HighSqz ? #e91e62 : MidSqz ? #f2aa0a : LowSqz ? #1E53E8 : #1EBEE8
 
+// ALERTS
+Detect_Sqz_Start = input.bool(true, "Alert Price Action Squeeze")
+Detect_Sqz_Fire = input.bool(true, "Alert Squeeze Firing")
+
+if Detect_Sqz_Start and NoSqz[1] and not NoSqz
+    alert("Squeeze Started")
+else if Detect_Sqz_Fire and NoSqz and not NoSqz[1]
+    alert("Squeeze Fired")
+
+// PLOTS
+plot(mom, title = "MOM", color = mom_color, style = plot.style_columns, linewidth = 2)
+plot(0, title = "SQZ", color = sq_color, style = plot.style_circles, linewidth = 2)
