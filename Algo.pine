@@ -51,12 +51,160 @@ getPrdWidthByPerc(int prd, float perc) => (ta.highest(prd) - ta.lowest(prd)) * p
 
 
 //-----------------------------------------------------------------------------*
+// DSMAs
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+period          = input.int(30, title = "Period")
+step            = 100 - input.int(60, "Sensitivity", minval = 0, maxval = 100,  tooltip = "The Lower input Lower sensitivity")
+src    = hlc3
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Methods
+//-----------------------------------------------------------------------------{
+calcDsma(src, int period)=>
+    // Variables initialization
+    var float a1   = 0.0
+    var float b1   = 0.0
+    var float c1   = 0.0
+    var float c2   = 0.0
+    var float c3   = 0.0
+    var float filt = 0.0
+    var float dsma = 0.0
+    var float s    = 0.0
+
+    // Initialize variables on the first bar
+    if barstate.isfirst
+        pi = 3.1415926535897932
+        g  = math.sqrt(2)
+        // Smooth with a Super Smoother
+        s  := 2 * pi / period
+        a1 := math.exp(-g * pi / (0.5 * period))
+        b1 := 2 * a1 * math.cos(g * s / (0.5 * period))
+        c2 := b1
+        c3 := -a1 * a1
+        c1 := 1 - c2 - c3
+
+    // Produce Nominal zero mean with zeros in the transfer response at DC and Nyquist with no spectral distortion
+    zeros = (close - close[2]) 
+    // SuperSmoother Filter
+    filt := c1 * (zeros + zeros[1]) / 2 + c2 * nz(filt[1]) + c3 * nz(filt[2])
+    
+    // Compute Standard Deviation
+    rms = math.sqrt(ta.ema(math.pow(filt, 2), period))
+    // Rescale Filt in terms of Standard Deviations
+    scaledFilt = rms != 0 ? filt / rms : 0
+    alpha1 = math.abs(scaledFilt) * 5 / period
+    dsma := alpha1 * close + (1 - alpha1) * nz(dsma[1])
+    dsma
+
+getPercentTrend(src, period, step)=>
+    dsmaArr = array.new<float>()
+    // Calculate DSMAs with increasing periods
+    length  = period
+    dsma1   = calcDsma(src, length)
+    length += step 
+    dsma2   = calcDsma(src, length)
+    length += step 
+    dsma3   = calcDsma(src, length)
+    length += step 
+    dsma4   = calcDsma(src, length)
+    length += step 
+    dsma5   = calcDsma(src, length)
+    length += step 
+    dsma6   = calcDsma(src, length)
+    length += step 
+    dsma7   = calcDsma(src, length)
+    length += step 
+    dsma8   = calcDsma(src, length)
+    // Store DSMAs in array
+    dsmaArr.push(dsma1)
+    dsmaArr.push(dsma2)
+    dsmaArr.push(dsma3)
+    dsmaArr.push(dsma4)
+    dsmaArr.push(dsma5)
+    dsmaArr.push(dsma6)
+    dsmaArr.push(dsma7)
+    dsmaArr.push(dsma8)
+
+    val = 0.14285714285714285714285714285714
+
+    // Calculate score based on DSMA comparisons
+    score = 0.
+    for i = 0 to dsmaArr.size() - 1
+        dsma = dsmaArr.get(i)
+        if dsma > dsmaArr.get(7)
+            score += val
+
+    // Determine color based on score
+    color =  score > 0.5 ? color.from_gradient(score, 0.5, 1, na, GREEN_COLOR) : color.from_gradient(score, 0, 0.5, RED_COLOR, na)
+
+    [score, dsmaArr.avg(), color]
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Values
+//-----------------------------------------------------------------------------{
+// Calculate trend percentage, average DSMA, and color
+[score, dsma, color] = getPercentTrend(src, period, step)
+
+upPercent = score * 100
+dnPercent = 100 - upPercent
+
+// Creates a trend histogram visualization
+if barstate.islast
+    tbl = table.new(position.bottom_right, 100, 100)
+
+    // Draw upper (bullish) part of histogram
+    for i = 1 to math.round(upPercent/2)
+        color_up = color.from_gradient(i, 0, 50, color.new(GREEN_COLOR, 80), color.new(GREEN_COLOR, 0))
+        tbl.cell(0, 50-i, "", 1, 1, bgcolor = color_up)
+
+        if i == math.round(upPercent/2)
+            tbl.cell(0, 50-i, str.tostring(math.round(upPercent)), 1, 2, text_color = color_up, text_size = size.small)
+
+    // Draw lower (bearish) part of histogram
+    for i = 1 to math.round(dnPercent/2)
+        color_dn = color.from_gradient(i, 0, 50, color.new(RED_COLOR, 80), color.new(RED_COLOR, 0))
+        tbl.cell(1, 50-i, "", 1, 1, bgcolor = color_dn)
+
+        if i == math.round(dnPercent/2)
+            tbl.cell(1, 50-i, str.tostring(math.round(dnPercent)), 1, 2, text_color = color_dn, text_size = size.small)
+
+// Detect crossovers for signal generation
+crossUp = ta.crossover(score, 0.3)
+crossDn = ta.crossunder(score, 0.7)
+
+//-----------------------------------------------------------------------------}
+
+//-----------------------------------------------------------------------------*
+// Render
+//-----------------------------------------------------------------------------{
+plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, color.new(GREEN_COLOR, 50), size = size.small, force_overlay = true)
+plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, GREEN_COLOR, size = size.tiny, force_overlay = true)
+
+plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, color.new(RED_COLOR, 50), size = size.small, force_overlay = true)
+plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, RED_COLOR, size = size.tiny, force_overlay = true)
+
+// Plot the main indicator line
+plot(dsma, color = color, linewidth = 2)
+
+//-----------------------------------------------------------------------------}
+
+
+
+
+
+//-----------------------------------------------------------------------------*
 // EMAs
 //-----------------------------------------------------------------------------*
 // Settings
 //-----------------------------------------------------------------------------{
 emaGrp = "EMAs"
-emaShowed = input.bool(true, title = "Show", group = emaGrp)
+emaShowed = input.bool(false, title = "Show", group = emaGrp)
 emaSrc = input.source(close, title = "Source", group = emaGrp)
 ema1Len = input.int(5, title = "EMA 1 Length", group = emaGrp, inline = "EMA1")
 ema1Color = input.color(GREEN_COLOR, "", group = emaGrp, inline = "EMA1")
