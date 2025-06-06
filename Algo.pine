@@ -130,21 +130,6 @@ getPercentTrend(src, period, step) =>
 upPercent = score * 100
 dnPercent = 100 - upPercent
 
-// Create trend histogram
-if barstate.islast
-    tbl = table.new(position.bottom_right, 100, 100)
-    for i = 1 to math.round(upPercent/2)
-        color_up = color.from_gradient(i, 0, 50, color.new(GREEN_COLOR, 80), color.new(GREEN_COLOR, 0))
-        tbl.cell(0, 50-i, "", 1, 1, bgcolor=color_up)
-        if i == math.round(upPercent/2)
-            tbl.cell(0, 50-i, str.tostring(math.round(upPercent)), 1, 2, text_color=color_up, text_size=size.small)
-
-    for i = 1 to math.round(dnPercent/2)
-        color_dn = color.from_gradient(i, 0, 50, color.new(RED_COLOR, 80), color.new(RED_COLOR, 0))
-        tbl.cell(1, 50-i, "", 1, 1, bgcolor=color_dn)
-        if i == math.round(dnPercent/2)
-            tbl.cell(1, 50-i, str.tostring(math.round(dnPercent)), 1, 2, text_color=color_dn, text_size=size.small)
-
 // Detect crossovers
 crossUp = ta.crossover(score, 0.3)
 crossDn = ta.crossunder(score, 0.7)
