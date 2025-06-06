@@ -2,108 +2,98 @@
 // © tamth_
 
 //@version=6
-indicator("Momentum Oscillator", overlay = false, precision = 2)
+indicator("Momentum Oscillator", overlay=false, precision=2)
 
-//-----------------------------------------------------------------------------*
-//  Constants
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR = #ffffff
-color BLACK_COLOR = #000000
-color RED_COLOR = #ef476f
-color ORANGE_COLOR = #fb8500
-color YELLOW_COLOR = #ffd166
-color GREEN_COLOR = #06d6a0
-color AQUA_COLOR = #00b4d8
-color BLUE_COLOR = #118ab2
-color PURPLE_COLOR = #9381ff
-color PINK_COLOR = #f7aef8
+color WHITE_COLOR      = #ffffff
+color BLACK_COLOR      = #000000
+color RED_COLOR        = #ff006e
+color ORANGE_COLOR     = #fb5607
+color YELLOW_COLOR     = #ffbe0b
+color GREEN_COLOR      = #2a9d8f
+color AQUA_COLOR       = #00b4d8
+color BLUE_COLOR       = #3a86ff
+color PURPLE_COLOR     = #8338ec
+color PINK_COLOR       = #f7aef8
 color LIGHT_GRAY_COLOR = #364156
-color DARK_GRAY_COLOR = #212d40
-color TEXT_COLOR = #ced4da
+color DARK_GRAY_COLOR  = #212d40
+color TEXT_COLOR       = #ced4da
 
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Common Variables
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Bar index and input
 series int barIdx = bar_index
-length = input.int(20, "TTM Squeeze Length")
+length            = input.int(20, title="TTM Squeeze Length")
 
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Common Methods
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Debug label function
 debug(simple string txt) =>
-    // Create label on the first bar
-    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
-    // On next bars, update the label"s x and y position, and the text it displays
-    label.set_xy(label, barIdx, ta.highest(10)[1])
-    label.set_text(label, txt)
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
 
-getPrdWidthByPerc(int prd, float perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+// Calculate period width by percentage
+getPrdWidthByPerc(int prd, float perc) => 
+    (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Bollinger Bands
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-// BOLLINGER BANDS
-bbMult = input.float(2.0, "Bollinger Band STD Multiplier")
-bbBasis = ta.sma(close, length)
-dev = bbMult * ta.stdev(close, length)
-bbUpper = bbBasis + dev
-bbLower = bbBasis - dev
+//-----------------------------------------------------------------------------
+// Bollinger Bands
+bbMult      = input.float(2.0, title="Bollinger Band STD Multiplier")
+bbBasis     = ta.sma(close, length)
+dev         = bbMult * ta.stdev(close, length)
+bbUpper     = bbBasis + dev
+bbLower     = bbBasis - dev
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Keltner Channels
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-kcMultHigh = input.float(1.0, "Keltner Channel #1")
-kcMultMid = input.float(1.5, "Keltner Channel #2")
-kcMultLow = input.float(2.0, "Keltner Channel #3")
-kcBasis = ta.sma(close, length)
-devKc = ta.sma(ta.tr, length)
+//-----------------------------------------------------------------------------
+// Keltner Channels
+kcMultHigh  = input.float(1.0, title="Keltner Channel #1")
+kcMultMid   = input.float(1.5, title="Keltner Channel #2")
+kcMultLow   = input.float(2.0, title="Keltner Channel #3")
+kcBasis     = ta.sma(close, length)
+devKc       = ta.sma(ta.tr, length)
 kcUpperHigh = kcBasis + devKc * kcMultHigh
 kcLowerHigh = kcBasis - devKc * kcMultHigh
-kcUpperMid = kcBasis + devKc * kcMultMid
-kcLowerMid = kcBasis - devKc * kcMultMid
-kcUpperLow = kcBasis + devKc * kcMultLow
-kcLowerLow = kcBasis - devKc * kcMultLow
+kcUpperMid  = kcBasis + devKc * kcMultMid
+kcLowerMid  = kcBasis - devKc * kcMultMid
+kcUpperLow  = kcBasis + devKc * kcMultLow
+kcLowerLow  = kcBasis - devKc * kcMultLow
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Calculation
-//-----------------------------------------------------------------------------*
-isNoSqz = bbLower < kcLowerLow or bbUpper > kcUpperLow
-isLowSqz = bbLower >= kcLowerLow or bbUpper <= kcUpperLow
-isMidSqz = bbLower >= kcLowerMid or bbUpper <= kcUpperMid
+//-----------------------------------------------------------------------------
+// Squeeze conditions
+isNoSqz   = bbLower < kcLowerLow or bbUpper > kcUpperLow
+isLowSqz  = bbLower >= kcLowerLow or bbUpper <= kcUpperLow
+isMidSqz  = bbLower >= kcLowerMid or bbUpper <= kcUpperMid
 isHighSqz = bbLower >= kcLowerHigh or bbUpper <= kcUpperHigh
 
+// Momentum calculation
 mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, length), ta.lowest(low, length)), ta.sma(close, length)), length, 0)
 
-iff1 = mom > nz(mom[1]) ? AQUA_COLOR : BLUE_COLOR
-iff2 = mom < nz(mom[1]) ? PURPLE_COLOR : PINK_COLOR
-momColor = mom > 0 ? iff1 : iff2
+// Color logic
+iff1      = mom > nz(mom[1]) ? AQUA_COLOR : BLUE_COLOR
+iff2      = mom < nz(mom[1]) ? YELLOW_COLOR : ORANGE_COLOR
+momColor  = mom > 0 ? iff1 : iff2
+sqzColor  = isHighSqz ? PURPLE_COLOR : isMidSqz ? RED_COLOR : isLowSqz ? LIGHT_GRAY_COLOR : GREEN_COLOR
 
-sqzColor = isHighSqz ? ORANGE_COLOR : isMidSqz ? RED_COLOR : isLowSqz ? LIGHT_GRAY_COLOR : GREEN_COLOR
-
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Render
-//-----------------------------------------------------------------------------*
-plot(mom, title = "Momentum", color = momColor, style = plot.style_histogram, linewidth = 3)
-plot(0, title = "Squeeze", color = sqzColor, style = plot.style_circles, linewidth = 2)
-
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
+// Plot momentum and squeeze
+plot(mom, title="Momentum", color=momColor, style=plot.style_histogram, linewidth=3)
+plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2)
