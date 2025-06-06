@@ -77,8 +77,6 @@ ema6Len = input.int(89, title = "EMA 6 Length", group = emaGrp, inline = "EMA6")
 ema6Color = input.color(PURPLE_COLOR, "", group = emaGrp, inline = "EMA6")
 ema6Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA6")
 
-EMA_COLOR_TRANS = 0
-
 //-----------------------------------------------------------------------------}
 
 //-----------------------------------------------------------------------------*
@@ -94,12 +92,12 @@ ema6 = ta.ema(emaSrc, ema6Len)
 //-----------------------------------------------------------------------------*
 // Render
 //-----------------------------------------------------------------------------{
-plot(emaShowed and ema1Showed ? ema1 : na, color = color.new(ema1Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema2Showed ? ema2 : na, color = color.new(ema2Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema3Showed ? ema3 : na, color = color.new(ema3Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema4Showed ? ema4 : na, color = color.new(ema4Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane)
-plot(emaShowed and ema5Showed ? ema5 : na, color = color.new(ema5Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane)
-plot(emaShowed and ema6Showed ? ema6 : na, color = color.new(ema6Color, EMA_COLOR_TRANS), linewidth = 1, display = display.pane)
+plot(emaShowed and ema1Showed ? ema1 : na, color = ema1Color, linewidth = 1, display = display.pane, style = plot.style_circles)
+plot(emaShowed and ema2Showed ? ema2 : na, color = ema2Color, linewidth = 1, display = display.pane, style = plot.style_circles)
+plot(emaShowed and ema3Showed ? ema3 : na, color = ema3Color, linewidth = 1, display = display.pane, style = plot.style_circles)
+plot(emaShowed and ema4Showed ? ema4 : na, color = ema4Color, linewidth = 1, display = display.pane)
+plot(emaShowed and ema5Showed ? ema5 : na, color = ema5Color, linewidth = 1, display = display.pane)
+plot(emaShowed and ema6Showed ? ema6 : na, color = ema6Color, linewidth = 1, display = display.pane)
 
 //-----------------------------------------------------------------------------}
 
