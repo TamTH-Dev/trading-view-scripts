@@ -18,7 +18,7 @@ color GREEN_COLOR      = #2a9d8f
 color AQUA_COLOR       = #00b4d8
 color BLUE_COLOR       = #3a86ff
 color PURPLE_COLOR     = #8338ec
-color PINK_COLOR       = #f7aef8
+color PINK_COLOR       = #df3bf1
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR  = #212d40
 color TEXT_COLOR       = #ced4da
@@ -89,7 +89,7 @@ mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, length), ta.lowest(lo
 iff1      = mom > nz(mom[1]) ? AQUA_COLOR : BLUE_COLOR
 iff2      = mom < nz(mom[1]) ? YELLOW_COLOR : ORANGE_COLOR
 momColor  = mom > 0 ? iff1 : iff2
-sqzColor  = isHighSqz ? PURPLE_COLOR : isMidSqz ? RED_COLOR : isLowSqz ? LIGHT_GRAY_COLOR : GREEN_COLOR
+sqzColor  = isHighSqz ? PURPLE_COLOR : isMidSqz ? PINK_COLOR : isLowSqz ? RED_COLOR : GREEN_COLOR
 
 //-----------------------------------------------------------------------------
 // Render
