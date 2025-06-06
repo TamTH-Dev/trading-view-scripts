@@ -1,71 +1,61 @@
 // © tamth_
 // @version=6
-indicator(title = "Algo", shorttitle = "Algo", overlay = true, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 1000, max_bars_back = 1000)
+indicator(title="Algo", shorttitle="Algo", overlay=true, max_labels_count=500, max_lines_count=500, max_boxes_count=1000, max_bars_back=1000)
 
-
-//-----------------------------------------------------------------------------*
-//  Constants
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR = #ffffff
-color BLACK_COLOR = #000000
-color RED_COLOR = #ef476f
-color ORANGE_COLOR = #fb8500
-color YELLOW_COLOR = #ffd166
-color GREEN_COLOR = #06d6a0
-color AQUA_COLOR = #00b4d8
-color BLUE_COLOR = #118ab2
-color PURPLE_COLOR = #9381ff
-color PINK_COLOR = #f7aef8
+color WHITE_COLOR      = #ffffff
+color BLACK_COLOR      = #000000
+color RED_COLOR        = #ef476f
+color ORANGE_COLOR     = #fb8500
+color YELLOW_COLOR     = #ffd166
+color GREEN_COLOR      = #06d6a0
+color AQUA_COLOR       = #00b4d8
+color BLUE_COLOR       = #118ab2
+color PURPLE_COLOR     = #9381ff
+color PINK_COLOR       = #f7aef8
 color LIGHT_GRAY_COLOR = #364156
-color DARK_GRAY_COLOR = #212d40
-color TEXT_COLOR = #ced4da
+color DARK_GRAY_COLOR  = #212d40
+color TEXT_COLOR       = #ced4da
 
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Common Variables
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Bar index
 series int barIdx = bar_index
 
-//-----------------------------------------------------------------------------}
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Common Methods
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Debug label function
 debug(simple string txt) =>
-    // Create label on the first bar
-    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
-    // On next bars, update the label"s x and y position, and the text it displays
-    label.set_xy(label, barIdx, ta.highest(10)[1])
-    label.set_text(label, txt)
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
 
-getPrdWidthByPerc(int prd, float perc) => (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+// Calculate period width by percentage
+getPrdWidthByPerc(int prd, float perc) => 
+    (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // DSMAs
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-period          = input.int(30, title = "Period")
-step            = 100 - input.int(60, "Sensitivity", minval = 0, maxval = 100,  tooltip = "The Lower input Lower sensitivity")
-src    = hlc3
+//-----------------------------------------------------------------------------
+dsmaGrp    = "DSMAs"
+dsmaShowed = input.bool(true, title="Show", group=dsmaGrp)
+period     = input.int(30, title="Period", group=dsmaGrp)
+step       = 100 - input.int(60, title="Sensitivity", minval=0, maxval=100, group=dsmaGrp)
+src        = hlc3
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Methods
-//-----------------------------------------------------------------------------{
-calcDsma(src, int period)=>
-    // Variables initialization
+//-----------------------------------------------------------------------------
+// Calculate DSMA
+calcDsma(src, int period) =>
     var float a1   = 0.0
     var float b1   = 0.0
     var float c1   = 0.0
@@ -75,11 +65,9 @@ calcDsma(src, int period)=>
     var float dsma = 0.0
     var float s    = 0.0
 
-    // Initialize variables on the first bar
     if barstate.isfirst
         pi = 3.1415926535897932
         g  = math.sqrt(2)
-        // Smooth with a Super Smoother
         s  := 2 * pi / period
         a1 := math.exp(-g * pi / (0.5 * period))
         b1 := 2 * a1 * math.cos(g * s / (0.5 * period))
@@ -87,39 +75,34 @@ calcDsma(src, int period)=>
         c3 := -a1 * a1
         c1 := 1 - c2 - c3
 
-    // Produce Nominal zero mean with zeros in the transfer response at DC and Nyquist with no spectral distortion
-    zeros = (close - close[2]) 
-    // SuperSmoother Filter
+    zeros = (close - close[2])
     filt := c1 * (zeros + zeros[1]) / 2 + c2 * nz(filt[1]) + c3 * nz(filt[2])
-    
-    // Compute Standard Deviation
     rms = math.sqrt(ta.ema(math.pow(filt, 2), period))
-    // Rescale Filt in terms of Standard Deviations
     scaledFilt = rms != 0 ? filt / rms : 0
     alpha1 = math.abs(scaledFilt) * 5 / period
     dsma := alpha1 * close + (1 - alpha1) * nz(dsma[1])
     dsma
 
-getPercentTrend(src, period, step)=>
+// Calculate percent trend
+getPercentTrend(src, period, step) =>
     dsmaArr = array.new<float>()
-    // Calculate DSMAs with increasing periods
     length  = period
     dsma1   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma2   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma3   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma4   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma5   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma6   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma7   = calcDsma(src, length)
-    length += step 
+    length += step
     dsma8   = calcDsma(src, length)
-    // Store DSMAs in array
+
     dsmaArr.push(dsma1)
     dsmaArr.push(dsma2)
     dsmaArr.push(dsma3)
@@ -130,106 +113,85 @@ getPercentTrend(src, period, step)=>
     dsmaArr.push(dsma8)
 
     val = 0.14285714285714285714285714285714
-
-    // Calculate score based on DSMA comparisons
     score = 0.
     for i = 0 to dsmaArr.size() - 1
         dsma = dsmaArr.get(i)
         if dsma > dsmaArr.get(7)
             score += val
 
-    // Determine color based on score
-    color =  score > 0.5 ? color.from_gradient(score, 0.5, 1, na, GREEN_COLOR) : color.from_gradient(score, 0, 0.5, RED_COLOR, na)
-
+    color = score > 0.5 ? color.from_gradient(score, 0.5, 1, na, GREEN_COLOR) : color.from_gradient(score, 0, 0.5, RED_COLOR, na)
     [score, dsmaArr.avg(), color]
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Values
-//-----------------------------------------------------------------------------{
-// Calculate trend percentage, average DSMA, and color
+//-----------------------------------------------------------------------------
+// Calculate trend metrics
 [score, dsma, color] = getPercentTrend(src, period, step)
-
 upPercent = score * 100
 dnPercent = 100 - upPercent
 
-// Creates a trend histogram visualization
+// Create trend histogram
 if barstate.islast
     tbl = table.new(position.bottom_right, 100, 100)
-
-    // Draw upper (bullish) part of histogram
     for i = 1 to math.round(upPercent/2)
         color_up = color.from_gradient(i, 0, 50, color.new(GREEN_COLOR, 80), color.new(GREEN_COLOR, 0))
-        tbl.cell(0, 50-i, "", 1, 1, bgcolor = color_up)
-
+        tbl.cell(0, 50-i, "", 1, 1, bgcolor=color_up)
         if i == math.round(upPercent/2)
-            tbl.cell(0, 50-i, str.tostring(math.round(upPercent)), 1, 2, text_color = color_up, text_size = size.small)
+            tbl.cell(0, 50-i, str.tostring(math.round(upPercent)), 1, 2, text_color=color_up, text_size=size.small)
 
-    // Draw lower (bearish) part of histogram
     for i = 1 to math.round(dnPercent/2)
         color_dn = color.from_gradient(i, 0, 50, color.new(RED_COLOR, 80), color.new(RED_COLOR, 0))
-        tbl.cell(1, 50-i, "", 1, 1, bgcolor = color_dn)
-
+        tbl.cell(1, 50-i, "", 1, 1, bgcolor=color_dn)
         if i == math.round(dnPercent/2)
-            tbl.cell(1, 50-i, str.tostring(math.round(dnPercent)), 1, 2, text_color = color_dn, text_size = size.small)
+            tbl.cell(1, 50-i, str.tostring(math.round(dnPercent)), 1, 2, text_color=color_dn, text_size=size.small)
 
-// Detect crossovers for signal generation
+// Detect crossovers
 crossUp = ta.crossover(score, 0.3)
 crossDn = ta.crossunder(score, 0.7)
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Render
-//-----------------------------------------------------------------------------{
-plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, color.new(GREEN_COLOR, 50), size = size.small, force_overlay = true)
-plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, GREEN_COLOR, size = size.tiny, force_overlay = true)
+//-----------------------------------------------------------------------------
+// Plot signals
+plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, color.new(GREEN_COLOR, 50), size=size.small, force_overlay=true)
+plotshape(crossUp ? dsma : na, "", shape.diamond, location.absolute, GREEN_COLOR, size=size.tiny, force_overlay=true)
+plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, color.new(RED_COLOR, 50), size=size.small, force_overlay=true)
+plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, RED_COLOR, size=size.tiny, force_overlay=true)
 
-plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, color.new(RED_COLOR, 50), size = size.small, force_overlay = true)
-plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, RED_COLOR, size = size.tiny, force_overlay = true)
+// Plot main indicator line
+plot(dsmaShowed ? dsma : na, color=color, linewidth=2)
 
-// Plot the main indicator line
-plot(dsma, color = color, linewidth = 2)
-
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // EMAs
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-emaGrp = "EMAs"
-emaShowed = input.bool(false, title = "Show", group = emaGrp)
-emaSrc = input.source(close, title = "Source", group = emaGrp)
-ema1Len = input.int(5, title = "EMA 1 Length", group = emaGrp, inline = "EMA1")
-ema1Color = input.color(GREEN_COLOR, "", group = emaGrp, inline = "EMA1")
-ema1Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA1")
-ema2Len = input.int(8, title = "EMA 2 Length", group = emaGrp, inline = "EMA2")
-ema2Color = input.color(BLUE_COLOR, "", group = emaGrp, inline = "EMA2")
-ema2Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA2")
-ema3Len = input.int(21, title = "EMA 3 Length", group = emaGrp, inline = "EMA3")
-ema3Color = input.color(RED_COLOR, "", group = emaGrp, inline = "EMA3")
-ema3Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA3")
-ema4Len = input.int(34, title = "EMA 4 Length", group = emaGrp, inline = "EMA4")
-ema4Color = input.color(ORANGE_COLOR, "", group = emaGrp, inline = "EMA4")
-ema4Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA4")
-ema5Len = input.int(55, title = "EMA 5 Length", group = emaGrp, inline = "EMA5")
-ema5Color = input.color(YELLOW_COLOR, "", group = emaGrp, inline = "EMA5")
-ema5Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA5")
-ema6Len = input.int(89, title = "EMA 6 Length", group = emaGrp, inline = "EMA6")
-ema6Color = input.color(PURPLE_COLOR, "", group = emaGrp, inline = "EMA6")
-ema6Showed = input.bool(true, title = "Show", group = emaGrp, inline = "EMA6")
+//-----------------------------------------------------------------------------
+emaGrp        = "EMAs"
+emaShowed     = input.bool(false, title="Show", group=emaGrp)
+emaSrc        = input.source(close, title="Source", group=emaGrp)
+ema1Len       = input.int(5, title="EMA 1 Length", group=emaGrp, inline="EMA1")
+ema1Color     = input.color(GREEN_COLOR, "", group=emaGrp, inline="EMA1")
+ema1Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA1")
+ema2Len       = input.int(8, title="EMA 2 Length", group=emaGrp, inline="EMA2")
+ema2Color     = input.color(BLUE_COLOR, "", group=emaGrp, inline="EMA2")
+ema2Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA2")
+ema3Len       = input.int(21, title="EMA 3 Length", group=emaGrp, inline="EMA3")
+ema3Color     = input.color(RED_COLOR, "", group=emaGrp, inline="EMA3")
+ema3Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA3")
+ema4Len       = input.int(34, title="EMA 4 Length", group=emaGrp, inline="EMA4")
+ema4Color     = input.color(ORANGE_COLOR, "", group=emaGrp, inline="EMA4")
+ema4Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA4")
+ema5Len       = input.int(55, title="EMA 5 Length", group=emaGrp, inline="EMA5")
+ema5Color     = input.color(YELLOW_COLOR, "", group=emaGrp, inline="EMA5")
+ema5Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA5")
+ema6Len       = input.int(89, title="EMA 6 Length", group=emaGrp, inline="EMA6")
+ema6Color     = input.color(PURPLE_COLOR, "", group=emaGrp, inline="EMA6")
+ema6Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA6")
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Values
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Calculate EMAs
 ema1 = ta.ema(emaSrc, ema1Len)
 ema2 = ta.ema(emaSrc, ema2Len)
 ema3 = ta.ema(emaSrc, ema3Len)
@@ -237,51 +199,46 @@ ema4 = ta.ema(emaSrc, ema4Len)
 ema5 = ta.ema(emaSrc, ema5Len)
 ema6 = ta.ema(emaSrc, ema6Len)
 
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Render
-//-----------------------------------------------------------------------------{
-plot(emaShowed and ema1Showed ? ema1 : na, color = ema1Color, linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema2Showed ? ema2 : na, color = ema2Color, linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema3Showed ? ema3 : na, color = ema3Color, linewidth = 1, display = display.pane, style = plot.style_circles)
-plot(emaShowed and ema4Showed ? ema4 : na, color = ema4Color, linewidth = 1, display = display.pane)
-plot(emaShowed and ema5Showed ? ema5 : na, color = ema5Color, linewidth = 1, display = display.pane)
-plot(emaShowed and ema6Showed ? ema6 : na, color = ema6Color, linewidth = 1, display = display.pane)
+//-----------------------------------------------------------------------------
+// Plot EMAs
+plot(emaShowed and ema1Showed ? ema1 : na, color=ema1Color, linewidth=1, display=display.pane, style=plot.style_circles)
+plot(emaShowed and ema2Showed ? ema2 : na, color=ema2Color, linewidth=1, display=display.pane, style=plot.style_circles)
+plot(emaShowed and ema3Showed ? ema3 : na, color=ema3Color, linewidth=1, display=display.pane, style=plot.style_circles)
+plot(emaShowed and ema4Showed ? ema4 : na, color=ema4Color, linewidth=1, display=display.pane)
+plot(emaShowed and ema5Showed ? ema5 : na, color=ema5Color, linewidth=1, display=display.pane)
+plot(emaShowed and ema6Showed ? ema6 : na, color=ema6Color, linewidth=1, display=display.pane)
 
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Volume Profile
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-string vpGrp = "Volume Profile"
-bool vpShowed = input.bool(false, "Show", group = vpGrp)
-int vpLen = input.int(200, "Lookback", minval = 1, maxval = 500, tooltip = "Number of most recent bars", group = vpGrp)
-int vpLevelsSize = input.int(360, "Size Of Levels", minval = 1, maxval = 400, group = vpGrp)
-int vpWidth = input.int(16, "Profile's Width", minval = 1, maxval = 100, tooltip = "The length of the bars relative to the Lookback value", group = vpGrp)
-int vpBarWidth = input.int(2, "Bar's Width", tooltip = "Width of each bar", group = vpGrp)
-int vpOffset = input.int(20, "Offset From Last Bar", group = vpGrp)
-color vpColor = input.color(DARK_GRAY_COLOR, "Color", group = vpGrp)
+//-----------------------------------------------------------------------------
+string vpGrp        = "Volume Profile"
+bool vpShowed       = input.bool(false, "Show", group=vpGrp)
+int vpLen           = input.int(200, "Lookback", minval=1, maxval=500, tooltip="Number of most recent bars", group=vpGrp)
+int vpLevelsSize    = input.int(360, "Size Of Levels", minval=1, maxval=400, group=vpGrp)
+int vpWidth         = input.int(16, "Profile's Width", minval=1, maxval=100, tooltip="The length of the bars relative to the Lookback value", group=vpGrp)
+int vpBarWidth      = input.int(2, "Bar's Width", tooltip="Width of each bar", group=vpGrp)
+int vpOffset        = input.int(20, "Offset From Last Bar", group=vpGrp)
+color vpColor       = input.color(DARK_GRAY_COLOR, "Color", group=vpGrp)
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
 // Render Volume Profile
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Initialize volume profile lines
 var vpLines = array.new_line()
-
 if barstate.isfirst
     for i = 0 to vpLevelsSize - 1
-        array.push(vpLines, line.new(na, na, na, na, width = 2))
+        array.push(vpLines, line.new(na, na, na, na, width=2))
 
 series float vpHighest = ta.highest(vpLen)
-series float vpLowest = ta.lowest(vpLen)
-array<float> vpLevels = array.new_float(0)
-array<int> vpVols = array.new_int(0)
-array<float> vpSumv = array.new_float(0)
-line vpLine = na
+series float vpLowest  = ta.lowest(vpLen)
+array<float> vpLevels  = array.new_float(0)
+array<int> vpVols      = array.new_int(0)
+array<float> vpSumv    = array.new_float(0)
+line vpLine            = na
 
 if barstate.islast and vpShowed
     for i = 0 to vpLevelsSize
@@ -309,58 +266,51 @@ if barstate.islast and vpShowed
         line.set_color(vpLine, vpColor)
         line.set_width(vpLine, vpBarWidth)
 
-//-----------------------------------------------------------------------------}
-
-
-
-
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // S/R
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
-srGrp = "S/R"
-srShowed = input.bool(false, title = "Show", group = srGrp)
-srPrd = input.int(284, title = "Period", group = srGrp)
-srSupportColor = input.color(#212d4080, title = "Support Color", group = srGrp)
-srResistanceColor = input.color(#212d4080, title = "Resistance Color", group = srGrp)
-srStrength = input.int(2, title = "Strength", minval = 1, group = srGrp)
-srZoneWidthPerc = input.float(1.5, title = "Zone Width In %", minval = 0, group = srGrp)
-srValColor = input.color(TEXT_COLOR, title = "Value Color", group = srGrp)
+//-----------------------------------------------------------------------------
+srGrp             = "S/R"
+srShowed          = input.bool(true, title="Show", group=srGrp)
+srPrd             = input.int(284, title="Period", group=srGrp)
+srSupportColor    = input.color(#212d4080, title="Support Color", group=srGrp)
+srResistanceColor = input.color(#212d4080, title="Resistance Color", group=srGrp)
+srStrength        = input.int(2, title="Strength", minval=1, group=srGrp)
+srZoneWidthPerc   = input.float(1.5, title="Zone Width In %", minval=0, group=srGrp)
+srValColor        = input.color(TEXT_COLOR, title="Value Color", group=srGrp)
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Methods
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Format S/R value text
 getSrValTxt(float val) =>
     str.tostring(val, "#.#####")
 
+// Build S/R value box
 buildSrValBox(float top, float bot, float val, float padding) =>
     int txtOffset = barIdx + 24
-    box.new(txtOffset, top - padding / 5, txtOffset + 150, bot + padding / 5, bgcolor = TRANSPARENT_COLOR, border_width = 0, text = getSrValTxt(val), text_color = srValColor, text_size = size.small, text_valign = text.align_center, text_halign = text.align_left, extend = extend.right)
+    box.new(txtOffset, top - padding / 5, txtOffset + 150, bot + padding / 5, bgcolor=TRANSPARENT_COLOR, border_width=0, text=getSrValTxt(val), text_color=srValColor, text_size=size.small, text_valign=text.align_center, text_halign=text.align_left, extend=extend.right)
 
-//-----------------------------------------------------------------------------}
-
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Render
-//-----------------------------------------------------------------------------{
-int srSize = 21
-int srRb = 10
-float srPh = ta.pivothigh(srRb, srRb)
-float srPl = ta.pivotlow(srRb, srRb)
-var srLevels = array.new_float(srSize, na)
-float srHighestVal = ta.highest(srPrd)
-float srLowestVal = ta.lowest(srPrd)
+//-----------------------------------------------------------------------------
+// Initialize S/R variables
+int srSize           = 21
+int srRb             = 10
+float srPh           = ta.pivothigh(srRb, srRb)
+float srPl           = ta.pivotlow(srRb, srRb)
+var srLevels         = array.new_float(srSize, na)
+float srHighestVal   = ta.highest(srPrd)
+float srLowestVal    = ta.lowest(srPrd)
 float srChannelWidth = getPrdWidthByPerc(srPrd, 10)
-float srZoneWidth = getPrdWidthByPerc(300, srZoneWidthPerc)
-bool[] srAas = array.new_bool(41, true)
-float srHighestPh = 0.0, srHighestPh := srHighestPh[1]
-float srLowestPl = 0.0, srLowestPl := srLowestPl[1]
-var srLevelsClone = array.new_float(srSize, na)
-var srAreaBoxes = array.new_box(srSize, na)
-var srValBoxes = array.new_box(srSize, na)
+float srZoneWidth    = getPrdWidthByPerc(300, srZoneWidthPerc)
+bool[] srAas         = array.new_bool(41, true)
+float srHighestPh    = 0.0, srHighestPh := srHighestPh[1]
+float srLowestPl     = 0.0, srLowestPl := srLowestPl[1]
+var srLevelsClone    = array.new_float(srSize, na)
+var srAreaBoxes      = array.new_box(srSize, na)
+var srValBoxes       = array.new_box(srSize, na)
 
 if (not na(srPh) or not na(srPl)) and srShowed
     for i = 0 to array.size(srLevels) - 1
@@ -427,17 +377,17 @@ if (not na(srPh) or not na(srPl)) and srShowed
 
 if srShowed
     var box srHighestAreaBox = na, box.delete(srHighestAreaBox)
-    var box srLowestAreaBox = na, box.delete(srLowestAreaBox)
-    var box srHighestValBox = na, box.delete(srHighestValBox)
-    var box srLowestValBox = na, box.delete(srLowestValBox)
-    color srHighestColor = close >= srHighestPh ? srSupportColor : srResistanceColor
-    color srLowestColor = close >= srLowestPl ? srSupportColor : srResistanceColor
-    float srHighestTop = srHighestPh + srZoneWidth
-    float srHighestBot = srHighestPh - srZoneWidth
-    float srLowestTop = srLowestPl + srZoneWidth
-    float srLowestBot = srLowestPl - srZoneWidth
-    srHighestAreaBox := box.new(barIdx, srHighestTop, barIdx, srHighestBot, extend = extend.both, bgcolor = srHighestColor, border_width = 0)
-    srLowestAreaBox := box.new(barIdx, srLowestTop, barIdx, srLowestBot, extend = extend.both, bgcolor = srLowestColor, border_width = 0)
+    var box srLowestAreaBox  = na, box.delete(srLowestAreaBox)
+    var box srHighestValBox  = na, box.delete(srHighestValBox)
+    var box srLowestValBox   = na, box.delete(srLowestValBox)
+    color srHighestColor     = close >= srHighestPh ? srSupportColor : srResistanceColor
+    color srLowestColor      = close >= srLowestPl ? srSupportColor : srResistanceColor
+    float srHighestTop       = srHighestPh + srZoneWidth
+    float srHighestBot       = srHighestPh - srZoneWidth
+    float srLowestTop        = srLowestPl + srZoneWidth
+    float srLowestBot        = srLowestPl - srZoneWidth
+    srHighestAreaBox := box.new(barIdx, srHighestTop, barIdx, srHighestBot, extend=extend.both, bgcolor=srHighestColor, border_width=0)
+    srLowestAreaBox := box.new(barIdx, srLowestTop, barIdx, srLowestBot, extend=extend.both, bgcolor=srLowestColor, border_width=0)
     srHighestValBox := buildSrValBox(srHighestTop, srHighestBot, srHighestPh, srZoneWidth)
     srLowestValBox := buildSrValBox(srLowestTop, srLowestBot, srLowestPl, srZoneWidth)
 
@@ -458,7 +408,5 @@ if srShowed
             bool botExisted = math.abs(level - srLowestPl) < srZoneWidth
 
             if (not topExisted and not botExisted)
-                array.set(srAreaBoxes, i, box.new(barIdx, top, barIdx, bot, extend = extend.both, bgcolor = lineColor, border_width = 0))
+                array.set(srAreaBoxes, i, box.new(barIdx, top, barIdx, bot, extend=extend.both, bgcolor=lineColor, border_width=0))
                 array.set(srValBoxes, i, buildSrValBox(top, bot, level, srZoneWidth))
-
-//-----------------------------------------------------------------------------}
