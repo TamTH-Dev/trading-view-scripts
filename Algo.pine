@@ -144,7 +144,7 @@ plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, color.new(R
 plotshape(crossDn ? dsma : na, "", shape.diamond, location.absolute, RED_COLOR, size=size.tiny, force_overlay=true)
 
 // Plot main indicator line
-plot(dsmaShowed ? dsma : na, color=color, linewidth=2)
+plot(dsmaShowed ? dsma : na, color=color, linewidth=1)
 
 //-----------------------------------------------------------------------------
 // EMAs
