@@ -390,7 +390,7 @@ plotshape(sigarrows ? (longhigh ? false : longmid ? false : longlow ? longlow : 
 plotshape(sigarrows ? (shorthigh ? false : shortmid ? false : shortlow ? shortlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Low Squeeze Signal - Short", force_overlay=true)
 plotshape(sigarrows ? (longhigh ? false : longmid ? longmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Mid Squeeze Signal - Long", force_overlay=true)
 plotshape(sigarrows ? (shorthigh ? false : shortmid ? shortmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Mid Squeeze Signal - Short", force_overlay=true)
-plotshape(sigarrows ? (longhigh ? longhigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.small, title="High Squeeze Signal - Long", force_overlay=true)
-plotshape(sigarrows ? (shorthigh ? shorthigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.small, title="High Squeeze Signal - Short", force_overlay=true)
+plotshape(sigarrows ? (longhigh ? longhigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="High Squeeze Signal - Long", force_overlay=true)
+plotshape(sigarrows ? (shorthigh ? shorthigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="High Squeeze Signal - Short", force_overlay=true)
 
 //------------------------------------------------------------------------------
