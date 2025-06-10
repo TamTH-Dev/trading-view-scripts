@@ -92,8 +92,57 @@ sqzColor  = isHighSqz ? PINK_COLOR : isMidSqz ? PURPLE_COLOR : isLowSqz ? YELLOW
 // Render
 //-----------------------------------------------------------------------------
 // Plot momentum and squeeze
-plot(mom, title="Momentum", color=momColor, style=plot.style_histogram, linewidth=3)
+plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2)
 plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2)
+
+//-----------------------------------------------------------------------------
+// EMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+emaGrp        = "EMAs"
+emaShowed     = input.bool(false, title="Show", group=emaGrp)
+emaSrc        = input.source(close, title="Source", group=emaGrp)
+ema1Len       = input.int(8, title="EMA 1 Length", group=emaGrp, inline="EMA1")
+ema1Color     = input.color(BLUE_COLOR, "", group=emaGrp, inline="EMA1")
+ema1Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA1")
+ema2Len       = input.int(13, title="EMA 2 Length", group=emaGrp, inline="EMA2")
+ema2Color     = input.color(AQUA_COLOR, "", group=emaGrp, inline="EMA2")
+ema2Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA2")
+ema3Len       = input.int(21, title="EMA 3 Length", group=emaGrp, inline="EMA3")
+ema3Color     = input.color(RED_COLOR, "", group=emaGrp, inline="EMA3")
+ema3Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA3")
+ema4Len       = input.int(34, title="EMA 4 Length", group=emaGrp, inline="EMA4")
+ema4Color     = input.color(ORANGE_COLOR, "", group=emaGrp, inline="EMA4")
+ema4Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA4")
+ema5Len       = input.int(55, title="EMA 5 Length", group=emaGrp, inline="EMA5")
+ema5Color     = input.color(YELLOW_COLOR, "", group=emaGrp, inline="EMA5")
+ema5Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA5")
+ema6Len       = input.int(89, title="EMA 6 Length", group=emaGrp, inline="EMA6")
+ema6Color     = input.color(PURPLE_COLOR, "", group=emaGrp, inline="EMA6")
+ema6Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA6")
+
+//-----------------------------------------------------------------------------
+// Values
+//-----------------------------------------------------------------------------
+// Calculate EMAs
+ema1 = ta.ema(emaSrc, ema1Len)
+ema2 = ta.ema(emaSrc, ema2Len)
+ema3 = ta.ema(emaSrc, ema3Len)
+ema4 = ta.ema(emaSrc, ema4Len)
+ema5 = ta.ema(emaSrc, ema5Len)
+ema6 = ta.ema(emaSrc, ema6Len)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+// Plot EMAs
+plot(emaShowed and ema1Showed ? ema1 : na, color=ema1Color, linewidth=1, display=display.pane, force_overlay = true)
+plot(emaShowed and ema2Showed ? ema2 : na, color=ema2Color, linewidth=1, display=display.pane, force_overlay = true)
+plot(emaShowed and ema3Showed ? ema3 : na, color=ema3Color, linewidth=1, display=display.pane, force_overlay = true)
+plot(emaShowed and ema4Showed ? ema4 : na, color=ema4Color, linewidth=1, display=display.pane, force_overlay = true)
+plot(emaShowed and ema5Showed ? ema5 : na, color=ema5Color, linewidth=1, display=display.pane, force_overlay = true)
+plot(emaShowed and ema6Showed ? ema6 : na, color=ema6Color, linewidth=1, display=display.pane, force_overlay = true)
 
 //-----------------------------------------------------------------------------
 // DSMAs
