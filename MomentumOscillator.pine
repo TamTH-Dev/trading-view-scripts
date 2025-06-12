@@ -105,17 +105,18 @@ plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2)
 ripsterEmaCloudsGrp    = "Ripster EMA Clouds"
 ripsterEmaCloudsShowed = input.bool(true, title="Show", group=ripsterEmaCloudsGrp)
 ripsterEmaCloudsSrc    = input.source(hl2, title="Source", group=ripsterEmaCloudsGrp)
+ripsterEmaCloudsTf     = input.timeframe("", title="Timeframe", group=ripsterEmaCloudsGrp)
 shortEma1Len           = input.int(8, title="Short EMA 1 Length", group=ripsterEmaCloudsGrp)
 longEma1Len            = input.int(9, title="Long EMA 1 Length", group=ripsterEmaCloudsGrp)
 ema1CloudShowed        = input.bool(true, title="Show EMA Cloud 1", group=ripsterEmaCloudsGrp)
 shortEma2Len           = input.int(5, title="Short EMA 2 Length", group=ripsterEmaCloudsGrp)
 longEma2Len            = input.int(12, title="Long EMA 2 Length", group=ripsterEmaCloudsGrp)
 ema2CloudShowed        = input.bool(true, title="Show EMA Cloud 2", group=ripsterEmaCloudsGrp)
-shortEma3Len           = input.int(34, title="Short EMA 3 Length", group=ripsterEmaCloudsGrp)
-longEma3Len            = input.int(50, title="Long EMA 3 Length", group=ripsterEmaCloudsGrp)
+shortEma3Len           = input.int(20, title="Short EMA 3 Length", group=ripsterEmaCloudsGrp)
+longEma3Len            = input.int(21, title="Long EMA 3 Length", group=ripsterEmaCloudsGrp)
 ema3CloudShowed        = input.bool(true, title="Show EMA Cloud 3", group=ripsterEmaCloudsGrp)
-shortEma4Len           = input.int(72, title="Short EMA 4 Length", group=ripsterEmaCloudsGrp)
-longEma4Len            = input.int(89, title="Long EMA 4 Length", group=ripsterEmaCloudsGrp)
+shortEma4Len           = input.int(34, title="Short EMA 4 Length", group=ripsterEmaCloudsGrp)
+longEma4Len            = input.int(50, title="Long EMA 4 Length", group=ripsterEmaCloudsGrp)
 ema4CloudShowed        = input.bool(true, title="Show EMA Cloud 4", group=ripsterEmaCloudsGrp)
 shortEma5Len           = input.int(180, title="Short EMA 5 Length", group=ripsterEmaCloudsGrp)
 longEma5Len            = input.int(200, title="Long EMA 5 Length", group=ripsterEmaCloudsGrp)
@@ -124,22 +125,22 @@ ema5CloudShowed        = input.bool(true, title="Show EMA Cloud 5", group=ripste
 //-----------------------------------------------------------------------------
 // Values
 //-----------------------------------------------------------------------------
-shortEma1 = ta.ema(ripsterEmaCloudsSrc, shortEma1Len)
-longEma1  = ta.ema(ripsterEmaCloudsSrc, longEma1Len)
-shortEma2 = ta.ema(ripsterEmaCloudsSrc, shortEma2Len)
-longEma2  = ta.ema(ripsterEmaCloudsSrc, longEma2Len)
-shortEma3 = ta.ema(ripsterEmaCloudsSrc, shortEma3Len)
-longEma3  = ta.ema(ripsterEmaCloudsSrc, longEma3Len)
-shortEma4 = ta.ema(ripsterEmaCloudsSrc, shortEma4Len)
-longEma4  = ta.ema(ripsterEmaCloudsSrc, longEma4Len)
-shortEma5 = ta.ema(ripsterEmaCloudsSrc, shortEma5Len)
-longEma5  = ta.ema(ripsterEmaCloudsSrc, longEma5Len)
+shortEma1 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma1Len))
+longEma1  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma1Len))
+shortEma2 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma2Len))
+longEma2  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma2Len))
+shortEma3 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma3Len))
+longEma3  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma3Len))
+shortEma4 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma4Len))
+longEma4  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma4Len))
+shortEma5 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma5Len))
+longEma5  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma5Len))
 
 cloudcolour1 = shortEma1 >= longEma1 ? AQUA_COLOR : RED_COLOR
 cloudcolour2 = shortEma2 >= longEma2 ? AQUA_COLOR : RED_COLOR
-cloudcolour3 = shortEma3 >= longEma3 ? BLUE_COLOR : ORANGE_COLOR
-cloudcolour4 = shortEma4 >= longEma4 ? PURPLE_COLOR : YELLOW_COLOR
-cloudcolour5 = shortEma5 >= longEma5 ? PINK_COLOR : GREEN_COLOR
+cloudcolour3 = shortEma3 >= longEma3 ? PINK_COLOR : YELLOW_COLOR
+cloudcolour4 = shortEma4 >= longEma4 ? BLUE_COLOR : ORANGE_COLOR
+cloudcolour5 = shortEma5 >= longEma5 ? PURPLE_COLOR : GREEN_COLOR
 
 //-----------------------------------------------------------------------------
 // Render
