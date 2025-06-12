@@ -27,7 +27,6 @@ color TEXT_COLOR       = #ced4da
 //-----------------------------------------------------------------------------
 // Bar index and input
 series int barIdx = bar_index
-length            = input.int(20, title="TTM Squeeze Length")
 
 //-----------------------------------------------------------------------------
 // Common Methods
@@ -43,13 +42,17 @@ getPrdWidthByPerc(int prd, float perc) =>
     (ta.highest(prd) - ta.lowest(prd)) * perc / 100
 
 //-----------------------------------------------------------------------------
+// Squeeze Momentum
+//-----------------------------------------------------------------------------
+sqzGrp      = "Squeeze Momentum"
+sqzLen      = input.int(20, title="TTM Squeeze Length", group=sqzGrp)
 // Bollinger Bands
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-bbMult      = input.float(2.0, title="Bollinger Band STD Multiplier")
-bbBasis     = ta.sma(close, length)
-bbDev       = bbMult * ta.stdev(close, length)
+bbMult      = input.float(2.0, title="Bollinger Band STD Multiplier", group=sqzGrp)
+bbBasis     = ta.sma(close, sqzLen)
+bbDev       = bbMult * ta.stdev(close, sqzLen)
 bbUpper     = bbBasis + bbDev
 bbLower     = bbBasis - bbDev
 
@@ -58,11 +61,11 @@ bbLower     = bbBasis - bbDev
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-kcMultHigh  = input.float(1.0, title="Keltner Channel #1")
-kcMultMid   = input.float(1.5, title="Keltner Channel #2")
-kcMultLow   = input.float(2.0, title="Keltner Channel #3")
-kcBasis     = ta.sma(close, length)
-devKc       = ta.sma(ta.tr, length)
+kcMultHigh  = input.float(1.0, title="Keltner Channel #1", group=sqzGrp)
+kcMultMid   = input.float(1.5, title="Keltner Channel #2", group=sqzGrp)
+kcMultLow   = input.float(2.0, title="Keltner Channel #3", group=sqzGrp)
+kcBasis     = ta.sma(close, sqzLen)
+devKc       = ta.sma(ta.tr, sqzLen)
 kcUpperHigh = kcBasis + devKc * kcMultHigh
 kcLowerHigh = kcBasis - devKc * kcMultHigh
 kcUpperMid  = kcBasis + devKc * kcMultMid
@@ -80,9 +83,8 @@ isMidSqz  = bbLower >= kcLowerMid or bbUpper <= kcUpperMid
 isHighSqz = bbLower >= kcLowerHigh or bbUpper <= kcUpperHigh
 
 // Momentum calculation
-mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, length), ta.lowest(low, length)), ta.sma(close, length)), length, 0)
+mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, sqzLen), ta.lowest(low, sqzLen)), ta.sma(close, sqzLen)), sqzLen, 0)
 
-// Color logic
 iff1      = mom > nz(mom[1]) ? AQUA_COLOR : BLUE_COLOR
 iff2      = mom < nz(mom[1]) ? RED_COLOR : ORANGE_COLOR
 momColor  = mom > 0 ? iff1 : iff2
@@ -96,53 +98,69 @@ plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2)
 plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2)
 
 //-----------------------------------------------------------------------------
-// EMAs
+// Ripster EMA Clouds
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-emaGrp        = "EMAs"
-emaShowed     = input.bool(true, title="Show", group=emaGrp)
-emaSrc        = input.source(close, title="Source", group=emaGrp)
-ema1Len       = input.int(8, title="EMA 1 Length", group=emaGrp, inline="EMA1")
-ema1Color     = input.color(BLUE_COLOR, "", group=emaGrp, inline="EMA1")
-ema1Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA1")
-ema2Len       = input.int(21, title="EMA 2 Length", group=emaGrp, inline="EMA2")
-ema2Color     = input.color(AQUA_COLOR, "", group=emaGrp, inline="EMA2")
-ema2Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA2")
-ema3Len       = input.int(34, title="EMA 3 Length", group=emaGrp, inline="EMA3")
-ema3Color     = input.color(RED_COLOR, "", group=emaGrp, inline="EMA3")
-ema3Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA3")
-ema4Len       = input.int(50, title="EMA 4 Length", group=emaGrp, inline="EMA4")
-ema4Color     = input.color(ORANGE_COLOR, "", group=emaGrp, inline="EMA4")
-ema4Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA4")
-ema5Len       = input.int(100, title="EMA 5 Length", group=emaGrp, inline="EMA5")
-ema5Color     = input.color(YELLOW_COLOR, "", group=emaGrp, inline="EMA5")
-ema5Showed    = input.bool(false, title="Show", group=emaGrp, inline="EMA5")
-ema6Len       = input.int(200, title="EMA 6 Length", group=emaGrp, inline="EMA6")
-ema6Color     = input.color(PURPLE_COLOR, "", group=emaGrp, inline="EMA6")
-ema6Showed    = input.bool(true, title="Show", group=emaGrp, inline="EMA6")
+ripsterEmaCloudsGrp    = "Ripster EMA Clouds"
+ripsterEmaCloudsShowed = input.bool(true, title="Show", group=ripsterEmaCloudsGrp)
+ripsterEmaCloudsSrc    = input.source(hl2, title="Source", group=ripsterEmaCloudsGrp)
+shortEma1Len           = input.int(8, title="Short EMA 1 Length", group=ripsterEmaCloudsGrp)
+longEma1Len            = input.int(9, title="Long EMA 1 Length", group=ripsterEmaCloudsGrp)
+ema1CloudShowed        = input.bool(true, title="Show EMA Cloud 1", group=ripsterEmaCloudsGrp)
+shortEma2Len           = input.int(5, title="Short EMA 2 Length", group=ripsterEmaCloudsGrp)
+longEma2Len            = input.int(12, title="Long EMA 2 Length", group=ripsterEmaCloudsGrp)
+ema2CloudShowed        = input.bool(true, title="Show EMA Cloud 2", group=ripsterEmaCloudsGrp)
+shortEma3Len           = input.int(34, title="Short EMA 3 Length", group=ripsterEmaCloudsGrp)
+longEma3Len            = input.int(50, title="Long EMA 3 Length", group=ripsterEmaCloudsGrp)
+ema3CloudShowed        = input.bool(true, title="Show EMA Cloud 3", group=ripsterEmaCloudsGrp)
+shortEma4Len           = input.int(72, title="Short EMA 4 Length", group=ripsterEmaCloudsGrp)
+longEma4Len            = input.int(89, title="Long EMA 4 Length", group=ripsterEmaCloudsGrp)
+ema4CloudShowed        = input.bool(true, title="Show EMA Cloud 4", group=ripsterEmaCloudsGrp)
+shortEma5Len           = input.int(180, title="Short EMA 5 Length", group=ripsterEmaCloudsGrp)
+longEma5Len            = input.int(200, title="Long EMA 5 Length", group=ripsterEmaCloudsGrp)
+ema5CloudShowed        = input.bool(true, title="Show EMA Cloud 5", group=ripsterEmaCloudsGrp)
 
 //-----------------------------------------------------------------------------
 // Values
 //-----------------------------------------------------------------------------
-// Calculate EMAs
-ema1 = ta.ema(emaSrc, ema1Len)
-ema2 = ta.ema(emaSrc, ema2Len)
-ema3 = ta.ema(emaSrc, ema3Len)
-ema4 = ta.ema(emaSrc, ema4Len)
-ema5 = ta.ema(emaSrc, ema5Len)
-ema6 = ta.ema(emaSrc, ema6Len)
+shortEma1 = ta.ema(ripsterEmaCloudsSrc, shortEma1Len)
+longEma1  = ta.ema(ripsterEmaCloudsSrc, longEma1Len)
+shortEma2 = ta.ema(ripsterEmaCloudsSrc, shortEma2Len)
+longEma2  = ta.ema(ripsterEmaCloudsSrc, longEma2Len)
+shortEma3 = ta.ema(ripsterEmaCloudsSrc, shortEma3Len)
+longEma3  = ta.ema(ripsterEmaCloudsSrc, longEma3Len)
+shortEma4 = ta.ema(ripsterEmaCloudsSrc, shortEma4Len)
+longEma4  = ta.ema(ripsterEmaCloudsSrc, longEma4Len)
+shortEma5 = ta.ema(ripsterEmaCloudsSrc, shortEma5Len)
+longEma5  = ta.ema(ripsterEmaCloudsSrc, longEma5Len)
+
+cloudcolour1 = shortEma1 >= longEma1 ? AQUA_COLOR : RED_COLOR
+cloudcolour2 = shortEma2 >= longEma2 ? AQUA_COLOR : RED_COLOR
+cloudcolour3 = shortEma3 >= longEma3 ? BLUE_COLOR : ORANGE_COLOR
+cloudcolour4 = shortEma4 >= longEma4 ? PURPLE_COLOR : YELLOW_COLOR
+cloudcolour5 = shortEma5 >= longEma5 ? PINK_COLOR : GREEN_COLOR
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-// Plot EMAs
-plot(emaShowed and ema1Showed ? ema1 : na, color=ema1Color, linewidth=1, display=display.pane, force_overlay = true)
-plot(emaShowed and ema2Showed ? ema2 : na, color=ema2Color, linewidth=1, display=display.pane, force_overlay = true)
-plot(emaShowed and ema3Showed ? ema3 : na, color=ema3Color, linewidth=1, display=display.pane, force_overlay = true)
-plot(emaShowed and ema4Showed ? ema4 : na, color=ema4Color, linewidth=1, display=display.pane, force_overlay = true)
-plot(emaShowed and ema5Showed ? ema5 : na, color=ema5Color, linewidth=1, display=display.pane, force_overlay = true)
-plot(emaShowed and ema6Showed ? ema6 : na, color=ema6Color, linewidth=1, display=display.pane, force_overlay = true)
+shortEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? shortEma1 : na, color=na, linewidth=1, title="Short EMA 1", force_overlay = true)
+shortEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? shortEma2 : na, color=na, linewidth=1, title="Short EMA 2", force_overlay = true)
+shortEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? shortEma3 : na, color=na, linewidth=1, title="Short EMA 3", force_overlay = true)
+shortEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? shortEma4 : na, color=na, linewidth=1, title="Short EMA 4", force_overlay = true)
+shortEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? shortEma5 : na, color=na, linewidth=1, title="Short EMA 5", force_overlay = true)
+
+longEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? longEma1 : na, color=na, linewidth=3, title="Long EMA 1", force_overlay = true)
+longEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? longEma2 : na, color=na, linewidth=3, title="Long EMA 2", force_overlay = true)
+longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, color=na, linewidth=3, title="Long EMA 3", force_overlay = true)
+longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=3, title="Long EMA 4", force_overlay = true)
+longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=3, title="Long EMA 5", force_overlay = true)
+
+fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 70), title="EMA Cloud 1")
+fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 70), title="EMA Cloud 2")
+fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 70), title="EMA Cloud 3")
+fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 70), title="EMA Cloud 4")
+fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 70), title="EMA Cloud 5")
 
 //-----------------------------------------------------------------------------
 // DSMAs
@@ -150,7 +168,7 @@ plot(emaShowed and ema6Showed ? ema6 : na, color=ema6Color, linewidth=1, display
 // Settings
 //-----------------------------------------------------------------------------
 dsmaGrp    = "DSMAs"
-dsmaShowed = input.bool(true, title="Show", group=dsmaGrp)
+dsmaShowed = input.bool(false, title="Show", group=dsmaGrp)
 dsmaSrc    = input.source(close, title="Source", group=dsmaGrp)
 dsma1Len   = input.int(40, title="DSMA 1 Length", group=dsmaGrp)
 dsma2Len   = input.int(100, title="DSMA 2 Length", group=dsmaGrp)
