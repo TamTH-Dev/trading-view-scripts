@@ -403,19 +403,19 @@ alUpper1000 = alPrevClose + atr
 // Render
 //-----------------------------------------------------------------------------
 alChar = '－'
-plotchar(alLower1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="-100%", force_overlay = true)
-plotchar(alShowAllFibLevels ? alLower0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true)
-plotchar(alLower0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true)
-plotchar(alShowAllFibLevels ? alLower0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-50.0%", force_overlay = true)
-plotchar(alShowAllFibLevels ? alLower0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-38.2%", force_overlay = true)
-plotchar(alLowerTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alLowerTriggerLevelColor, size=size.normal, title="Lower Trigger", force_overlay = true)
-plotchar(alPrevClose, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alPrevCloseLevelColor, size=size.normal, title="Previous Close", force_overlay = true)
-plotchar(alUpperTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alUpperTriggerLevelColor, size=size.normal, title="Upper Trigger", force_overlay = true)
-plotchar(alShowAllFibLevels ? alUpper0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="38.2%", force_overlay = true)
-plotchar(alShowAllFibLevels ? alUpper0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="50.0%", force_overlay = true)
-plotchar(alUpper0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="61.8%", force_overlay = true)
-plotchar(alShowAllFibLevels ? alUpper0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="78.6%", force_overlay = true)
-plotchar(alUpper1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="100%", force_overlay = true)
+plotchar(alLower1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="-100%", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alLower0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true, display = display.pane)
+plotchar(alLower0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alLower0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-50.0%", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alLower0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-38.2%", force_overlay = true, display = display.pane)
+plotchar(alLowerTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alLowerTriggerLevelColor, size=size.normal, title="Lower Trigger", force_overlay = true, display = display.pane)
+plotchar(alPrevClose, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alPrevCloseLevelColor, size=size.normal, title="Previous Close", force_overlay = true, display = display.pane)
+plotchar(alUpperTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alUpperTriggerLevelColor, size=size.normal, title="Upper Trigger", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alUpper0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="38.2%", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alUpper0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="50.0%", force_overlay = true, display = display.pane)
+plotchar(alUpper0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="61.8%", force_overlay = true, display = display.pane)
+plotchar(alShowAllFibLevels ? alUpper0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="78.6%", force_overlay = true, display = display.pane)
+plotchar(alUpper1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="100%", force_overlay = true, display = display.pane)
 
 //-----------------------------------------------------------------------------
 
