@@ -99,6 +99,99 @@ plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2, 
 plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2, display = display.pane)
 
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// ATR Levels
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+alGrp= "ATR Levels"
+alShowed= input.bool(true, title="Show", group=alGrp)
+alDayTradingOption = 'Day'
+alMultidayTradingOption = 'Multiday'
+alSwingTradingOption = 'Swing'
+alTradingType = input.string(alDayTradingOption, 'Trading Type', options=[alDayTradingOption, alMultidayTradingOption, alSwingTradingOption], group=alGrp)
+alLength = input.int(14, 'ATR Length', group=alGrp)
+alTriggerPerc = input.float(0.236, 'Trigger Percentage', group=alGrp)
+alPrevCloseLevelColor = input.color(WHITE_COLOR, 'Previous Close Level Color', group=alGrp)
+alLowerTriggerLevelColor = input.color(PURPLE_COLOR, 'Lower Trigger Level Color', group=alGrp)
+alUpperTriggerLevelColor = input.color(PURPLE_COLOR, 'Upper Trigger Level Color', group=alGrp)
+alKeyTargetLevelColor = input.color(ORANGE_COLOR, 'Key Target Level Color', group=alGrp)
+alAtrTargetLevelColor = input.color(WHITE_COLOR, 'ATR Target Level Color', group=alGrp)
+alIntermediateTargetLevelColor = input.color(GRAY_COLOR, 'Intermediate Target Level Color', group=alGrp)
+alShowAllFibLevels = input.bool(true, 'Show All Fibonacci Levels', group=alGrp)
+alFastEma = input.int(8, 'Fast EMA', group=alGrp)
+alPivotEma = input.int(21, 'Pivot EMA', group=alGrp)
+alSlowEma = input.int(34, 'Slow EMA', group=alGrp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+// Set the appropriate timeframe based on trading mode
+getAlTf() =>
+    timeframe = 'D'
+    if alTradingType == alDayTradingOption
+        timeframe := 'D'
+    else if alTradingType == alMultidayTradingOption
+        timeframe := 'W'
+    else if alTradingType == alSwingTradingOption
+        timeframe := 'M'
+    else
+        timeframe := 'D'
+
+//-----------------------------------------------------------------------------
+// Values
+//-----------------------------------------------------------------------------
+// Trend
+price = close
+alFastEmaVal = ta.ema(price, alFastEma)
+alPivotEmaVal = ta.ema(price, alPivotEma)
+alSlowEmaVal = ta.ema(price, alSlowEma)
+
+// Data
+alPeriodIdx = 1
+alTicker = ticker.new(syminfo.prefix, syminfo.ticker, session=session.extended)
+alPrevClose = request.security(alTicker, getAlTf(), close[alPeriodIdx], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+atr = request.security(alTicker, getAlTf(), ta.atr(alLength)[alPeriodIdx], gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+alPeriodHigh = request.security(alTicker, getAlTf(), high, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+alPeriodLow = request.security(alTicker, getAlTf(), low, gaps=barmerge.gaps_off, lookahead=barmerge.lookahead_on)
+alRange1 = alPeriodHigh - alPeriodLow
+alTrPercOfAtr = alRange1 / atr * 100
+alLowerTrigger = alPrevClose - alTriggerPerc * atr
+alUpperTrigger = alPrevClose + alTriggerPerc * atr
+alLower0382 = alPrevClose - atr * 0.382
+alUpper0382 = alPrevClose + atr * 0.382
+alLower0500 = alPrevClose - atr * 0.5
+alUpper0500 = alPrevClose + atr * 0.5
+alLower0618 = alPrevClose - atr * 0.618
+alUpper0618 = alPrevClose + atr * 0.618
+alLower0786 = alPrevClose - atr * 0.786
+alUpper0786 = alPrevClose + atr * 0.786
+alLower1000 = alPrevClose - atr
+alUpper1000 = alPrevClose + atr
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(alLower1000, color=color.new(alAtrTargetLevelColor, 40), linewidth=1, title='-100%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alLower0786 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-78.6%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alLower0618, color=color.new(alKeyTargetLevelColor, 40), linewidth=1, title='-61.8%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alLower0500 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-50.0%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alLower0382 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-38.2%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alLowerTrigger, color=color.new(alLowerTriggerLevelColor, 40), linewidth=1, title='Lower Trigger', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alPrevClose, color=color.new(alPrevCloseLevelColor, 40), linewidth=1, title='Previous Close', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alUpperTrigger, color=color.new(alUpperTriggerLevelColor, 40), linewidth=1, title='Upper Trigger', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alUpper0382 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='38.2%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alUpper0500 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='50.0%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alUpper0618, color=color.new(alKeyTargetLevelColor, 40), linewidth=1, title='61.8%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alShowAllFibLevels ? alUpper0786 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='78.6%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+plot(alUpper1000, color=color.new(alAtrTargetLevelColor, 40), linewidth=1, title='100%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // Ripster EMA Clouds
 //-----------------------------------------------------------------------------
 // Settings
@@ -210,8 +303,8 @@ dsma2 = calcDsma(dsmaSrc, dsma2Len)
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(dsmaShowed ? dsma1 : na, color=BLUE_COLOR, linewidth=1, display = display.pane, force_overlay = true)
-plot(dsmaShowed ? dsma2 : na, color=RED_COLOR, linewidth=1, display = display.pane, force_overlay = true)
+// plot(dsmaShowed ? dsma1 : na, color=BLUE_COLOR, linewidth=1, display = display.pane, force_overlay = true)
+// plot(dsmaShowed ? dsma2 : na, color=RED_COLOR, linewidth=1, display = display.pane, force_overlay = true)
 
 //-----------------------------------------------------------------------------
 
