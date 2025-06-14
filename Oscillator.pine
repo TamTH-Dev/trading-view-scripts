@@ -2,7 +2,7 @@
 // © tamth_
 
 //@version=6
-indicator("Momentum Oscillator", overlay=false, precision=2)
+indicator("Oscillator", overlay=false, precision=2)
 
 //-----------------------------------------------------------------------------
 // Constants
@@ -37,15 +37,16 @@ debug(simple string txt) =>
     label.set_xy(lbl, barIdx, ta.highest(10)[1])
     label.set_text(lbl, txt)
 
-// Calculate period width by percentage
-getPrdWidthByPerc(int prd, float perc) => 
-    (ta.highest(prd) - ta.lowest(prd)) * perc / 100
+//-----------------------------------------------------------------------------
+
 
 //-----------------------------------------------------------------------------
 // Squeeze Momentum
 //-----------------------------------------------------------------------------
 sqzGrp      = "Squeeze Momentum"
 sqzLen      = input.int(20, title="TTM Squeeze Length", group=sqzGrp)
+
+//-----------------------------------------------------------------------------
 // Bollinger Bands
 //-----------------------------------------------------------------------------
 // Settings
@@ -94,8 +95,8 @@ sqzColor  = isHighSqz ? PINK_COLOR : isMidSqz ? PURPLE_COLOR : isLowSqz ? YELLOW
 // Render
 //-----------------------------------------------------------------------------
 // Plot momentum and squeeze
-plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2)
-plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2)
+plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2, display = display.pane)
+plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2, display = display.pane)
 
 //-----------------------------------------------------------------------------
 // Ripster EMA Clouds
@@ -145,23 +146,26 @@ cloudcolour5 = shortEma5 >= longEma5 ? PURPLE_COLOR : GREEN_COLOR
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-shortEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? shortEma1 : na, color=na, linewidth=1, title="Short EMA 1", force_overlay = true)
-shortEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? shortEma2 : na, color=na, linewidth=1, title="Short EMA 2", force_overlay = true)
-shortEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? shortEma3 : na, color=na, linewidth=1, title="Short EMA 3", force_overlay = true)
-shortEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? shortEma4 : na, color=na, linewidth=1, title="Short EMA 4", force_overlay = true)
-shortEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? shortEma5 : na, color=na, linewidth=1, title="Short EMA 5", force_overlay = true)
+shortEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? shortEma1 : na, color=na, linewidth=1, title="Short EMA 1", display = display.pane, force_overlay = true)
+shortEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? shortEma2 : na, color=na, linewidth=1, title="Short EMA 2", display = display.pane, force_overlay = true)
+shortEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? shortEma3 : na, color=na, linewidth=1, title="Short EMA 3", display = display.pane, force_overlay = true)
+shortEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? shortEma4 : na, color=na, linewidth=1, title="Short EMA 4", display = display.pane, force_overlay = true)
+shortEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? shortEma5 : na, color=na, linewidth=1, title="Short EMA 5", display = display.pane, force_overlay = true)
 
-longEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? longEma1 : na, color=na, linewidth=3, title="Long EMA 1", force_overlay = true)
-longEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? longEma2 : na, color=na, linewidth=3, title="Long EMA 2", force_overlay = true)
-longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, color=na, linewidth=3, title="Long EMA 3", force_overlay = true)
-longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=3, title="Long EMA 4", force_overlay = true)
-longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=3, title="Long EMA 5", force_overlay = true)
+longEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? longEma1 : na, color=na, linewidth=3, title="Long EMA 1", display = display.pane, force_overlay = true)
+longEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? longEma2 : na, color=na, linewidth=3, title="Long EMA 2", display = display.pane, force_overlay = true)
+longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, color=na, linewidth=3, title="Long EMA 3", display = display.pane, force_overlay = true)
+longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=3, title="Long EMA 4", display = display.pane, force_overlay = true)
+longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=3, title="Long EMA 5", display = display.pane, force_overlay = true)
 
 fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 70), title="EMA Cloud 1")
 fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 70), title="EMA Cloud 2")
 fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 70), title="EMA Cloud 3")
 fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 70), title="EMA Cloud 4")
 fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 70), title="EMA Cloud 5")
+
+//-----------------------------------------------------------------------------
+
 
 //-----------------------------------------------------------------------------
 // DSMAs
@@ -454,11 +458,11 @@ bool    shorthigh       = (soc and hschg) or (momom and hsbsc) or (rf and hsrf) 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plotshape(sigarrows ? (longhigh ? false : longmid ? false : longlow ? longlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Low Squeeze Signal - Long", force_overlay=true)
-plotshape(sigarrows ? (shorthigh ? false : shortmid ? false : shortlow ? shortlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Low Squeeze Signal - Short", force_overlay=true)
-plotshape(sigarrows ? (longhigh ? false : longmid ? longmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Mid Squeeze Signal - Long", force_overlay=true)
-plotshape(sigarrows ? (shorthigh ? false : shortmid ? shortmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Mid Squeeze Signal - Short", force_overlay=true)
-plotshape(sigarrows ? (longhigh ? longhigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="High Squeeze Signal - Long", force_overlay=true)
-plotshape(sigarrows ? (shorthigh ? shorthigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="High Squeeze Signal - Short", force_overlay=true)
+plotshape(sigarrows ? (longhigh ? false : longmid ? false : longlow ? longlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Low Squeeze Signal - Long", force_overlay=true, display = display.pane)
+plotshape(sigarrows ? (shorthigh ? false : shortmid ? false : shortlow ? shortlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Low Squeeze Signal - Short", force_overlay=true, display = display.pane)
+plotshape(sigarrows ? (longhigh ? false : longmid ? longmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Mid Squeeze Signal - Long", force_overlay=true, display = display.pane)
+plotshape(sigarrows ? (shorthigh ? false : shortmid ? shortmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Mid Squeeze Signal - Short", force_overlay=true, display = display.pane)
+plotshape(sigarrows ? (longhigh ? longhigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="High Squeeze Signal - Long", force_overlay=true, display = display.pane)
+plotshape(sigarrows ? (shorthigh ? shorthigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="High Squeeze Signal - Short", force_overlay=true, display = display.pane)
 
 //------------------------------------------------------------------------------
