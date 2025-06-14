@@ -2,7 +2,8 @@
 // © tamth_
 
 //@version=6
-indicator("Oscillator", overlay=false, precision=2)
+indicator("Oscillator", overlay=false, precision=2, max_labels_count=500, max_lines_count=500, max_boxes_count=1000, max_bars_back=1000)
+
 
 //-----------------------------------------------------------------------------
 // Constants
@@ -19,7 +20,8 @@ color AQUA_COLOR       = #00b4d8
 color BLUE_COLOR       = #3a86ff
 color PURPLE_COLOR     = #8338ec
 color PINK_COLOR       = #df3bf1
-color GRAY_COLOR       = #212d40
+color LIGHT_GRAY_COLOR = #212d40
+color DARK_GRAY_COLOR  = #212d40
 color TEXT_COLOR       = #ced4da
 
 //-----------------------------------------------------------------------------
@@ -43,60 +45,285 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Squeeze Momentum
 //-----------------------------------------------------------------------------
-sqzGrp      = "Squeeze Momentum"
-sqzLen      = input.int(20, title="TTM Squeeze Length", group=sqzGrp)
-
-//-----------------------------------------------------------------------------
-// Bollinger Bands
-//-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-bbMult      = input.float(2.0, title="Bollinger Band STD Multiplier", group=sqzGrp)
-bbBasis     = ta.sma(close, sqzLen)
-bbDev       = bbMult * ta.stdev(close, sqzLen)
-bbUpper     = bbBasis + bbDev
-bbLower     = bbBasis - bbDev
+const string tg  = 'Choose how to display the Confluence Gauges.'
+const string tm  = 'Calibrates the length of the main oscillator ribbon as well as the period for the squeeze algorithm.'
+const string ts  = 'Controls the width of the ribbon.\nLower values result in faster responsiveness at the cost of premature positives.'
+const string td  = 'Adjusts a threshold to limit the amount of divergences detected based on strength.\nHigher values result in less detections.'
+const string go  = 'Squeeze Momentum'
+const string gd  = 'Directional Flux'
+const string gl  = 'Divergences'
+const string gg  = 'Gauges'
+const string ss  = 'Sell Signal'
+const string sb  = 'Buy Signal'
+const string sob = 'Momentum Bullish'
+const string sos = 'Momentum Bearish'
+const string sfb = 'Flux Bullish'
+const string sfs = 'Flux Bearish'
+const string ssb = 'Bullish Swing'
+const string sss = 'Bearish Swing'
+const string sgb = 'Strong Bull Gauge'
+const string sgs = 'Strong Bear Gauge'
+const string swb = 'Weak Bull Gauge'
+const string sws = 'Weak Bear Gauge'
+const string shs = 'High Squeeze'
+const string sms = 'Normal Squeeze'
+const string sls = 'Low Squeeze'
+const string sds = 'Bearish Divergence'
+const string sdb = 'Bullish Divergence'
+
+dfb = input.bool(true, "", inline='1', group=gd)
+dfl = input.int(30, "Length", 7, 50, 1, inline='1', group=gd, tooltip=tm)
+dfh = input.bool(false, "Trend Bias", group=gd)
+cps = input.color(GREEN_COLOR, "", inline='2', group=gd)
+cng = input.color(RED_COLOR, "", inline='2', group=gd)
+cpo = input.color(GREEN_COLOR, "", inline='3', group=gd)
+cno = input.color(RED_COLOR, "", inline='3', group=gd)
+smb = input.bool(true, "", inline='1', group=go)
+len = input.int(20, "Length", 7, 50, 1, inline='1', group=go, tooltip=tm)
+sig = input.int(3, "Signal", 2, 7, 1, inline='2', group=go, tooltip=ts)
+cup = input.color(WHITE_COLOR, "", inline='3', group=go)
+cdn = input.color(AQUA_COLOR, "", inline='3', group=go)
+cpf = input.color(WHITE_COLOR, "", inline='4', group=go)
+cdf = input.color(AQUA_COLOR, "", inline='4', group=go)
+trs = input.int(25, "Sensitivity", 20, 40, 1, inline='5', group=gl, tooltip=td)
+dbl = input.bool(true, "Lines", group=gl)
+dbs = input.bool(true, "Labels", group=gl)
+cdu = input.color(WHITE_COLOR, "", inline='1', group=gl)
+cdd = input.color(AQUA_COLOR, "", inline='1', group=gl)
+gds = input.string('Both', "Showcase", ['Both', 'Bull', 'Bear', 'None'], inline='4', group=gg, tooltip=tg)
+cgp = input.color(GREEN_COLOR, "", inline='2', group=gg)
+cgn = input.color(RED_COLOR, "", inline='2', group=gg)
 
 //-----------------------------------------------------------------------------
-// Keltner Channels
+
 //-----------------------------------------------------------------------------
-// Settings
+// UDTs
 //-----------------------------------------------------------------------------
-kcMultHigh  = input.float(1.0, title="Keltner Channel #1", group=sqzGrp)
-kcMultMid   = input.float(1.5, title="Keltner Channel #2", group=sqzGrp)
-kcMultLow   = input.float(2.0, title="Keltner Channel #3", group=sqzGrp)
-kcBasis     = ta.sma(close, sqzLen)
-devKc       = ta.sma(ta.tr, sqzLen)
-kcUpperHigh = kcBasis + devKc * kcMultHigh
-kcLowerHigh = kcBasis - devKc * kcMultHigh
-kcUpperMid  = kcBasis + devKc * kcMultMid
-kcLowerMid  = kcBasis - devKc * kcMultMid
-kcUpperLow  = kcBasis + devKc * kcMultLow
-kcLowerLow  = kcBasis - devKc * kcMultLow
+// Bar data type
+type bar
+    float o = open
+    float h = high
+    float l = low
+    float c = close
+    int   i = bar_index
+
+// Oscillator data type
+type osc
+    float o = na
+    float s = na
+
+// Squeeze status type
+type squeeze
+    bool h = false
+    bool m = false
+    bool l = false
+
+// Gauge display type
+type gauge
+    float u = na
+    float l = na
+    color c = chart.fg_color
+    bool  p = true
+
+// Divergence data type
+type divergence
+    float p = na
+    float s = na
+    int   i = na
+
+// Alerts state type
+type alerts
+    bool b = false
+    bool s = false
+    bool u = false
+    bool d = false
+    bool p = false
+    bool n = false
+    bool x = false
+    bool y = false
+    bool a = false
+    bool c = false
+    bool q = false
+    bool w = false
+    bool h = false
+    bool m = false
+    bool l = false
+    bool e = false
+    bool f = false
+
+// Prompt message type
+type prompt
+    string s = ''
+    bool   c = false
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+method notify(prompt p) =>
+    if p.c
+        alert(p.s, alert.freq_once_per_bar_close)
+        
+method any(alerts a) =>
+    string s = switch
+        a.s => ss       
+        a.b => sb       
+        a.u => sob  
+        a.d => sos  
+        a.p => sfb  
+        a.n => sfs  
+        a.x => sss     
+        a.y => ssb     
+        a.q => sgb 
+        a.w => sgs 
+        a.a => swb 
+        a.c => sws 
+        a.h => shs    
+        a.m => sms    
+        a.l => sls    
+        a.e => sds
+        a.f => sdb
+        => na
+    prompt.new(s, not na(s))
+        
+method src(bar b, simple string src) =>
+    if na(b)
+        na
+    else
+        float x = switch src
+            'oc2' => math.avg(b.o, b.c)
+            'hl2' => math.avg(b.h, b.l)
+            'hlc3' => math.avg(b.h, b.l, b.c)
+            'ohlc4' => math.avg(b.o, b.h, b.l, b.c)
+            'hlcc4' => math.avg(b.h, b.l, b.c, b.c)
+        x
+
+method ha(bar b, simple bool p = true) =>
+    bar x = bar.new()
+    x.c := barstate.isfirst or na(b) ? close : b.src('ohlc4')
+    x := barstate.isfirst or na(b) or na(b.h) or na(x) or na(x[1]) ? na : bar.new(na((x[1]).o) ? b.src('oc2') : nz(x.src('oc2')[1]), math.max(b.h, math.max(x.o, x.c)), math.min(b.l, math.min(x.o, x.c)), x.c)
+    p ? x : b
+
+method atr(bar b, simple int len = 1) =>
+    float tr = barstate.isfirst or na(b) or na(b.h) or na(b.l) or na(b.c) or na((b[1]).h) or na((b[1]).c) ? na : math.max(math.max(b.h - b.l, math.abs(b.h - (b[1]).c)), math.abs(b.l - (b[1]).c))
+    len == 1 ? tr : ta.rma(tr, len)
+
+method stdev(float src, simple int len) =>
+    float sq = 0.
+    float psq = 0.
+    float sum = 0.
+    for k = 0 to len - 1
+        val = nz(src[k])
+        psq := sq
+        sq += (val - sq) / (1 + k)
+        sum += (val - sq) * (val - psq)
+    math.sqrt(sum / (len - 1))
+
+method osc(bar b, simple int sig, simple int len) =>
+    float av = ta.sma(b.src('hl2'), len)
+    bar z = bar.new(b.o, ta.highest(len), ta.lowest(len), b.c)
+    float x = ta.linreg((z.c - math.avg(z.src('hl2'), av)) / z.atr() * 100, len, 0)
+    osc.new(x, ta.sma(x, sig))
+
+method dfo(bar b, simple int len) =>
+    float tr = b.atr(len)
+    float up = ta.rma(math.max(ta.change(b.h), 0), len) / tr
+    float dn = ta.rma(math.max(ta.change(b.l) * -1, 0), len) / tr
+    float x = ta.rma((up - dn) / (up + dn), len / 2) * 100
+    osc.new(x, x > 25 ? x - 25 : x < -25 ? x + 25 : na)
+
+method sqz(bar b, simple int len) =>
+    array<bool> sqz = array.new<bool>()
+    float dev = b.c.stdev(len)
+    float atr = b.atr(len)
+    for i = 2 to 4
+        sqz.unshift(dev < atr * 0.25 * i)
+    squeeze.new(sqz.pop(), sqz.pop(), sqz.pop())
+
+method draw(bar b, osc o, simple int trs, simple bool s) =>
+    var divergence d = divergence.new()
+    bool u = ta.crossunder(o.o, o.s)
+    bool l = ta.crossover(o.o, o.s)
+    float x = o.s
+    bool p = false
+
+    switch
+        // Bearish divergence
+        o.o > trs and u and barstate.isconfirmed =>
+            switch
+                na(d.p) =>
+                    d := divergence.new(b.h, x, b.i)
+                    p := false
+
+                not na(d.p) =>
+                    if b.h > d.p and x < d.s
+                        if s
+                            line.new(d.i, d.s, b.i, x, xloc.bar_index, extend.none, cdd)
+                        d := divergence.new()
+                        p := true
+                    else
+                        d := divergence.new(b.h, x, b.i)
+                        p := false
+        // Bullish divergence
+        o.o < -trs and l and barstate.isconfirmed =>
+            switch
+                na(d.p) =>
+                    d := divergence.new(b.l, x, b.i)
+                    p := false
+
+                not na(d.p) =>
+                    if b.l < d.p and x > d.s
+                        if s
+                            line.new(d.i, d.s, b.i, x, xloc.bar_index, extend.none, cdu)
+                        d := divergence.new()
+                        p := true
+                    else
+                        d := divergence.new(b.l, x, b.i)
+                        p := false
+
+    p
 
 //-----------------------------------------------------------------------------
 // Calculation
 //-----------------------------------------------------------------------------
-// Squeeze conditions
-isNoSqz   = bbLower < kcLowerLow or bbUpper > kcUpperLow
-isLowSqz  = bbLower >= kcLowerLow or bbUpper <= kcUpperLow
-isMidSqz  = bbLower >= kcLowerMid or bbUpper <= kcUpperMid
-isHighSqz = bbLower >= kcLowerHigh or bbUpper <= kcUpperHigh
+bar     b = bar.new(open, high, low, close)
+squeeze s = b.sqz(len)
+osc     o = b.osc(sig, len)
+osc     v = b.ha(dfh).dfo(dfl)
+bool    p = b.draw(o, trs, dbl)
+u = gauge.new(+75, +70, v.o > 0 and o.o > 0 ? cgp : v.o > 0 or o.o > 0 ? color.new(cgp, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bull')
+d = gauge.new(-75, -70, v.o < 0 and o.o < 0 ? cgn : v.o < 0 or o.o < 0 ? color.new(cgn, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bear')
 
-// Momentum calculation
-mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, sqzLen), ta.lowest(low, sqzLen)), ta.sma(close, sqzLen)), sqzLen, 0)
-
-iff1      = mom > nz(mom[1]) ? AQUA_COLOR : BLUE_COLOR
-iff2      = mom < nz(mom[1]) ? RED_COLOR : ORANGE_COLOR
-momColor  = mom > 0 ? iff1 : iff2
-sqzColor  = isHighSqz ? PINK_COLOR : isMidSqz ? PURPLE_COLOR : isLowSqz ? YELLOW_COLOR : GRAY_COLOR
+alerts a = alerts.new(ta.crossover(o.o, o.s) and o.o < -40 and v.o < 0, ta.crossunder(o.o, o.s) and o.o > +40 and v.o > 0, ta.crossover(o.o, 0), ta.crossunder(o.o, 0), ta.crossover(v.o, 0), ta.crossunder(v.o, 0), ta.crossunder(o.o, o.s) and smb, ta.crossover(o.o, o.s) and smb, ta.change(u.c == LIGHT_GRAY_COLOR) and u.c == color.new(cgp, 40), ta.change(d.c == LIGHT_GRAY_COLOR) and d.c == color.new(cgn, 40), ta.change(u.c == LIGHT_GRAY_COLOR) and u.c == cgp, ta.change(d.c == LIGHT_GRAY_COLOR) and d.c == cng, ta.change(s.h) and s.h, ta.change(s.m) and s.m, ta.change(s.l) and s.l, p and o.o > trs, p and o.o < -trs)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-// Plot momentum and squeeze
-plot(mom, title="Momentum", color=momColor, style=plot.style_line, linewidth=2, display = display.pane)
-plot(0, title="Squeeze", color=sqzColor, style=plot.style_circles, linewidth=2, display = display.pane)
+color colsq = s.h ? #023e8a : s.m ? #0096c7 : #48cae4
+color colvf = v.o > 0 ? color.new(cps, 70) : color.new(cng, 70)
+color colof = v.s > 0 ? color.new(cpo, 70) : color.new(cno, 70)
+color colsf = o.o > o.s ? color.new(cpf, 50) : color.new(cdf, 50)
+color colzf = o.o > o.s ? cup : cdn
+
+l  = plot(dfb ? v.o : na, "Flux", colvf, 1, plot.style_area, display = display.pane)
+z  = plot(dfb ? v.s : na, "OverFlux", colof, 1, plot.style_areabr, display = display.pane)
+w  = plot(smb ? o.o : na, "Mom", colzf, 1, plot.style_line, display = display.pane)
+q  = plot(1, "Squeeze", color = s.l ? colsq : LIGHT_GRAY_COLOR, linewidth = 1, style = plot.style_columns, trackprice = false, histbase = -1, display=display.pane)
+j  = plot(a.x ? o.s : na, "Trend Shift", cdf, 2, plot.style_circles, display=display.pane)
+k  = plot(a.y ? o.o : na, "Trend Shift", cpf, 2, plot.style_circles, display=display.pane)
+c  = plot(smb ? o.s : na, "Signal", display=display.none)
+ll = plot(d.p ? d.l : na, "Lower Gauge", display=display.none)
+hl = plot(d.p ? d.u : na, "Lower Gauge", display=display.none)
+hh = plot(u.p ? u.u : na, "Upper Gauge", display=display.none)
+lh = plot(u.p ? u.l : na, "Upper Gauge", display=display.none)
+
+plotshape(u.p and a.s ? u.u + 10 : na, "Confluence Sell", shape.triangledown, location.absolute, AQUA_COLOR, size=size.tiny, display = display.pane)
+plotshape(d.p and a.b ? d.l - 15 : na, "Confluence Buy", shape.triangleup, location.absolute, WHITE_COLOR, size=size.tiny, display = display.pane)
+
+fill(w, c, colsf)
+fill(lh, hh, u.c)
+fill(ll, hl, d.c)
 
 //-----------------------------------------------------------------------------
 
@@ -119,7 +346,7 @@ alLowerTriggerLevelColor = input.color(PURPLE_COLOR, 'Lower Trigger Level Color'
 alUpperTriggerLevelColor = input.color(PURPLE_COLOR, 'Upper Trigger Level Color', group=alGrp)
 alKeyTargetLevelColor = input.color(YELLOW_COLOR, 'Key Target Level Color', group=alGrp)
 alAtrTargetLevelColor = input.color(WHITE_COLOR, 'ATR Target Level Color', group=alGrp)
-alIntermediateTargetLevelColor = input.color(GRAY_COLOR, 'Intermediate Target Level Color', group=alGrp)
+alIntermediateTargetLevelColor = input.color(LIGHT_GRAY_COLOR, 'Intermediate Target Level Color', group=alGrp)
 alShowAllFibLevels = input.bool(true, 'Show All Fibonacci Levels', group=alGrp)
 alFastEma = input.int(8, 'Fast EMA', group=alGrp)
 alPivotEma = input.int(21, 'Pivot EMA', group=alGrp)
@@ -260,304 +487,3 @@ fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 80), title="EMA 
 fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 80), title="EMA Cloud 5")
 
 //-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// DSMAs
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-dsmaGrp    = "DSMAs"
-dsmaShowed = input.bool(false, title="Show", group=dsmaGrp)
-dsmaSrc    = input.source(close, title="Source", group=dsmaGrp)
-dsma1Len   = input.int(40, title="DSMA 1 Length", group=dsmaGrp)
-dsma2Len   = input.int(100, title="DSMA 2 Length", group=dsmaGrp)
-
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-calcDsma(src, len) =>
-    filt = 0.0
-    dsma = 0.0
-
-    PI = 3.1415926
-    a1 = math.exp( -1.414 * PI / (0.5 * len))
-    b1 = 2 * a1 * math.cos( 1.414 * PI / ( 0.5 * len))
-    c2 = b1
-    c3 = -a1 * a1
-    c1 = 1 - c2 - c3
-
-    zeros = src - src[2]
-    filt := c1 * (zeros + zeros[1]) / 2 + c2 * nz(filt[1]) + c3 * nz(filt[2])
-    rm = math.sum(filt * filt, len) 
-    rms = math.sqrt(rm / len) 
-    scaledFilt = rms != 0 ? filt / rms : 0
-    alpha1 = math.abs(scaledFilt) * 5 / len
-    dsma := alpha1 * close + (1 - alpha1) * nz(dsma[1])
-    dsma
-
-//-----------------------------------------------------------------------------
-// Values
-//-----------------------------------------------------------------------------
-dsma1 = calcDsma(dsmaSrc, dsma1Len)
-dsma2 = calcDsma(dsmaSrc, dsma2Len)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-// plot(dsmaShowed ? dsma1 : na, color=BLUE_COLOR, linewidth=1, display = display.pane, force_overlay = true)
-// plot(dsmaShowed ? dsma2 : na, color=RED_COLOR, linewidth=1, display = display.pane, force_overlay = true)
-
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Signals
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-bool    sigarrows   = input.bool(true, title="Signal Arrows")
-string  sigt        = input.string("+/-", title="Signal Type", options=["Current Momentum", "Sum of Change", "+/-", "Rising/Falling", "Crossed Zero", "Basis Line Momentum", "Divergence", "Combo"])
-string  custsqz     = input.string("6 Dots", title="Squeeze Signal Length", options=["End of Early Signal", "6 Dots", "12 Dots", "End of Squeeze", "Custom"])
-int     sqzsig      = input.int(8, title="Custom Squeeze Signal Duration")
-int     sumofc      = input.int(20, title="Sum of Change Length")
-int     entrysmooth = input.int(7, title="Early Entry Smoothing Period")
-int     exitsmooth  = input.int(9, title="Early Exit Smoothing Period")
-
-//-----------------------------------------------------------------------------
-// Values
-//-----------------------------------------------------------------------------
-// Squeeze Variables
-float   bb          = 2.0
-float   kch         = 1.0
-float   kcm         = 1.5
-float   kcl         = 2.0
-float   sqz         = ta.linreg(close - math.avg(math.avg(ta.highest(high, 20), ta.lowest(low, 20)), ta.ema(close, 20)), 20, 0)
-float   momo        = ta.linreg((sqz-sqz[1]), exitsmooth, 0)
-// Basis Line
-float   basis       = ta.sma(close,20)
-// Bollinger Bands
-float   dev         = bb * ta.stdev(close, 20)
-float   upperbb     = basis + dev
-float   lowerbb     = basis - dev
-// Keltner Channels Range
-float   kcrange     = ta.sma(ta.tr, 20)
-// Keltner Channels High
-float   kcuph       = basis + kcrange * kch
-float   kcdnh       = basis - kcrange * kch
-// Keltner Channels Mid
-float   kcupm       = basis + kcrange * kcm
-float   kcdnm       = basis - kcrange * kcm
-// Keltner Channels Low
-float   kcupl       = basis + kcrange * kcl
-float   kcdnl       = basis - kcrange * kcl
-// Early Signal Variables
-float   bkhigh      = upperbb - kcuph
-float   bkmid       = upperbb - kcupm
-float   bklow       = upperbb - kcupl
-float   bkhema      = ta.ema(bkhigh,entrysmooth)
-float   bkmema      = ta.ema(bkmid,entrysmooth)
-float   bklema      = ta.ema(bklow,entrysmooth)
-// Each Squeeze Type
-bool    lowsqz      = upperbb < kcupl and lowerbb > kcdnl
-bool    midsqz      = upperbb < kcupm and lowerbb > kcdnm
-bool    highsqz     = upperbb < kcuph and lowerbb > kcdnh
-// BB and KC Signal Formulas
-bool    ksm         = close < kcdnm or close > kcupm
-bool    ksh         = close < kcdnh or close > kcuph
-bool    ksl         = close < kcdnl or close > kcupl
-bool    bbsmh       = close < lowerbb or close > upperbb
-// Early Entry Candle Conditions
-bool    earlyentrymid   = bkmid > bkmema and bkmid <=0
-bool    earlyentryhigh  = bkhigh > bkhema and bkhigh <=0
-bool    earlyentrylow   = bklow > bklema and bklow <=0
-bool    endofmid        = ta.barssince(earlyentrymid) == 1
-bool    endofhigh       = ta.barssince(earlyentryhigh) == 1
-bool    endoflow        = ta.barssince(earlyentrylow) == 1
-// Individual KC Formulas
-barssinceKsl = ta.barssince(ksl)
-barssinceKsm = ta.barssince(ksm)
-barssinceKsh = ta.barssince(ksh)
-bool    kcllong     = ksl and lowsqz[1] and close > basis and (barssinceKsl[1] > 20)
-bool    kclshort    = ksl and lowsqz[1] and close < basis and (barssinceKsl[1] > 20)
-bool    kcmlong     = ksm and midsqz[1] and close > basis and (barssinceKsm[1] > 20)
-bool    kcmshort    = ksm and midsqz[1] and close < basis and (barssinceKsm[1] > 20)
-bool    kchlong     = ksh and highsqz[1] and close > basis and (barssinceKsh[1] > 20)
-bool    kchshort    = ksh and highsqz[1] and close < basis and (barssinceKsh[1] > 20)
-// Individual BB Formulas
-barssinceBbSmh = ta.barssince(bbsmh)
-bool    bbllong     = bbsmh and lowsqz[1] and close > basis and (barssinceBbSmh[1] > 20)
-bool    bblshort    = bbsmh and lowsqz[1] and close < basis and (barssinceBbSmh[1] > 20)
-bool    bbmlong     = bbsmh and midsqz[1] and close > basis and (barssinceBbSmh[1] > 20)
-bool    bbmshort    = bbsmh and midsqz[1] and close < basis and (barssinceBbSmh[1] > 20)
-bool    bbhlong     = bbsmh and highsqz[1] and close > basis and (barssinceBbSmh[1] > 20)
-bool    bbhshort    = bbsmh and highsqz[1] and close < basis and (barssinceBbSmh[1] > 20)
-// Signal Types
-bool  cmom          = sigt == "Current Momentum"
-bool  soc           = sigt == "Sum of Change"
-bool  momom         = sigt == "+/-"
-bool  rf            = sigt == "Rising/Falling"
-bool  czero         = sigt == "Crossed Zero"
-bool  blma          = sigt == "Basis Line Momentum"
-bool  diverg        = sigt == "Divergence"
-bool  combo         = sigt == "Combo"
-// Signal Durations
-bool  sigeoe        = custsqz == "End of Early Signal"
-bool  sigreg        = custsqz == "6 Dots"
-bool  sigpro        = custsqz == "12 Dots"
-bool  sigeos        = custsqz == "End of Squeeze"
-bool  sigcus        = custsqz == "Custom"
-// Sum of Change
-float   change     = math.sum((sqz-sqz[1]),sumofc)
-bool    changel    = change > 0
-bool    changes    = change < 0
-// Basis Line Filter
-bool    bbmal       = close >= basis
-bool    bbmas       = close < basis
-// Basic Signal Conditions
-bool    sc1         = sqz > 0
-bool    sc2         = sqz < 0
-// Rising/Falling Conditions
-bool    sqzlongreg  = sqz > sqz[1] and sqz[1] > sqz[2] and sqz[2] > sqz[3] and sqz[3] > sqz[4] and sqz[4] > sqz[5] and sqz[5] > sqz[6]
-bool    sqzshortreg = sqz < sqz[1] and sqz[1] < sqz[2] and sqz[2] < sqz[3] and sqz[3] < sqz[4] and sqz[4] < sqz[5] and sqz[5] < sqz[6]
-// Zero Line Conditions
-bool    sqzzerolong = sqz > 0 and sqz[6] < 0
-bool    sqzzeroshort= sqz < 0 and sqz[6] > 0
-// Divergence Formula
-ftf(_src) => _src[4] < _src[2] and _src[3] < _src[2] and _src[2] > _src[1] and _src[2] > _src[0]
-fbf(_src) => _src[4] > _src[2] and _src[3] > _src[2] and _src[2] < _src[1] and _src[2] < _src[0]
-ffract(_src) => ftf(_src) ? 1 : fbf(_src) ? -1 : 0
-// Divergence Variables
-float   fractaltop = ffract(sqz) > 0 ? sqz[2] : na
-float   fractalbot = ffract(sqz) < 0 ? sqz[2] : na
-float   high_prev  = ta.valuewhen(not na(fractaltop), sqz[2], 1) 
-float   high_price = ta.valuewhen(not na(fractaltop), high[2], 1)
-float   low_prev   = ta.valuewhen(not na(fractalbot), sqz[2], 1) 
-float   low_price  = ta.valuewhen(not na(fractalbot), low[2], 1)
-bool    regbeardiv = not na(fractaltop) and high[2] > high_price and sqz[2] < high_prev
-bool    regbulldiv = not na(fractalbot) and low[2] < low_price and sqz[2] > low_prev
-// Current Momentum
-bool    cmolong         = sqz > sqz[1]
-bool    cmoshort        = sqz <= sqz[1]
-// False Signals
-bool    lsf             = lowsqz == false
-bool    msf             = midsqz == false
-bool    hsf             = highsqz == false
-// End of Early Signal
-bool    eoel            = sigeoe ? endoflow : false
-bool    eoem            = sigeoe ? endofmid : false
-bool    eoeh            = sigeoe ? endofhigh : false
-
-barssinceLsf = ta.barssince(lsf)
-barssinceMsf = ta.barssince(msf)
-barssinceHsf = ta.barssince(hsf)
-barssinceLowSqz = ta.barssince(lowsqz)
-barssinceMidSqz = ta.barssince(midsqz)
-barssinceHighSqz = ta.barssince(highsqz)
-
-// Dot Count Regular
-bool    ll6             = sigreg ? lowsqz and (barssinceLsf == 6) : false
-bool    ml6             = sigreg ? midsqz and (barssinceMsf == 6) : false
-bool    hl6             = sigreg ? highsqz and (barssinceHsf == 6) : false
-// Dot Count Prolonged
-bool    ll12            = sigpro ? lowsqz and (barssinceLsf == 12) : false
-bool    ml12            = sigpro ? midsqz and (barssinceMsf == 12) : false
-bool    hl12            = sigpro ? highsqz and (barssinceHsf == 12) : false
-// End Of Squeeze
-bool    eol             = sigeos ? lsf and (barssinceLowSqz == 1) : false
-bool    eom             = sigeos ? msf and (barssinceMidSqz == 1) : false
-bool    eoh             = sigeos ? hsf and (barssinceHighSqz == 1) : false
-// Custom Squeeze
-bool    custl           = sigcus ? lowsqz and (barssinceLsf == sqzsig) : false
-bool    custm           = sigcus ? midsqz and (barssinceMsf == sqzsig) : false
-bool    custh           = sigcus ? highsqz and (barssinceHsf == sqzsig) : false
-// Dot Count Signals
-bool    squeezesignall  = eoel or ll6 or ll12 or eol or custl
-bool    squeezesignalm  = eoem or ml6 or ml12 or eom or custm
-bool    squeezesignalh  = eoeh or hl6 or hl12 or eoh or custh
-// Sum of Change Formulas
-bool    llchg           = squeezesignall and changel
-bool    lschg           = squeezesignall and changes
-bool    mlchg           = squeezesignalm and changel
-bool    mschg           = squeezesignalm and changes
-bool    hlchg           = squeezesignalh and changel
-bool    hschg           = squeezesignalh and changes
-// Basic Signal Formulas
-bool    llbsc           = squeezesignall and sc1
-bool    lsbsc           = squeezesignall and sc2
-bool    mlbsc           = squeezesignalm and sc1
-bool    msbsc           = squeezesignalm and sc2
-bool    hlbsc           = squeezesignalh and sc1
-bool    hsbsc           = squeezesignalh and sc2
-// Rising/Falling Signal Formulas
-bool    llrf            = squeezesignall and sqzlongreg
-bool    lsrf            = squeezesignall and sqzshortreg
-bool    mlrf            = squeezesignalm and sqzlongreg
-bool    msrf            = squeezesignalm and sqzshortreg
-bool    hlrf            = squeezesignalh and sqzlongreg
-bool    hsrf            = squeezesignalh and sqzshortreg
-// Zero Line Signal Formulas
-bool    llz             = squeezesignall and sqzzerolong
-bool    lsz             = squeezesignall and sqzzeroshort
-bool    mlz             = squeezesignalm and sqzzerolong
-bool    msz             = squeezesignalm and sqzzeroshort
-bool    hlz             = squeezesignalh and sqzzerolong
-bool    hsz             = squeezesignalh and sqzzeroshort
-// Basis Line Signal Formulas
-bool    llbl            = squeezesignall and bbmal
-bool    lsbl            = squeezesignall and bbmas
-bool    mlbl            = squeezesignalm and bbmal
-bool    msbl            = squeezesignalm and bbmas
-bool    hlbl            = squeezesignalh and bbmal
-bool    hsbl            = squeezesignalh and bbmas
-// Divergence Signal Formulas
-bool    lldv            = squeezesignall and regbulldiv
-bool    lsdv            = squeezesignall and regbeardiv
-bool    mldv            = squeezesignalm and regbulldiv
-bool    msdv            = squeezesignalm and regbeardiv
-bool    hldv            = squeezesignalh and regbulldiv
-bool    hsdv            = squeezesignalh and regbeardiv
-// Current Momentum Signal Formulas
-bool    llcm            = squeezesignall and cmolong
-bool    lscm            = squeezesignall and cmoshort
-bool    mlcm            = squeezesignalm and cmolong
-bool    mscm            = squeezesignalm and cmoshort
-bool    hlcm            = squeezesignalh and cmolong
-bool    hscm            = squeezesignalh and cmoshort
-// Combo Scoring
-int     basicscore      = sc1 ? 6 : -6
-int     rfscore         = sqzlongreg ? 3 : sqzshortreg ? -3 : 0
-int     zlscore         = sqzzerolong ? 4 : sqzzeroshort ? -4 : 0
-int     bbmascore       = bbmal ? 3 : bbmas ? -3 : 0
-int     divscore        = regbulldiv ? 3 : regbeardiv ? -3 : 0
-int     sumscore        = changel ? 4 : -4
-int     currentmo       = cmolong ? 3 : -3
-int     comboscore      = basicscore + rfscore + zlscore + bbmascore + divscore + sumscore + currentmo
-bool    longcombo       = comboscore > 0
-bool    shortcombo      = comboscore < 0
-// Combo Signal Formulas
-bool    llcombo         = squeezesignall and longcombo
-bool    lscombo         = squeezesignall and shortcombo
-bool    mlcombo         = squeezesignalm and longcombo
-bool    mscombo         = squeezesignalm and shortcombo
-bool    hlcombo         = squeezesignalh and longcombo
-bool    hscombo         = squeezesignalh and shortcombo
-// Final Signals
-bool    longlow         = (soc and llchg) or (momom and llbsc) or (rf and llrf) or (czero and llz) or (blma and llbl) or (diverg and lldv) or (llcm and cmom) or (combo and llcombo)
-bool    shortlow        = (soc and lschg) or (momom and lsbsc) or (rf and lsrf) or (czero and lsz) or (blma and lsbl) or (diverg and lsdv) or (lscm and cmom) or (combo and lscombo)
-bool    longmid         = (soc and mlchg) or (momom and mlbsc) or (rf and mlrf) or (czero and mlz) or (blma and mlbl) or (diverg and mldv) or (mlcm and cmom) or (combo and mlcombo)
-bool    shortmid        = (soc and mschg) or (momom and msbsc) or (rf and msrf) or (czero and msz) or (blma and msbl) or (diverg and msdv) or (mscm and cmom) or (combo and mscombo)
-bool    longhigh        = (soc and hlchg) or (momom and hlbsc) or (rf and hlrf) or (czero and hlz) or (blma and hlbl) or (diverg and hldv) or (hlcm and cmom) or (combo and hlcombo)
-bool    shorthigh       = (soc and hschg) or (momom and hsbsc) or (rf and hsrf) or (czero and hsz) or (blma and hsbl) or (diverg and hsdv) or (hscm and cmom) or (combo and hscombo)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-plotshape(sigarrows ? (longhigh ? false : longmid ? false : longlow ? longlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Low Squeeze Signal - Long", force_overlay=true, display = display.pane)
-plotshape(sigarrows ? (shorthigh ? false : shortmid ? false : shortlow ? shortlow : false) : false, color=color.new(YELLOW_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Low Squeeze Signal - Short", force_overlay=true, display = display.pane)
-plotshape(sigarrows ? (longhigh ? false : longmid ? longmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="Mid Squeeze Signal - Long", force_overlay=true, display = display.pane)
-plotshape(sigarrows ? (shorthigh ? false : shortmid ? shortmid : false) : false, color=color.new(PURPLE_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="Mid Squeeze Signal - Short", force_overlay=true, display = display.pane)
-plotshape(sigarrows ? (longhigh ? longhigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.belowbar, size=size.tiny, title="High Squeeze Signal - Long", force_overlay=true, display = display.pane)
-plotshape(sigarrows ? (shorthigh ? shorthigh : false) : false, color=color.new(PINK_COLOR, 20), style=shape.diamond, location=location.abovebar, size=size.tiny, title="High Squeeze Signal - Short", force_overlay=true, display = display.pane)
-
-//------------------------------------------------------------------------------
