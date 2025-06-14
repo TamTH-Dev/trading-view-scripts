@@ -117,13 +117,14 @@ alTriggerPerc = input.float(0.236, 'Trigger Percentage', group=alGrp)
 alPrevCloseLevelColor = input.color(WHITE_COLOR, 'Previous Close Level Color', group=alGrp)
 alLowerTriggerLevelColor = input.color(PURPLE_COLOR, 'Lower Trigger Level Color', group=alGrp)
 alUpperTriggerLevelColor = input.color(PURPLE_COLOR, 'Upper Trigger Level Color', group=alGrp)
-alKeyTargetLevelColor = input.color(ORANGE_COLOR, 'Key Target Level Color', group=alGrp)
+alKeyTargetLevelColor = input.color(YELLOW_COLOR, 'Key Target Level Color', group=alGrp)
 alAtrTargetLevelColor = input.color(WHITE_COLOR, 'ATR Target Level Color', group=alGrp)
 alIntermediateTargetLevelColor = input.color(GRAY_COLOR, 'Intermediate Target Level Color', group=alGrp)
 alShowAllFibLevels = input.bool(true, 'Show All Fibonacci Levels', group=alGrp)
 alFastEma = input.int(8, 'Fast EMA', group=alGrp)
 alPivotEma = input.int(21, 'Pivot EMA', group=alGrp)
 alSlowEma = input.int(34, 'Slow EMA', group=alGrp)
+alOffset = input.int(5, "Offset", group=alGrp)
 
 //-----------------------------------------------------------------------------
 // Methods
@@ -174,19 +175,20 @@ alUpper1000 = alPrevClose + atr
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(alLower1000, color=color.new(alAtrTargetLevelColor, 40), linewidth=1, title='-100%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alLower0786 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-78.6%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alLower0618, color=color.new(alKeyTargetLevelColor, 40), linewidth=1, title='-61.8%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alLower0500 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-50.0%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alLower0382 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='-38.2%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alLowerTrigger, color=color.new(alLowerTriggerLevelColor, 40), linewidth=1, title='Lower Trigger', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alPrevClose, color=color.new(alPrevCloseLevelColor, 40), linewidth=1, title='Previous Close', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alUpperTrigger, color=color.new(alUpperTriggerLevelColor, 40), linewidth=1, title='Upper Trigger', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alUpper0382 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='38.2%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alUpper0500 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='50.0%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alUpper0618, color=color.new(alKeyTargetLevelColor, 40), linewidth=1, title='61.8%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alShowAllFibLevels ? alUpper0786 : na, color=color.new(alIntermediateTargetLevelColor, 40), linewidth=1, title='78.6%', style=plot.style_stepline, display = display.pane, force_overlay = true)
-plot(alUpper1000, color=color.new(alAtrTargetLevelColor, 40), linewidth=1, title='100%', style=plot.style_stepline, display = display.pane, force_overlay = true)
+alChar = '－'
+plotchar(alLower1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="-100%", force_overlay = true)
+plotchar(alShowAllFibLevels ? alLower0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true)
+plotchar(alLower0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="-78.6%", force_overlay = true)
+plotchar(alShowAllFibLevels ? alLower0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-50.0%", force_overlay = true)
+plotchar(alShowAllFibLevels ? alLower0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="-38.2%", force_overlay = true)
+plotchar(alLowerTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alLowerTriggerLevelColor, size=size.normal, title="Lower Trigger", force_overlay = true)
+plotchar(alPrevClose, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alPrevCloseLevelColor, size=size.normal, title="Previous Close", force_overlay = true)
+plotchar(alUpperTrigger, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alUpperTriggerLevelColor, size=size.normal, title="Upper Trigger", force_overlay = true)
+plotchar(alShowAllFibLevels ? alUpper0382 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="38.2%", force_overlay = true)
+plotchar(alShowAllFibLevels ? alUpper0500 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="50.0%", force_overlay = true)
+plotchar(alUpper0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.normal, title="61.8%", force_overlay = true)
+plotchar(alShowAllFibLevels ? alUpper0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.normal, title="78.6%", force_overlay = true)
+plotchar(alUpper1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.normal, title="100%", force_overlay = true)
 
 //-----------------------------------------------------------------------------
 
@@ -233,8 +235,8 @@ longEma5  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripste
 cloudcolour1 = shortEma1 >= longEma1 ? AQUA_COLOR : RED_COLOR
 cloudcolour2 = shortEma2 >= longEma2 ? AQUA_COLOR : RED_COLOR
 cloudcolour3 = shortEma3 >= longEma3 ? PINK_COLOR : YELLOW_COLOR
-cloudcolour4 = shortEma4 >= longEma4 ? BLUE_COLOR : ORANGE_COLOR
-cloudcolour5 = shortEma5 >= longEma5 ? PURPLE_COLOR : GREEN_COLOR
+cloudcolour4 = shortEma4 >= longEma4 ? GREEN_COLOR : PURPLE_COLOR
+cloudcolour5 = shortEma5 >= longEma5 ? BLUE_COLOR : ORANGE_COLOR
 
 //-----------------------------------------------------------------------------
 // Render
@@ -251,11 +253,11 @@ longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, 
 longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=3, title="Long EMA 4", display = display.pane, force_overlay = true)
 longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=3, title="Long EMA 5", display = display.pane, force_overlay = true)
 
-fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 70), title="EMA Cloud 1")
-fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 70), title="EMA Cloud 2")
-fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 70), title="EMA Cloud 3")
-fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 70), title="EMA Cloud 4")
-fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 70), title="EMA Cloud 5")
+fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 80), title="EMA Cloud 1")
+fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 80), title="EMA Cloud 2")
+fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 60), title="EMA Cloud 3")
+fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 80), title="EMA Cloud 4")
+fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 80), title="EMA Cloud 5")
 
 //-----------------------------------------------------------------------------
 
