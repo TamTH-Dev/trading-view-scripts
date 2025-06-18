@@ -43,6 +43,134 @@ debug(simple string txt) =>
 
 
 //-----------------------------------------------------------------------------
+// DSMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+dsmaGrp    = "DSMAs"
+dsmaShowed = input.bool(true, title="Show", group=dsmaGrp)
+dsmaSrc    = input.source(close, title="Source", group=dsmaGrp)
+dsmaTf     = input.timeframe("", title="Timeframe", group=dsmaGrp)
+dsma1Len   = input.int(40, title="DSMA 1 Length", group=dsmaGrp)
+dsma1Color = input.color(color.blue, title="DSMA 1 Color", group=dsmaGrp)
+dsma2Len   = input.int(100, title="DSMA 2 Length", group=dsmaGrp)
+dsma2Color = input.color(color.red, title="DSMA 2 Color", group=dsmaGrp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+// Calculate DSMA
+calcDsma(src, len) =>
+    filt = 0.0
+    dsma = 0.0
+
+    PI = 3.1415926
+    a1 = math.exp( -1.414 * PI / (0.5 * len))
+    b1 = 2 * a1 * math.cos( 1.414 * PI / ( 0.5 * len))
+    c2 = b1
+    c3 = -a1 * a1
+    c1 = 1 - c2 - c3
+
+    zeros = src - src[2]
+    filt := c1 * (zeros + zeros[1]) / 2 + c2 * nz(filt[1]) + c3 * nz(filt[2])
+    rm = math.sum(filt * filt, len) 
+    rms = math.sqrt(rm / len) 
+    scaledFilt = rms != 0 ? filt / rms : 0
+    alpha1 = math.abs(scaledFilt) * 5 / len
+    dsma := alpha1 * close + (1 - alpha1) * nz(dsma[1])
+    dsma
+
+//-----------------------------------------------------------------------------
+// Values
+//-----------------------------------------------------------------------------
+dsma1 = request.security(syminfo.tickerid, dsmaTf, calcDsma(dsmaSrc, dsma1Len))
+dsma2 = request.security(syminfo.tickerid, dsmaTf, calcDsma(dsmaSrc, dsma2Len))
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(dsmaShowed ? dsma1 : na, color=dsma1Color, linewidth=1, display = display.pane, force_overlay = true)
+plot(dsmaShowed ? dsma2 : na, color=dsma2Color, linewidth=1, display = display.pane, force_overlay = true)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Ripster EMA Clouds
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+ripsterEmaCloudsGrp    = "Ripster EMA Clouds"
+ripsterEmaCloudsShowed = input.bool(false, title="Show", group=ripsterEmaCloudsGrp)
+ripsterEmaCloudsSrc    = input.source(close, title="Source", group=ripsterEmaCloudsGrp)
+ripsterEmaCloudsTf     = input.timeframe("", title="Timeframe", group=ripsterEmaCloudsGrp)
+shortEma1Len           = input.int(8, title="Short EMA 1 Length", group=ripsterEmaCloudsGrp)
+longEma1Len            = input.int(9, title="Long EMA 1 Length", group=ripsterEmaCloudsGrp)
+ema1CloudShowed        = input.bool(true, title="Show EMA Cloud 1", group=ripsterEmaCloudsGrp)
+shortEma2Len           = input.int(5, title="Short EMA 2 Length", group=ripsterEmaCloudsGrp)
+longEma2Len            = input.int(13, title="Long EMA 2 Length", group=ripsterEmaCloudsGrp)
+ema2CloudShowed        = input.bool(true, title="Show EMA Cloud 2", group=ripsterEmaCloudsGrp)
+shortEma3Len           = input.int(20, title="Short EMA 3 Length", group=ripsterEmaCloudsGrp)
+longEma3Len            = input.int(21, title="Long EMA 3 Length", group=ripsterEmaCloudsGrp)
+ema3CloudShowed        = input.bool(true, title="Show EMA Cloud 3", group=ripsterEmaCloudsGrp)
+shortEma4Len           = input.int(48, title="Short EMA 4 Length", group=ripsterEmaCloudsGrp)
+longEma4Len            = input.int(50, title="Long EMA 4 Length", group=ripsterEmaCloudsGrp)
+ema4CloudShowed        = input.bool(true, title="Show EMA Cloud 4", group=ripsterEmaCloudsGrp)
+shortEma5Len           = input.int(180, title="Short EMA 5 Length", group=ripsterEmaCloudsGrp)
+longEma5Len            = input.int(200, title="Long EMA 5 Length", group=ripsterEmaCloudsGrp)
+ema5CloudShowed        = input.bool(true, title="Show EMA Cloud 5", group=ripsterEmaCloudsGrp)
+
+//-----------------------------------------------------------------------------
+// Values
+//-----------------------------------------------------------------------------
+shortEma1 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma1Len))
+longEma1  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma1Len))
+shortEma2 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma2Len))
+longEma2  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma2Len))
+shortEma3 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma3Len))
+longEma3  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma3Len))
+shortEma4 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma4Len))
+longEma4  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma4Len))
+shortEma5 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma5Len))
+longEma5  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma5Len))
+
+cloudcolour1 = shortEma1 >= longEma1 ? AQUA_COLOR : RED_COLOR
+cloudcolour2 = shortEma2 >= longEma2 ? AQUA_COLOR : RED_COLOR
+cloudcolour3 = shortEma3 >= longEma3 ? PINK_COLOR : YELLOW_COLOR
+cloudcolour4 = shortEma4 >= longEma4 ? GREEN_COLOR : PURPLE_COLOR
+cloudcolour5 = shortEma5 >= longEma5 ? BLUE_COLOR : ORANGE_COLOR
+
+isUp = ta.crossover(longEma2, shortEma4)
+isDn = ta.crossunder(longEma2, shortEma4)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+shortEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? shortEma1 : na, color=na, linewidth=1, title="Short EMA 1", display = display.pane)
+shortEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? shortEma2 : na, color=na, linewidth=1, title="Short EMA 2", display = display.pane)
+shortEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? shortEma3 : na, color=na, linewidth=1, title="Short EMA 3", display = display.pane)
+shortEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? shortEma4 : na, color=na, linewidth=1, title="Short EMA 4", display = display.pane)
+shortEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? shortEma5 : na, color=na, linewidth=1, title="Short EMA 5", display = display.pane)
+
+longEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? longEma1 : na, color=na, linewidth=1, title="Long EMA 1", display = display.pane)
+longEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? longEma2 : na, color=na, linewidth=1, title="Long EMA 2", display = display.pane)
+longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, color=na, linewidth=1, title="Long EMA 3", display = display.pane)
+longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=1, title="Long EMA 4", display = display.pane)
+longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=1, title="Long EMA 5", display = display.pane)
+
+fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 80), title="EMA Cloud 1")
+fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 80), title="EMA Cloud 2")
+fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 60), title="EMA Cloud 3")
+fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 60), title="EMA Cloud 4")
+fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 80), title="EMA Cloud 5")
+
+plotshape(ripsterEmaCloudsShowed and isUp, title = "Up Trend Signal" , style = shape.triangleup, location = location.belowbar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
+plotshape(ripsterEmaCloudsShowed and isDn, title = "Down Trend Signal" , style = shape.triangledown, location = location.abovebar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // ATR Levels
 //-----------------------------------------------------------------------------
 // Settings
@@ -130,80 +258,5 @@ plotchar(alShowAllFibLevels ? alUpper0500 : na, char=alChar, show_last=1, locati
 plotchar(alUpper0618, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alKeyTargetLevelColor, size=size.small, title="61.8%", display = display.pane, editable = false)
 plotchar(alShowAllFibLevels ? alUpper0786 : na, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alIntermediateTargetLevelColor, size=size.small, title="78.6%", display = display.pane, editable = false)
 plotchar(alUpper1000, char=alChar, show_last=1, location=location.absolute, offset=alOffset, color=alAtrTargetLevelColor, size=size.small, title="100%", display = display.pane, editable = false)
-
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Ripster EMA Clouds
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-ripsterEmaCloudsGrp    = "Ripster EMA Clouds"
-ripsterEmaCloudsShowed = input.bool(true, title="Show", group=ripsterEmaCloudsGrp)
-ripsterEmaCloudsSrc    = input.source(hl2, title="Source", group=ripsterEmaCloudsGrp)
-ripsterEmaCloudsTf     = input.timeframe("", title="Timeframe", group=ripsterEmaCloudsGrp)
-shortEma1Len           = input.int(8, title="Short EMA 1 Length", group=ripsterEmaCloudsGrp)
-longEma1Len            = input.int(9, title="Long EMA 1 Length", group=ripsterEmaCloudsGrp)
-ema1CloudShowed        = input.bool(true, title="Show EMA Cloud 1", group=ripsterEmaCloudsGrp)
-shortEma2Len           = input.int(5, title="Short EMA 2 Length", group=ripsterEmaCloudsGrp)
-longEma2Len            = input.int(13, title="Long EMA 2 Length", group=ripsterEmaCloudsGrp)
-ema2CloudShowed        = input.bool(true, title="Show EMA Cloud 2", group=ripsterEmaCloudsGrp)
-shortEma3Len           = input.int(20, title="Short EMA 3 Length", group=ripsterEmaCloudsGrp)
-longEma3Len            = input.int(21, title="Long EMA 3 Length", group=ripsterEmaCloudsGrp)
-ema3CloudShowed        = input.bool(true, title="Show EMA Cloud 3", group=ripsterEmaCloudsGrp)
-shortEma4Len           = input.int(48, title="Short EMA 4 Length", group=ripsterEmaCloudsGrp)
-longEma4Len            = input.int(50, title="Long EMA 4 Length", group=ripsterEmaCloudsGrp)
-ema4CloudShowed        = input.bool(true, title="Show EMA Cloud 4", group=ripsterEmaCloudsGrp)
-shortEma5Len           = input.int(180, title="Short EMA 5 Length", group=ripsterEmaCloudsGrp)
-longEma5Len            = input.int(200, title="Long EMA 5 Length", group=ripsterEmaCloudsGrp)
-ema5CloudShowed        = input.bool(true, title="Show EMA Cloud 5", group=ripsterEmaCloudsGrp)
-
-//-----------------------------------------------------------------------------
-// Values
-//-----------------------------------------------------------------------------
-shortEma1 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma1Len))
-longEma1  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma1Len))
-shortEma2 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma2Len))
-longEma2  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma2Len))
-shortEma3 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma3Len))
-longEma3  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma3Len))
-shortEma4 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma4Len))
-longEma4  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma4Len))
-shortEma5 = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, shortEma5Len))
-longEma5  = request.security(syminfo.tickerid, ripsterEmaCloudsTf, ta.ema(ripsterEmaCloudsSrc, longEma5Len))
-
-cloudcolour1 = shortEma1 >= longEma1 ? AQUA_COLOR : RED_COLOR
-cloudcolour2 = shortEma2 >= longEma2 ? AQUA_COLOR : RED_COLOR
-cloudcolour3 = shortEma3 >= longEma3 ? PINK_COLOR : YELLOW_COLOR
-cloudcolour4 = shortEma4 >= longEma4 ? GREEN_COLOR : PURPLE_COLOR
-cloudcolour5 = shortEma5 >= longEma5 ? BLUE_COLOR : ORANGE_COLOR
-
-isUp = ta.crossover(longEma2, shortEma4)
-isDn = ta.crossunder(longEma2, shortEma4)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-shortEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? shortEma1 : na, color=na, linewidth=1, title="Short EMA 1", display = display.pane)
-shortEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? shortEma2 : na, color=na, linewidth=1, title="Short EMA 2", display = display.pane)
-shortEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? shortEma3 : na, color=na, linewidth=1, title="Short EMA 3", display = display.pane)
-shortEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? shortEma4 : na, color=na, linewidth=1, title="Short EMA 4", display = display.pane)
-shortEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? shortEma5 : na, color=na, linewidth=1, title="Short EMA 5", display = display.pane)
-
-longEma1Line = plot(ripsterEmaCloudsShowed and ema1CloudShowed ? longEma1 : na, color=na, linewidth=3, title="Long EMA 1", display = display.pane)
-longEma2Line = plot(ripsterEmaCloudsShowed and ema2CloudShowed ? longEma2 : na, color=na, linewidth=3, title="Long EMA 2", display = display.pane)
-longEma3Line = plot(ripsterEmaCloudsShowed and ema3CloudShowed ? longEma3 : na, color=na, linewidth=3, title="Long EMA 3", display = display.pane)
-longEma4Line = plot(ripsterEmaCloudsShowed and ema4CloudShowed ? longEma4 : na, color=na, linewidth=3, title="Long EMA 4", display = display.pane)
-longEma5Line = plot(ripsterEmaCloudsShowed and ema5CloudShowed ? longEma5 : na, color=na, linewidth=3, title="Long EMA 5", display = display.pane)
-
-fill(shortEma1Line, longEma1Line, color=color.new(cloudcolour1, 80), title="EMA Cloud 1")
-fill(shortEma2Line, longEma2Line, color=color.new(cloudcolour2, 80), title="EMA Cloud 2")
-fill(shortEma3Line, longEma3Line, color=color.new(cloudcolour3, 60), title="EMA Cloud 3")
-fill(shortEma4Line, longEma4Line, color=color.new(cloudcolour4, 60), title="EMA Cloud 4")
-fill(shortEma5Line, longEma5Line, color=color.new(cloudcolour5, 80), title="EMA Cloud 5")
-
-plotshape(ripsterEmaCloudsShowed and isUp, title = "Up Trend Signal" , style = shape.triangleup, location = location.belowbar, color = WHITE_COLOR, size = size.tiny, display = display.pane)
-plotshape(ripsterEmaCloudsShowed and isDn, title = "Down Trend Signal" , style = shape.triangledown, location = location.abovebar, color = AQUA_COLOR, size = size.tiny, display = display.pane)
 
 //-----------------------------------------------------------------------------
