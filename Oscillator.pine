@@ -1,0 +1,362 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+// @version=6
+indicator("Test Oscillator", overlay = false, max_bars_back = 5000, max_lines_count = 500, max_boxes_count=1000, max_labels_count = 500)
+
+
+//-----------------------------------------------------------------------------*
+//  Constants
+//-----------------------------------------------------------------------------{
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR      = #ffffff
+color BLACK_COLOR      = #000000
+color RED_COLOR        = #ff006e
+color ORANGE_COLOR     = #fb5607
+color YELLOW_COLOR     = #ffbe0b
+color GREEN_COLOR      = #2a9d8f
+color AQUA_COLOR       = #00b4d8
+color BLUE_COLOR       = #3a86ff
+color PURPLE_COLOR     = #8338ec
+color PINK_COLOR       = #df3bf1
+color LIGHT_GRAY_COLOR = #212d40
+color DARK_GRAY_COLOR  = #212d40
+color TEXT_COLOR       = #ced4da
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Variables
+//-----------------------------------------------------------------------------{
+series int barIdx = bar_index
+series bool confirmed = barstate.isconfirmed
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Common Functions
+//-----------------------------------------------------------------------------{
+debug(simple string txt) =>
+    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(label, barIdx, ta.highest(10)[1])
+    label.set_text(label, txt)
+
+//-----------------------------------------------------------------------------}
+
+
+//-----------------------------------------------------------------------------*
+// Settings
+//-----------------------------------------------------------------------------{
+string thresholdGrp = "Threshold"
+bool thresholdShowed = input.bool(true, title = "Show", group = thresholdGrp)
+int overboughtThreshold = input.int(60, title = "Overbought Threshold", group = thresholdGrp)
+int oversoldThreshold = input.int(-60, title = "Oversold Threshold", group = thresholdGrp)
+string wtGrp = "Waves Trend"
+bool wtShowed = input.bool(true, title = "Show", group = wtGrp)
+int wtChlPrd = input.int(9, title = "Channel Period", group = wtGrp)
+int wtAvgPrd = input.int(12, title = "Average Period", group = wtGrp)
+float wtMaSrc = input.source(hlc3, title = "MA Source", group = wtGrp)
+int wtMaLen = input.int(3, title = "MA Length", group = wtGrp)
+bool wtDivShowed = input.bool(true, title = "Show Divergence", group = wtGrp)
+string mfoGrp = "MFO"
+bool mfoShowed = input.bool(true, title = "Show", group = mfoGrp)
+int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
+int mfoMult = input.int(150, title = "Area Multiplier", group = mfoGrp)
+string vwapGrp = "VWAP"
+bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
+
+//-----------------------------------------------------------------------------}
+// Methods
+//-----------------------------------------------------------------------------{
+getTopFractal(series float src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
+getBotFractal(series float src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
+fractalize(series float src) =>
+    series bool isBotFractal = getBotFractal(src)
+    series bool isTopFractal = getTopFractal(src)
+    isTopFractal ? 1 : isBotFractal ? -1 : 0
+
+getDivPoints(series float src, int topLimit, int botLimit) =>
+    series bool isTopFractal = not na(fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na)
+    series bool isBotFractal = not na(fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na)
+    float highPrev = ta.valuewhen(isTopFractal, src[2], 0)[2]
+    float highPrice = ta.valuewhen(isTopFractal, high[2], 0)[2]
+    float lowPrev = ta.valuewhen(isBotFractal, src[2], 0)[2]
+    float lowPrice = ta.valuewhen(isBotFractal, low[2], 0)[2]
+    bool isBearish = isTopFractal and high[2] > highPrice and src[2] < highPrev
+    bool isBullish = isBotFractal and low[2] < lowPrice and src[2] > lowPrev
+    [isTopFractal, isBotFractal, lowPrev, isBearish, isBullish]
+
+getWtAndVwap() =>
+    float src = request.security(syminfo.tickerid, timeframe.period, wtMaSrc)
+    float esa = ta.ema(src, wtChlPrd)
+    float d = ta.ema(math.abs(src - esa), wtChlPrd)
+    float ci = (src - esa) / (0.015 * d)
+    float leadingWt = ta.ema(ci, wtAvgPrd)
+    float laggingWt = ta.sma(leadingWt, wtMaLen)
+    bool isOversold = laggingWt <= oversoldThreshold
+    bool isOverbought = laggingWt >= overboughtThreshold
+    bool wtCross = ta.cross(leadingWt, laggingWt)
+    bool wtCrossUp = laggingWt - leadingWt <= 0
+    bool wtCrossDn = laggingWt - leadingWt >= 0
+    float vwap = leadingWt - laggingWt
+    [leadingWt, laggingWt, isOversold, isOverbought, wtCross, wtCrossUp, wtCrossDn, vwap]
+
+getHaVal(series float src) => request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
+
+getMfo() =>
+    series float haOpen = getHaVal(open)
+    series float haClose = getHaVal(close)
+    series float haHigh = getHaVal(high)
+    series float haLow = getHaVal(low)
+    mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
+
+//-----------------------------------------------------------------------------}
+// Calculate
+//-----------------------------------------------------------------------------{
+int WT_LONG_BEARISH_DIV_LEVEL = 45
+int WT_LONG_BULLISH_DIV_LEVEL = -65
+int WT_SHORT_BEARISH_DIV_LEVEL = 15
+int WT_SHORT_BULLISH_DIV_LEVEL = -40
+series float _close = request.security(syminfo.tickerid, timeframe.period, close)
+series float _high = request.security(syminfo.tickerid, timeframe.period, high)
+series float _low = request.security(syminfo.tickerid, timeframe.period, low)
+float mfo = getMfo()
+[leadingWt, laggingWt, isOversold, isOverbought, cross, crossUp, crossDn, vwap] = getWtAndVwap()
+[wtLongTopFractal, wtLongBotFractal, wtLongLowPrev, isWtLongBearishDiv, isWtLongBullishDiv] = getDivPoints(laggingWt, WT_LONG_BEARISH_DIV_LEVEL, WT_LONG_BULLISH_DIV_LEVEL)
+[wtShortTopFractal, wtShortBotFractal, wtShortLowPrev, isWtShortBearishDiv, isWtShortBullishDiv] =  getDivPoints(laggingWt, WT_SHORT_BEARISH_DIV_LEVEL, WT_SHORT_BULLISH_DIV_LEVEL)
+
+//-----------------------------------------------------------------------------}
+// Render
+//-----------------------------------------------------------------------------{
+plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
+plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = DARK_GRAY_COLOR, display = display.pane, linewidth = 1, style = plot.style_cross)
+plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(LIGHT_GRAY_COLOR, 10), style = plot.style_area)
+plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80), linewidth = 2, style = plot.style_area)
+
+color leadingWtColor = leadingWt >= laggingWt ? color.new(AQUA_COLOR, 20) : color.new(WHITE_COLOR, 20)
+var leadingWtPlot = plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = leadingWtColor, linewidth = 2, style = plot.style_line, display = display.pane)
+var laggingWtPlot = plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = TRANSPARENT_COLOR, linewidth = 1, style = plot.style_line, display = display.pane)
+color wtFillColor = leadingWt >= laggingWt ? color.new(AQUA_COLOR, 75) : color.new(WHITE_COLOR, 75)
+fill(leadingWtPlot, laggingWtPlot, title = 'Wave Trend', color = wtFillColor)
+
+color wtLongBearishDivColor = wtDivShowed and isWtLongBearishDiv ? WHITE_COLOR : na
+color wtLongBullishDivColor = wtDivShowed and isWtLongBullishDiv ? AQUA_COLOR : na
+color wtShortBearishDivColor = wtDivShowed and isWtShortBearishDiv ? color.new(WHITE_COLOR, 50) : na
+color wtShortBullishDivColor = wtDivShowed and isWtShortBullishDiv ? color.new(AQUA_COLOR, 50) : na
+plot(series = wtLongTopFractal ? laggingWt[2] : na, title = "Wave Trend Long Bearish Divergence", color = wtLongBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtLongBotFractal ? laggingWt[2] : na, title = "Wave Trend Long Bullish Divergence", color = wtLongBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtShortTopFractal ? laggingWt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wtShortBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
+plot(series = wtShortBotFractal ? laggingWt[2] : na, title = "Wave Trend Short Bullish Divergence", color = wtShortBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
+
+
+
+
+
+
+
+//-----------------------------------------------------------------------------
+// Squeeze Momentum
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+const string tg  = 'Choose how to display the Confluence Gauges.'
+const string tm  = 'Calibrates the length of the main oscillator ribbon as well as the period for the squeeze algorithm.'
+const string ts  = 'Controls the width of the ribbon.\nLower values result in faster responsiveness at the cost of premature positives.'
+const string td  = 'Adjusts a threshold to limit the amount of divergences detected based on strength.\nHigher values result in less detections.'
+const string go  = 'Squeeze Momentum'
+const string gd  = 'Directional Flux'
+const string gl  = 'Divergences'
+const string gg  = 'Gauges'
+const string ss  = 'Sell Signal'
+const string sb  = 'Buy Signal'
+const string sob = 'Momentum Bullish'
+const string sos = 'Momentum Bearish'
+const string sfb = 'Flux Bullish'
+const string sfs = 'Flux Bearish'
+const string ssb = 'Bullish Swing'
+const string sss = 'Bearish Swing'
+const string sgb = 'Strong Bull Gauge'
+const string sgs = 'Strong Bear Gauge'
+const string swb = 'Weak Bull Gauge'
+const string sws = 'Weak Bear Gauge'
+const string shs = 'High Squeeze'
+const string sms = 'Normal Squeeze'
+const string sls = 'Low Squeeze'
+const string sds = 'Bearish Divergence'
+const string sdb = 'Bullish Divergence'
+
+dfb = input.bool(true, "", inline='1', group=gd)
+dfl = input.int(30, "Length", 7, 50, 1, inline='1', group=gd, tooltip=tm)
+dfh = input.bool(false, "Trend Bias", group=gd)
+smb = input.bool(true, "", inline='1', group=go)
+len = input.int(20, "Length", 7, 50, 1, inline='1', group=go, tooltip=tm)
+sig = input.int(3, "Signal", 2, 7, 1, inline='2', group=go, tooltip=ts)
+cpf = input.color(WHITE_COLOR, "", inline='4', group=go)
+cdf = input.color(AQUA_COLOR, "", inline='4', group=go)
+trs = input.int(25, "Sensitivity", 20, 40, 1, inline='5', group=gl, tooltip=td)
+dbl = input.bool(true, "Lines", group=gl)
+dbs = input.bool(true, "Labels", group=gl)
+cdu = input.color(WHITE_COLOR, "", inline='1', group=gl)
+cdd = input.color(AQUA_COLOR, "", inline='1', group=gl)
+gds = input.string('Both', "Showcase", ['Both', 'Bull', 'Bear', 'None'], inline='4', group=gg, tooltip=tg)
+cgp = input.color(GREEN_COLOR, "", inline='2', group=gg)
+cgn = input.color(RED_COLOR, "", inline='2', group=gg)
+
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// UDTs
+//-----------------------------------------------------------------------------
+// Bar data type
+type bar
+    float o = open
+    float h = high
+    float l = low
+    float c = close
+    int   i = bar_index
+
+// Oscillator data type
+type osc
+    float o = na
+    float s = na
+
+// Squeeze status type
+type squeeze
+    bool h = false
+    bool m = false
+    bool l = false
+
+// Gauge display type
+type gauge
+    float u = na
+    float l = na
+    color c = chart.fg_color
+    bool  p = true
+
+// Divergence data type
+type divergence
+    float p = na
+    float s = na
+    int   i = na
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+method src(bar b, simple string src) =>
+    if na(b)
+        na
+    else
+        float x = switch src
+            'oc2' => math.avg(b.o, b.c)
+            'hl2' => math.avg(b.h, b.l)
+            'hlc3' => math.avg(b.h, b.l, b.c)
+            'ohlc4' => math.avg(b.o, b.h, b.l, b.c)
+            'hlcc4' => math.avg(b.h, b.l, b.c, b.c)
+        x
+
+method ha(bar b, simple bool p = true) =>
+    bar x = bar.new()
+    x.c := barstate.isfirst or na(b) ? close : b.src('ohlc4')
+    x := barstate.isfirst or na(b) or na(b.h) or na(x) or na(x[1]) ? na : bar.new(na((x[1]).o) ? b.src('oc2') : nz(x.src('oc2')[1]), math.max(b.h, math.max(x.o, x.c)), math.min(b.l, math.min(x.o, x.c)), x.c)
+    p ? x : b
+
+method atr(bar b, simple int len = 1) =>
+    float tr = barstate.isfirst or na(b) or na(b.h) or na(b.l) or na(b.c) or na((b[1]).h) or na((b[1]).c) ? na : math.max(math.max(b.h - b.l, math.abs(b.h - (b[1]).c)), math.abs(b.l - (b[1]).c))
+    len == 1 ? tr : ta.rma(tr, len)
+
+method stdev(float src, simple int len) =>
+    float sq = 0.
+    float psq = 0.
+    float sum = 0.
+    for k = 0 to len - 1
+        val = nz(src[k])
+        psq := sq
+        sq += (val - sq) / (1 + k)
+        sum += (val - sq) * (val - psq)
+    math.sqrt(sum / (len - 1))
+
+method osc(bar b, simple int sig, simple int len) =>
+    float av = ta.sma(b.src('hl2'), len)
+    bar z = bar.new(b.o, ta.highest(len), ta.lowest(len), b.c)
+    float x = ta.linreg((z.c - math.avg(z.src('hl2'), av)) / z.atr() * 100, len, 0)
+    osc.new(x, ta.sma(x, sig))
+
+method dfo(bar b, simple int len) =>
+    float tr = b.atr(len)
+    float up = ta.rma(math.max(ta.change(b.h), 0), len) / tr
+    float dn = ta.rma(math.max(ta.change(b.l) * -1, 0), len) / tr
+    float x = ta.rma((up - dn) / (up + dn), len / 2) * 100
+    osc.new(x, x > 25 ? x - 25 : x < -25 ? x + 25 : na)
+
+method sqz(bar b, simple int len) =>
+    array<bool> sqz = array.new<bool>()
+    float dev = b.c.stdev(len)
+    float atr = b.atr(len)
+    for i = 2 to 4
+        sqz.unshift(dev < atr * 0.25 * i)
+    squeeze.new(sqz.pop(), sqz.pop(), sqz.pop())
+
+method draw(bar b, osc o, simple int trs, simple bool s) =>
+    var divergence d = divergence.new()
+    bool u = ta.crossunder(o.o, o.s)
+    bool l = ta.crossover(o.o, o.s)
+    float x = o.s
+    bool p = false
+    switch
+        o.o > trs and u and barstate.isconfirmed =>
+            switch
+                na(d.p) =>
+                    p := false
+                not na(d.p) =>
+                    if b.h > d.p and x < d.s
+                        if s
+                            line.new(d.i, d.s, b.i, x, xloc.bar_index, extend.none, cdd)
+                        p := true
+                    else
+                        p := false
+        o.o < -trs and l and barstate.isconfirmed =>
+            switch
+                na(d.p) =>
+                    p := false
+                not na(d.p) =>
+                    if b.l < d.p and x > d.s
+                        if s
+                            line.new(d.i, d.s, b.i, x, xloc.bar_index, extend.none, cdu)
+                        p := true
+                    else
+                        d := divergence.new(b.l, x, b.i)
+                        p := false
+    p
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+bar     b = bar.new(open, high, low, close)
+squeeze s = b.sqz(len)
+osc     o = b.osc(sig, len)
+osc     v = b.ha(dfh).dfo(dfl)
+bool    p = b.draw(o, trs, dbl)
+u = gauge.new(+75, +70, v.o > 0 and o.o > 0 ? cgp : v.o > 0 or o.o > 0 ? color.new(cgp, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bull')
+d = gauge.new(-75, -70, v.o < 0 and o.o < 0 ? cgn : v.o < 0 or o.o < 0 ? color.new(cgn, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bear')
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+color colsq = s.h ? #023e8a : s.m ? #0096c7 : #48cae4
+color colvf = v.o > 0 ? color.new(GREEN_COLOR, 85) : color.new(RED_COLOR, 85)
+color colof = v.s > 0 ? color.new(GREEN_COLOR, 85) : color.new(RED_COLOR, 85)
+
+l  = plot(dfb ? v.o : na, "Flux", colvf, 1, plot.style_area, display = display.pane)
+z  = plot(dfb ? v.s : na, "OverFlux", colof, 1, plot.style_areabr, display = display.pane)
+q  = plot(1, "Squeeze", color = s.l ? colsq : LIGHT_GRAY_COLOR, linewidth = 1, style = plot.style_columns, trackprice = false, histbase = -1, display=display.pane)
+
+var vaTopLineSt = plot(105, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var vaTopLineNd = plot(100, title = "Top Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var vaBotLineSt = plot(-100, title = "Bottom Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+var veBotLineNd = plot(-105, title = "Bottom Volume Bar", color = TRANSPARENT_COLOR, editable = false, display = display.pane)
+fill(vaTopLineSt, vaTopLineNd, title = "Top Volume Bar Color", color = u.c)
+fill(vaBotLineSt, veBotLineNd, title = "Bottom Volume Bar Color", color = d.c)
+
+//-----------------------------------------------------------------------------
