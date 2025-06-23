@@ -20,7 +20,7 @@ color AQUA_COLOR       = #00b4d8
 color BLUE_COLOR       = #3a86ff
 color PURPLE_COLOR     = #8338ec
 color PINK_COLOR       = #df3bf1
-color LIGHT_GRAY_COLOR = #212d40
+color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR  = #212d40
 color TEXT_COLOR       = #ced4da
 
