@@ -83,8 +83,8 @@ htfKAMA = request.security(syminfo.tickerid, htf, getKAMA(KAMASrc, htfLen, htfFa
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(KAMAShowed ? ctfKAMA : na, title = "CTF KAMA", linewidth = 1, color = BLUE_COLOR, display = display.pane)
-plot(KAMAShowed ? htfKAMA : na, title = "HTF KAMA", linewidth = 1, color = ORANGE_COLOR, display = display.pane)
+plot(KAMAShowed ? ctfKAMA : na, title = "CTF KAMA", linewidth = 1, color = GREEN_COLOR, display = display.pane)
+plot(KAMAShowed ? htfKAMA : na, title = "HTF KAMA", linewidth = 1, color = RED_COLOR, style = plot.style_circles, display = display.pane)
 
 //-----------------------------------------------------------------------------
 
@@ -116,16 +116,16 @@ getBbMa(source, length, _type) =>
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-bbBasis = getBbMa(bbSrc, bbLen, bbMaType)
-bbDev = bbMult * ta.stdev(bbSrc, bbLen)
+bbBasis = request.security(syminfo.tickerid, bbTf, getBbMa(bbSrc, bbLen, bbMaType))
+bbDev = request.security(syminfo.tickerid, bbTf, bbMult * ta.stdev(bbSrc, bbLen))
 bbUpper = bbBasis + bbDev
 bbLower = bbBasis - bbDev
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(bbShowed ? bbBasis : na, "Basis", color = RED_COLOR)
-plot(bbShowed ? bbUpper : na, "Upper", color = GREEN_COLOR)
-plot(bbShowed ? bbLower : na, "Lower", color = GREEN_COLOR)
+plot(bbShowed ? bbBasis : na, "Basis", color = ORANGE_COLOR, style = plot.style_circles, display = display.pane)
+plot(bbShowed ? bbUpper : na, "Upper", color = BLUE_COLOR, style = plot.style_circles, display = display.pane)
+plot(bbShowed ? bbLower : na, "Lower", color = BLUE_COLOR, style = plot.style_circles, display = display.pane)
 
 //-----------------------------------------------------------------------------
