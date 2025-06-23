@@ -47,12 +47,13 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------
 KAMAGrp       = "KAMAs"
-src           = input.source(close, title = "Source", group = KAMAGrp)
+KAMAShowed    = input.bool(true, "Show", group = KAMAGrp)
+KAMASrc       = input.source(close, title = "Source", group = KAMAGrp)
 
 // Current time frame settings
-curLen        = input.int(21, title = "CTF Length", group = KAMAGrp)
-curFastEmaLen = input.int(2, title = "CTF Fast EMA Length", group = KAMAGrp)
-curSlowEmaLen = input.int(30, title = "CTF Slow EMA Length", group = KAMAGrp)
+ctfLen        = input.int(21, title = "CTF Length", group = KAMAGrp)
+ctfFastEmaLen = input.int(2, title = "CTF Fast EMA Length", group = KAMAGrp)
+ctfSlowEmaLen = input.int(30, title = "CTF Slow EMA Length", group = KAMAGrp)
 
 // Higher timeframe settings
 htf           = input.timeframe("W", title = "HTF", group = KAMAGrp)
@@ -76,13 +77,49 @@ getKAMA(src, len, fastEmaLen, slowEmaLen) =>
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-curKAMA = getKAMA(src, curLen, curFastEmaLen, curSlowEmaLen)
-htfKAMA = request.security(syminfo.tickerid, htf, getKAMA(src, htfLen, htfFastEmaLen, htfSlowEmaLen))
+ctfKAMA = getKAMA(KAMASrc, ctfLen, ctfFastEmaLen, ctfSlowEmaLen)
+htfKAMA = request.security(syminfo.tickerid, htf, getKAMA(KAMASrc, htfLen, htfFastEmaLen, htfSlowEmaLen))
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(curKAMA, title = "Current Timeframe KAMA", linewidth = 1, color = BLUE_COLOR)
-plot(htfKAMA, title = "Higher Timeframe KAMA", linewidth = 1, color = ORANGE_COLOR)
+plot(KAMAShowed ? ctfKAMA : na, title = "CTF KAMA", linewidth = 1, color = BLUE_COLOR, display = display.pane)
+plot(KAMAShowed ? htfKAMA : na, title = "HTF KAMA", linewidth = 1, color = ORANGE_COLOR, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Keltner Channels
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+kcGrp    = "Keltner Channels"
+kcShowed = input.bool(true, "Show", group = kcGrp)
+kcTf     = input.timeframe("", title = "Timeframe", group = kcGrp)
+kcLen    = input.int(20, "Length", minval = 1, group = kcGrp)
+kcMult   = input.float(2.0, "Multiplier", group = kcGrp)
+kcSrc    = input.source(close, "Source", group = kcGrp)
+kcAtrLen = input.int(10, "ATR Length", group = kcGrp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+getEma(src, len) => ta.ema(src, len)
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+kcEma = request.security(syminfo.tickerid, kcTf, getEma(kcSrc, kcLen))
+kcRange = request.security(syminfo.tickerid, kcTf, ta.atr(kcAtrLen))
+kcUpper = kcEma + kcRange * kcMult
+kcLower = kcEma - kcRange * kcMult
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(kcShowed ? kcEma : na, color = GREEN_COLOR, title = "Basis", display = display.pane)
+plot(kcShowed ? kcUpper : na, color = GREEN_COLOR, title = "Upper", display = display.pane)
+plot(kcShowed ? kcLower : na, color = GREEN_COLOR, title = "Lower", display = display.pane)
 
 //-----------------------------------------------------------------------------
