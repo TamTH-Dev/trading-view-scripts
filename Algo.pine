@@ -94,20 +94,21 @@ plot(KAMAShowed ? htfKAMA : na, title = "HTF KAMA", linewidth = 1, color = PURPL
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-icGrp = "Ichimoku Cloud"
-icShowed = input.bool(true, "Show", group = icGrp)
-tenkanSenPrd = input.int(9, minval = 1, title = "Tenkan Sen Length", inline = "Tenkan")
-tenkanSenShowed = input.bool(false, "", inline = "Tenkan")
-kijunSenPrd = input.int(26, minval = 1, title = "Kijun Sen Length", inline = "Kijun")
-kijunSenShowed = input.bool(false, "", inline = "Kijun")
+icGrp            = "Ichimoku Cloud"
+icShowed         = input.bool(true, "Show", group = icGrp)
+icTf             = input.timeframe("", "Timeframe", group = icGrp)
+tenkanSenPrd     = input.int(9, minval = 1, title = "Tenkan Sen Length", inline = "Tenkan")
+tenkanSenShowed  = input.bool(false, "", inline = "Tenkan")
+kijunSenPrd      = input.int(26, minval = 1, title = "Kijun Sen Length", inline = "Kijun")
+kijunSenShowed   = input.bool(false, "", inline = "Kijun")
 chikouSpanOffset = input.int(26, minval = 1, title = "Chikou Span Offset", inline = "Chikou")
 chikouSpanShowed = input.bool(false, "", inline = "Chikou")
-senkouSpanBPrd = input.int(52, minval = 1, title = "Senkou Span B Length")
+senkouSpanBPrd   = input.int(52, minval = 1, title = "Senkou Span B Length")
 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-calcDonchian(len) => math.avg(ta.lowest(len), ta.highest(len))
+calcDonchian(len) => request.security(syminfo.tickerid, icTf, math.avg(ta.lowest(len), ta.highest(len)), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
 
 //-----------------------------------------------------------------------------
 // Calculate
