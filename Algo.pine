@@ -46,20 +46,24 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-kamaGrp       = "Kaufman Adaptive Moving Average"
-kamaShowed    = input.bool(true, "Show", group = kamaGrp)
-kamaHtf       = input.timeframe("", title = "Higher Timeframe Line", group = kamaGrp, tooltip = "Use the default setting if this value is empty; otherwise, use this setting")
-kamaSrc       = input.source(close, title = "Source", group = kamaGrp)
+kamaCommonGrp   = "kamaCommonGrp"
+kamaGrp         = "Kaufman Adaptive Moving Average"
+kamaSrc         = input.source(close, title = "Source", group = kamaGrp, inline = kamaCommonGrp)
+kamaShowed      = input.bool(true, "", group = kamaGrp, inline = kamaCommonGrp)
 
-// Current timeframe settings
-ctfLen        = input.int(21, title = "CTF Length", group = kamaGrp)
-ctfFastEmaLen = input.int(2, title = "CTF Fast EMA Length", group = kamaGrp)
-ctfSlowEmaLen = input.int(30, title = "CTF Slow EMA Length", group = kamaGrp)
+kama1Grp        = "KAMA 1"
+kama1Tf         = input.timeframe("", title = "K1", group = kamaGrp, inline = kama1Grp)
+kama1Len        = input.int(21, title = "", group = kamaGrp, inline = kama1Grp)
+kama1FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama1Grp)
+kama1SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama1Grp)
+kama1Showed     = input.bool(true, title = "", group = kamaGrp, inline = kama1Grp)
 
-// Higher timeframe settings
-htfLen        = input.int(21, title = "HTF Length", group = kamaGrp)
-htfFastEmaLen = input.int(2, title = "HTF Fast EMA Length", group = kamaGrp)
-htfSlowEmaLen = input.int(30, title = "HTF Slow EMA Length", group = kamaGrp)
+kama2Grp        = "KAMA 2"
+kama2Tf         = input.timeframe("", title = "K2", group = kamaGrp, inline = kama2Grp)
+kama2Len        = input.int(21, title = "", group = kamaGrp, inline = kama2Grp)
+kama2FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama2Grp)
+kama2SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama2Grp)
+kama2Showed     = input.bool(true, title = "", group = kamaGrp, inline = kama2Grp)
 
 //-----------------------------------------------------------------------------
 // Methods
@@ -76,8 +80,10 @@ getKama(src, len, fastEmaLen, slowEmaLen) =>
 
 getDefHtf() =>
     switch timeframe.period
+        "3"   => "30"
 		"5"   => "60"
 		"15"  => "240"
+        "30"  => "480"
 		"60"  => "D"
 		"240" => "W"
         "1D"  => "M"
@@ -86,13 +92,13 @@ getDefHtf() =>
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-ctfKama = getKama(kamaSrc, ctfLen, ctfFastEmaLen, ctfSlowEmaLen)
-htfKama = request.security(syminfo.tickerid, kamaHtf != "" ? kamaHtf : getDefHtf(), getKama(kamaSrc, htfLen, htfFastEmaLen, htfSlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+kama1 = request.security(syminfo.tickerid, kama1Tf, getKama(kamaSrc, kama1Len, kama1FastEmaLen, kama1SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+kama2 = request.security(syminfo.tickerid, kama2Tf != "" ? kama2Tf : getDefHtf(), getKama(kamaSrc, kama2Len, kama2FastEmaLen, kama2SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(kamaShowed ? ctfKama : na, title = "CTF KAMA", linewidth = 1, color = AQUA_COLOR, display = display.pane)
-plot(kamaShowed ? htfKama : na, title = "HTF KAMA", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
+plot(kamaShowed and kama1Showed ? kama1 : na, title = "KAMA 1", linewidth = 1, color = AQUA_COLOR, display = display.pane)
+plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
 
 //-----------------------------------------------------------------------------
