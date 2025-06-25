@@ -12,14 +12,14 @@ indicator("Algo", overlay=true, precision=2, max_labels_count=500, max_lines_cou
 color TRANSPARENT_COLOR = color.new(#000000, 100)
 color WHITE_COLOR      = #ffffff
 color BLACK_COLOR      = #000000
-color RED_COLOR        = #ff006e
+color RED_COLOR        = #F72585
 color ORANGE_COLOR     = #fb5607
 color YELLOW_COLOR     = #ffbe0b
 color GREEN_COLOR      = #2a9d8f
-color AQUA_COLOR       = #00b4d8
-color BLUE_COLOR       = #3a86ff
-color PURPLE_COLOR     = #8338ec
-color PINK_COLOR       = #df3bf1
+color AQUA_COLOR       = #4CC9F0
+color BLUE_COLOR       = #4895EF
+color PURPLE_COLOR     = #3F37C9
+color PINK_COLOR       = #B5179E
 color LIGHT_GRAY_COLOR = #364156
 color DARK_GRAY_COLOR  = #212d40
 color TEXT_COLOR       = #ced4da
@@ -46,25 +46,25 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-KAMAGrp       = "KAMAs"
-KAMAShowed    = input.bool(true, "Show", group = KAMAGrp)
-KAMASrc       = input.source(close, title = "Source", group = KAMAGrp)
+kamaGrp       = "Kaufman Adaptive Moving Average"
+kamaShowed    = input.bool(true, "Show", group = kamaGrp)
+kamaHtf       = input.timeframe("", title = "Higher Timeframe Line", group = kamaGrp, tooltip = "Use the default setting if this value is empty; otherwise, use this setting")
+kamaSrc       = input.source(close, title = "Source", group = kamaGrp)
 
-// Current time frame settings
-ctfLen        = input.int(21, title = "CTF Length", group = KAMAGrp)
-ctfFastEmaLen = input.int(2, title = "CTF Fast EMA Length", group = KAMAGrp)
-ctfSlowEmaLen = input.int(30, title = "CTF Slow EMA Length", group = KAMAGrp)
+// Current timeframe settings
+ctfLen        = input.int(21, title = "CTF Length", group = kamaGrp)
+ctfFastEmaLen = input.int(2, title = "CTF Fast EMA Length", group = kamaGrp)
+ctfSlowEmaLen = input.int(30, title = "CTF Slow EMA Length", group = kamaGrp)
 
 // Higher timeframe settings
-htf           = input.timeframe("W", title = "HTF", group = KAMAGrp)
-htfLen        = input.int(21, title = "HTF Length", group = KAMAGrp)
-htfFastEmaLen = input.int(2, title = "HTF Fast EMA Length", group = KAMAGrp)
-htfSlowEmaLen = input.int(30, title = "HTF Slow EMA Length", group = KAMAGrp)
+htfLen        = input.int(21, title = "HTF Length", group = kamaGrp)
+htfFastEmaLen = input.int(2, title = "HTF Fast EMA Length", group = kamaGrp)
+htfSlowEmaLen = input.int(30, title = "HTF Slow EMA Length", group = kamaGrp)
 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-getKAMA(src, len, fastEmaLen, slowEmaLen) =>
+getKama(src, len, fastEmaLen, slowEmaLen) =>
     mom = math.abs(ta.change(src, len))
     volatility = math.sum(math.abs(ta.change(src)), len)
     efficiencyRatio = volatility != 0 ? mom / volatility : 0
@@ -74,60 +74,25 @@ getKAMA(src, len, fastEmaLen, slowEmaLen) =>
     kama = 0.0
     kama := alpha * src + (1 - alpha) * nz(kama[1], src)
 
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-ctfKAMA = getKAMA(KAMASrc, ctfLen, ctfFastEmaLen, ctfSlowEmaLen)
-htfKAMA = request.security(syminfo.tickerid, htf, getKAMA(KAMASrc, htfLen, htfFastEmaLen, htfSlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-plot(KAMAShowed ? ctfKAMA : na, title = "CTF KAMA", linewidth = 1, color = AQUA_COLOR, display = display.pane)
-plot(KAMAShowed ? htfKAMA : na, title = "HTF KAMA", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
-
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Ichimoku Cloud
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-icGrp            = "Ichimoku Cloud"
-icShowed         = input.bool(true, "Show", group = icGrp)
-icTf             = input.timeframe("", "Timeframe", group = icGrp)
-tenkanSenPrd     = input.int(9, minval = 1, title = "Tenkan Sen Length", inline = "Tenkan")
-tenkanSenShowed  = input.bool(false, "", inline = "Tenkan")
-kijunSenPrd      = input.int(26, minval = 1, title = "Kijun Sen Length", inline = "Kijun")
-kijunSenShowed   = input.bool(false, "", inline = "Kijun")
-chikouSpanOffset = input.int(26, minval = 1, title = "Chikou Span Offset", inline = "Chikou")
-chikouSpanShowed = input.bool(false, "", inline = "Chikou")
-senkouSpanBPrd   = input.int(52, minval = 1, title = "Senkou Span B Length")
-
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-calcDonchian(len) => request.security(syminfo.tickerid, icTf, math.avg(ta.lowest(len), ta.highest(len)), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+getDefHtf() =>
+    switch timeframe.period
+		"5"   => "60"
+		"15"  => "240"
+		"60"  => "D"
+		"240" => "W"
+        "1D"  => "M"
+        "1M"  => "12M"
 
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-tenkanSen = calcDonchian(tenkanSenPrd)
-kijunSen = calcDonchian(kijunSenPrd)
-senkouSpanA = math.avg(tenkanSen, kijunSen)
-senkouSpanB = calcDonchian(senkouSpanBPrd)
+ctfKama = getKama(kamaSrc, ctfLen, ctfFastEmaLen, ctfSlowEmaLen)
+htfKama = request.security(syminfo.tickerid, kamaHtf != "" ? kamaHtf : getDefHtf(), getKama(kamaSrc, htfLen, htfFastEmaLen, htfSlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(icShowed and tenkanSenShowed ? tenkanSen : na, color = BLUE_COLOR, title = "Tenkan Sen")
-plot(icShowed and kijunSenShowed ? kijunSen : na, color = ORANGE_COLOR, title = "Kijun Sen")
-plot(icShowed and chikouSpanShowed ? close : na, offset = -chikouSpanOffset + 1, color = LIGHT_GRAY_COLOR, title = "Chikou Span")
-p1 = plot(icShowed ? senkouSpanA : na, offset = chikouSpanOffset - 1, color = color.new(GREEN_COLOR, 75), title = "Senkou Span A")
-p2 = plot(icShowed ? senkouSpanB : na, offset = chikouSpanOffset - 1, color = color.new(RED_COLOR, 75), title = "Senkou Span B")
-plot(icShowed ? (senkouSpanA > senkouSpanB ? senkouSpanA : senkouSpanB) : na, offset = chikouSpanOffset - 1, title = "Upper Kumo Cloud", display = display.none) 
-plot(icShowed ? (senkouSpanA < senkouSpanB ? senkouSpanA : senkouSpanB) : na, offset = chikouSpanOffset - 1, title = "Lower Kumo Cloud", display = display.none) 
-fill(p1, p2, color = senkouSpanA > senkouSpanB ? color.new(GREEN_COLOR, 95) : color.new(RED_COLOR, 95))
+plot(kamaShowed ? ctfKama : na, title = "CTF KAMA", linewidth = 1, color = AQUA_COLOR, display = display.pane)
+plot(kamaShowed ? htfKama : na, title = "HTF KAMA", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
 
 //-----------------------------------------------------------------------------
