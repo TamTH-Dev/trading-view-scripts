@@ -105,6 +105,107 @@ plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, c
 
 
 //-----------------------------------------------------------------------------
+// Delta Volume Profile
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+dvpGrp = "Delta Volume Profile"
+dvpShowed = input.bool(true, "Show", group=dvpGrp)
+dvpLookback = input.int(300, group=dvpGrp)
+dvpPlusColor = input.color(PINK_COLOR, "Volume +", group=dvpGrp)
+dvpMinusColor = input.color(PURPLE_COLOR, "Volume -", group=dvpGrp)
+
+//-----------------------------------------------------------------------------
+// Calculate & Render
+//-----------------------------------------------------------------------------
+dvpMaxMin = array.new<float>()
+dvpStep = 0.
+dvpBins = 0
+
+dvpAtr = ta.atr(200)
+
+if barstate.islast
+    for i = 0 to dvpLookback-1
+
+        h = high[i]
+        l = low[i]
+
+        dvpMaxMin.push(h)
+        dvpMaxMin.push(l)
+
+    dvpBins := int((dvpMaxMin.max() - dvpMaxMin.min()) / dvpAtr)
+    dvpStep := (dvpMaxMin.max() - dvpMaxMin.min()) / dvpBins
+
+dvpVolPlus = array.new<float>(dvpBins, 0)
+dvpVolMinus = array.new<float>(dvpBins, 0)
+
+if barstate.islast
+    for i = 0 to dvpLookback-1
+        h = high[i]
+        l = low[i]
+        c = close[i]
+        o = open[i]
+        v = volume[i]
+
+        for k = 0 to dvpBins - 1
+
+            loww = dvpMaxMin.min() + dvpStep * k
+            mid = loww + dvpStep/2
+
+            if h > mid and l < mid 
+                if c > o
+                    dvpVolPlus.set(k, dvpVolPlus.get(k) + v)
+                else
+                    dvpVolMinus.set(k, dvpVolMinus.get(k) + v)
+
+var dvpBoxes = array.new<box>()
+var dvpLabels = array.new<label>()
+
+if barstate.islast
+    if dvpBoxes.size() >= 0
+        for b in dvpBoxes
+            box.delete(b)
+        dvpBoxes.clear()
+
+    if dvpLabels.size() >= 0
+        for l in dvpLabels
+            label.delete(l)
+        dvpLabels.clear()
+
+    for i = 0 to dvpBins - 1
+        loww = dvpMaxMin.min() + dvpStep * i
+        highh = loww + dvpStep
+
+        value_plus = int(dvpVolPlus.get(i) / dvpVolPlus.sum()*200)
+        value_minus = int(dvpVolMinus.get(i) / dvpVolMinus.sum()*200)
+
+        max_plus = dvpVolPlus.get(i) == dvpVolPlus.max()
+        dvpMaxMinus = dvpVolMinus.get(i) == dvpVolMinus.max()
+
+        col_plus = color.from_gradient(dvpVolPlus.get(i), dvpVolPlus.min(), dvpVolPlus.max(), color.new(dvpPlusColor, 90), color.new(dvpPlusColor, 30))
+        col_minus = color.from_gradient(dvpVolMinus.get(i), dvpVolMinus.min(), dvpVolMinus.max(), color.new(dvpMinusColor, 90), color.new(dvpMinusColor, 30))
+
+        sum = value_plus + value_minus
+        tot = dvpVolPlus.sum() + dvpVolMinus.sum()
+
+        delta = ((dvpVolPlus.sum() - dvpVolMinus.sum()) / dvpVolMinus.sum()) * 100
+
+        b1=box.new(bar_index+50, highh, bar_index+50-value_plus, loww, chart.bg_color, bgcolor = max_plus ? dvpPlusColor : col_plus, text =  dvpVolPlus.get(i) != 0 ? "+"+str.tostring(dvpVolPlus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_right)
+        b2=box.new(bar_index+50, highh, bar_index+50+value_minus, loww, chart.bg_color, bgcolor = dvpMaxMinus ? dvpMinusColor : col_minus, text = dvpVolMinus.get(i) != 0 ? "-"+str.tostring(dvpVolMinus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_left)
+
+        dvpBoxes.push(b1)
+        dvpBoxes.push(b2)
+
+        l1=label.new(bar_index+50, dvpMaxMin.max(), "Delta: "+ str.tostring(delta, format.percent), color = delta > 0 ? dvpPlusColor : dvpMinusColor, textcolor = TEXT_COLOR, style = label.style_label_down, size = size.small)
+        // l2=label.new(bar_index+50, dvpMaxMin.min(), "Total: "+ str.tostring(tot, format.volume), color = LIGHT_GRAY_COLOR, textcolor = TEXT_COLOR, style = label.style_label_up)
+
+        dvpLabels.push(l1)
+        // dvpLabels.push(l2)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // Session Volume Profile
 //-----------------------------------------------------------------------------
 // Settings
@@ -113,11 +214,10 @@ svpGrp = "Session Volume Profile"
 sessionType = input.string('Daily', 'Session Type', options=['Daily','Weekly', 'Monthly', 'Quarterly', 'Yearly'], group=svpGrp)
 svpShowed = input.bool(true, 'Show', group=svpGrp)
 svpPocShowed = input.bool(false, 'Show POC', group=svpGrp)
-svpRes = input.int(50, 'Resolution', minval=5, tooltip='The higher the value, the more refined of a profile, but less profiles shown on chart', group=svpGrp)
+svpRes = input.int(70, 'Resolution', minval=5, tooltip='The higher the value, the more refined of a profile, but less profiles shown on chart', group=svpGrp)
 svpVavWid = input.int(100, 'Value Area Volume %', minval=1, maxval=100, group=svpGrp)
 svpTf = input.timeframe('', 'Timeframe', group=svpGrp)
-svpBullColor = input.color(LIGHT_GRAY_COLOR, 'Up Volume', group=svpGrp)
-svpBearColor = input.color(LIGHT_GRAY_COLOR, 'svpDOwn Volume', group=svpGrp)
+svpColor = input.color(LIGHT_GRAY_COLOR, 'Color', group=svpGrp)
 svpPocColor = input.color(ORANGE_COLOR, 'POC', inline='p', group=svpGrp)
 svpVahColor = input.color(DARK_GRAY_COLOR, 'VAH', inline='h', group=svpGrp)
 svpValColor = input.color(DARK_GRAY_COLOR, 'VAL', inline='l', group=svpGrp)
@@ -259,8 +359,7 @@ svpDrawNewZone(update) =>
             for i = 0 to array.size(svpVpRed) - 1
                 greenEnd = int(leftMax + (rightMax - leftMax) * (array.get(svpVpGreen, i) / rightMaxVol))
                 redEnd = int(greenEnd + (rightMax - leftMax) * (array.get(svpVpRed, i) / rightMaxVol))
-                box.new(int(leftMax), array.get(svpZoneBounds, i) - buffer, greenEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpBullColor, border_width=0)
-                box.new(greenEnd, array.get(svpZoneBounds, i) - buffer, redEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpBearColor, border_width=0)
+                box.new(int(leftMax), array.get(svpZoneBounds, i) - buffer, redEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpColor, border_width=0)
 
         poc = svpGetPocLevel()
         [val, vah] = svpGetValLevels(poc)
@@ -304,8 +403,7 @@ svpDrawCurZone(update, delete) =>
             for i = 0 to array.size(svpVpRed) - 1
                 greenEnd = int(leftMax + (rightMax - leftMax) * (array.get(svpVpGreen, i) / rightMaxVol))
                 redEnd = int(greenEnd + (rightMax - leftMax) * (array.get(svpVpRed, i) / rightMaxVol))
-                array.set(greenBoxes, i, box.new(int(leftMax), array.get(svpZoneBounds, i) - buffer, greenEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpBullColor, border_width=0))
-                array.set(redBoxes, i, box.new(greenEnd, array.get(svpZoneBounds, i) - buffer, redEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpBearColor, border_width=0))
+                array.set(greenBoxes, i, box.new(int(leftMax), array.get(svpZoneBounds, i) - buffer, redEnd, array.get(svpZoneBounds, i) - gap + buffer, bgcolor=svpColor, border_width=0))
         
         poc = svpGetPocLevel()
         [val, vah] = svpGetValLevels(poc)
