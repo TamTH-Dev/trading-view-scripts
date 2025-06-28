@@ -217,7 +217,7 @@ svpPocShowed = input.bool(false, 'Show POC', group=svpGrp)
 svpRes = input.int(70, 'Resolution', minval=5, tooltip='The higher the value, the more refined of a profile, but less profiles shown on chart', group=svpGrp)
 svpVavWid = input.int(100, 'Value Area Volume %', minval=1, maxval=100, group=svpGrp)
 svpTf = input.timeframe('', 'Timeframe', group=svpGrp)
-svpColor = input.color(LIGHT_GRAY_COLOR, 'Profile Color', group=svpGrp)
+svpColor = input.color(DARK_GRAY_COLOR, 'Profile Color', group=svpGrp)
 svpPocColor = input.color(ORANGE_COLOR, 'POC Color', inline='p', group=svpGrp)
 
 //-----------------------------------------------------------------------------
