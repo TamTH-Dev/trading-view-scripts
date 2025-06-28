@@ -52,18 +52,18 @@ kamaSrc         = input.source(close, title = "Source", group = kamaGrp, inline 
 kamaShowed      = input.bool(true, "", group = kamaGrp, inline = kamaCommonGrp)
 
 kama1Grp        = "KAMA 1"
-kama1Tf         = input.timeframe("", title = "K1", group = kamaGrp, inline = kama1Grp)
+kama1Showed     = input.bool(true, title = "Show KAMA 1", group = kamaGrp)
+kama1Tf         = input.timeframe("", title = "Values", group = kamaGrp, inline = kama1Grp)
 kama1Len        = input.int(21, title = "", group = kamaGrp, inline = kama1Grp)
 kama1FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama1Grp)
 kama1SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama1Grp)
-kama1Showed     = input.bool(true, title = "", group = kamaGrp, inline = kama1Grp)
 
 kama2Grp        = "KAMA 2"
-kama2Tf         = input.timeframe("", title = "K2", group = kamaGrp, inline = kama2Grp)
+kama2Showed     = input.bool(true, title = "Show KAMA 2", group = kamaGrp)
+kama2Tf         = input.timeframe("", title = "Values", group = kamaGrp, inline = kama2Grp)
 kama2Len        = input.int(21, title = "", group = kamaGrp, inline = kama2Grp)
 kama2FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama2Grp)
 kama2SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama2Grp)
-kama2Showed     = input.bool(true, title = "", group = kamaGrp, inline = kama2Grp)
 
 //-----------------------------------------------------------------------------
 // Methods
@@ -111,7 +111,7 @@ plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, c
 //-----------------------------------------------------------------------------
 dvpGrp = "Delta Volume Profile"
 dvpShowed = input.bool(true, "Show", group=dvpGrp)
-dvpLookback = input.int(300, group=dvpGrp)
+dvpLookback = input.int(300, "Lookback Length", group=dvpGrp)
 dvpPlusColor = input.color(PINK_COLOR, "Volume +", group=dvpGrp)
 dvpMinusColor = input.color(PURPLE_COLOR, "Volume -", group=dvpGrp)
 
@@ -217,10 +217,8 @@ svpPocShowed = input.bool(false, 'Show POC', group=svpGrp)
 svpRes = input.int(70, 'Resolution', minval=5, tooltip='The higher the value, the more refined of a profile, but less profiles shown on chart', group=svpGrp)
 svpVavWid = input.int(100, 'Value Area Volume %', minval=1, maxval=100, group=svpGrp)
 svpTf = input.timeframe('', 'Timeframe', group=svpGrp)
-svpColor = input.color(LIGHT_GRAY_COLOR, 'Color', group=svpGrp)
-svpPocColor = input.color(ORANGE_COLOR, 'POC', inline='p', group=svpGrp)
-svpVahColor = input.color(DARK_GRAY_COLOR, 'VAH', inline='h', group=svpGrp)
-svpValColor = input.color(DARK_GRAY_COLOR, 'VAL', inline='l', group=svpGrp)
+svpColor = input.color(LIGHT_GRAY_COLOR, 'Profile Color', group=svpGrp)
+svpPocColor = input.color(ORANGE_COLOR, 'POC Color', inline='p', group=svpGrp)
 
 //-----------------------------------------------------------------------------
 // Values
