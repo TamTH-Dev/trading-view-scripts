@@ -45,54 +45,55 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-showema1 = input.bool(defval = true, title = "EMA 1", inline = "ema1")
-ema1len = input.int(defval = 50, title = "", minval = 1, inline = "ema1")
-ema1col = input.color(defval = AQUA_COLOR, title = "", inline = "ema1")
-showema2 = input.bool(defval = true, title = "EMA 2", inline = "ema2")
-ema2len = input.int(defval = 200, title = "", minval = 1, inline = "ema2")
-ema2col = input.color(defval = PURPLE_COLOR, title = "", inline = "ema2")
-colorup = input.color(defval = TRANSPARENT_COLOR, title = "Body", inline = "bcol")
-colordown = input.color(defval = TRANSPARENT_COLOR, title = "", inline = "bcol")
-bcolup = input.color(defval = WHITE_COLOR, title = "Border", inline = "bocol")
-bcoldown = input.color(defval = BLUE_COLOR, title = "", inline = "bocol")
+obvGrp = "On Balance Volume"
+obvEma1Showed = input.bool(defval = true, title = "EMA 1", inline = "ema1", group = obvGrp)
+obvEma1Len = input.int(defval = 50, title = "", minval = 1, inline = "ema1", group = obvGrp)
+obvEma1Color = input.color(defval = AQUA_COLOR, title = "", inline = "ema1", group = obvGrp)
+obvEma2Showed = input.bool(defval = true, title = "EMA 2", inline = "ema2", group = obvGrp)
+obvEma2Len = input.int(defval = 200, title = "", minval = 1, inline = "ema2", group = obvGrp)
+obvEma2Color = input.color(defval = PURPLE_COLOR, title = "", inline = "ema2", group = obvGrp)
+obvBodyUpColor = input.color(defval = TRANSPARENT_COLOR, title = "Body", inline = "bcol", group = obvGrp)
+obvBodyDnColor = input.color(defval = TRANSPARENT_COLOR, title = "", inline = "bcol", group = obvGrp)
+obvBorderUpColor = input.color(defval = WHITE_COLOR, title = "Border", inline = "bocol", group = obvGrp)
+obvBorderDnColor = input.color(defval = BLUE_COLOR, title = "", inline = "bocol", group = obvGrp)
 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-tw = high - math.max(open, close) 
-bw = math.min(open, close) - low 
-body = math.abs(close - open) 
+obvTw = high - math.max(open, close) 
+obvBw = math.min(open, close) - low 
+obvBody = math.abs(close - open) 
 
-getRate(cond) =>
-    ret = 0.5 * (tw + bw + (cond ? 2 * body : 0)) / (tw + bw + body) 
+obvGetRate(cond) =>
+    ret = 0.5 * (obvTw + obvBw + (cond ? 2 * obvBody : 0)) / (obvTw + obvBw + obvBody) 
     ret := nz(ret) == 0 ? 0.5 : ret
     ret
     
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-deltaup =  volume * getRate(open <= close) 
-deltadown = volume * getRate(open > close)
-delta = close >= open ? deltaup : -deltadown
-cumdelta = ta.cum(delta)
-float o = cumdelta[1]
-float h = math.max(cumdelta, cumdelta[1])
-float l = math.min(cumdelta, cumdelta[1])
-float c = cumdelta
-float haclose = na
-float haopen = na
-float hahigh = na
-float halow = na
-haclose := (o + h + l + c) / 4
-haopen  := na(haopen[1]) ? (o + c) / 2 : (haopen[1] + haclose[1]) / 2
-hahigh  := math.max(h, math.max(haopen, haclose))
-halow   := math.min(l, math.min(haopen, haclose))
+obvDeltaUp =  volume * obvGetRate(open <= close) 
+obvDeltaDn = volume * obvGetRate(open > close)
+obvDelta = close >= open ? obvDeltaUp : -obvDeltaDn
+obvCumDelta = ta.cum(obvDelta)
+float obvOpen = obvCumDelta[1]
+float obvHigh = math.max(obvCumDelta, obvCumDelta[1])
+float obvLow = math.min(obvCumDelta, obvCumDelta[1])
+float obvClose = obvCumDelta
+float obvHaClose = na
+float obvHaOpen = na
+float obvHaHigh = na
+float obvHaLow = na
+obvHaClose := (obvOpen + obvHigh + obvLow + obvClose) / 4
+obvHaOpen  := na(obvHaOpen[1]) ? (obvOpen + obvClose) / 2 : (obvHaOpen[1] + obvHaClose[1]) / 2
+obvHaHigh  := math.max(obvHigh, math.max(obvHaOpen, obvHaClose))
+obvHaLow   := math.min(obvLow, math.min(obvHaOpen, obvHaClose))
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plotcandle(haopen, hahigh, halow, haclose, title='CDV Candles', color = haopen <= haclose ? colorup : colordown, bordercolor = haopen <= haclose ? bcolup : bcoldown, wickcolor = haopen <= haclose ? bcolup : bcoldown)
-plot(showema1 ? ta.ema(haclose, ema1len) : na, title = "EMA 1", color = ema1col)
-plot(showema2 ? ta.ema(haclose, ema2len) : na, title = "EMA 2", color = ema2col)
+plotcandle(obvHaOpen, obvHaHigh, obvHaLow, obvHaClose, title = 'OBV Candles', color = obvHaOpen <= obvHaClose ? obvBodyUpColor : obvBodyDnColor, bordercolor = obvHaOpen <= obvHaClose ? obvBorderUpColor : obvBorderDnColor, wickcolor = obvHaOpen <= obvHaClose ? obvBorderUpColor : obvBorderDnColor, display = display.pane)
+plot(obvEma1Showed ? ta.ema(obvHaClose, obvEma1Len) : na, title = "EMA 1", color = obvEma1Color, display = display.pane)
+plot(obvEma2Showed ? ta.ema(obvHaClose, obvEma2Len) : na, title = "EMA 2", color = obvEma2Color, display = display.pane)
 
 //-----------------------------------------------------------------------------
