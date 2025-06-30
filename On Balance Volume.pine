@@ -45,15 +45,14 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-hacandle = input.bool(true, title = "Heikin Ashi Candles?")
 showema1 = input.bool(defval = true, title = "EMA 1", inline = "ema1")
 ema1len = input.int(defval = 50, title = "", minval = 1, inline = "ema1")
 ema1col = input.color(defval = AQUA_COLOR, title = "", inline = "ema1")
 showema2 = input.bool(defval = true, title = "EMA 2", inline = "ema2")
 ema2len = input.int(defval = 200, title = "", minval = 1, inline = "ema2")
 ema2col = input.color(defval = PURPLE_COLOR, title = "", inline = "ema2")
-colorup = input.color(defval = WHITE_COLOR, title = "Body", inline = "bcol")
-colordown = input.color(defval = BLUE_COLOR, title = "", inline = "bcol")
+colorup = input.color(defval = TRANSPARENT_COLOR, title = "Body", inline = "bcol")
+colordown = input.color(defval = TRANSPARENT_COLOR, title = "", inline = "bcol")
 bcolup = input.color(defval = WHITE_COLOR, title = "Border", inline = "bocol")
 bcoldown = input.color(defval = BLUE_COLOR, title = "", inline = "bocol")
 
@@ -76,15 +75,10 @@ deltaup =  volume * getRate(open <= close)
 deltadown = volume * getRate(open > close)
 delta = close >= open ? deltaup : -deltadown
 cumdelta = ta.cum(delta)
-float o = na
-float h = na
-float l = na
-float c = na
-o := cumdelta[1]
-h := math.max(cumdelta, cumdelta[1])
-l := math.min(cumdelta, cumdelta[1])
-c := cumdelta
-
+float o = cumdelta[1]
+float h = math.max(cumdelta, cumdelta[1])
+float l = math.min(cumdelta, cumdelta[1])
+float c = cumdelta
 float haclose = na
 float haopen = na
 float hahigh = na
@@ -93,17 +87,12 @@ haclose := (o + h + l + c) / 4
 haopen  := na(haopen[1]) ? (o + c) / 2 : (haopen[1] + haclose[1]) / 2
 hahigh  := math.max(h, math.max(haopen, haclose))
 halow   := math.min(l, math.min(haopen, haclose))
- 
-c_ = hacandle ? haclose : c
-o_ = hacandle ? haopen : o
-h_ = hacandle ? hahigh : h
-l_ = hacandle ? halow : l
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plotcandle(o_, h_, l_, c_, title='CDV Candles', color = o_ <= c_ ? colorup : colordown, bordercolor = o_ <= c_ ? bcolup : bcoldown, wickcolor = o_ <= c_ ? bcolup : bcoldown)
-plot(showema1 ? ta.ema(c_, ema1len) : na, title = "EMA 1", color = ema1col)
-plot(showema2 ? ta.ema(c_, ema2len) : na, title = "EMA 2", color = ema2col)
+plotcandle(haopen, hahigh, halow, haclose, title='CDV Candles', color = haopen <= haclose ? colorup : colordown, bordercolor = haopen <= haclose ? bcolup : bcoldown, wickcolor = haopen <= haclose ? bcolup : bcoldown)
+plot(showema1 ? ta.ema(haclose, ema1len) : na, title = "EMA 1", color = ema1col)
+plot(showema2 ? ta.ema(haclose, ema2len) : na, title = "EMA 2", color = ema2col)
 
 //-----------------------------------------------------------------------------
