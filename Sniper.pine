@@ -1,0 +1,143 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+ 
+//@version=6
+indicator("Sniper", "Sniper", overlay = false, precision = 2, max_labels_count = 500, max_lines_count = 500, max_boxes_count = 1000, max_bars_back = 1000)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR      = #dee2e6
+color BLACK_COLOR      = #000000
+color RED_COLOR        = #F72585
+color ORANGE_COLOR     = #fb5607
+color YELLOW_COLOR     = #ffbe0b
+color GREEN_COLOR      = #2a9d8f
+color AQUA_COLOR       = #4CC9F0
+color BLUE_COLOR       = #4361ee
+color PURPLE_COLOR     = #3F37C9
+color PINK_COLOR       = #B5179E
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR  = #212d40
+color TEXT_COLOR       = #ced4da
+
+//-----------------------------------------------------------------------------
+// Common Variables
+//-----------------------------------------------------------------------------
+// Bar index and input
+series int barIdx = bar_index
+
+//-----------------------------------------------------------------------------
+// Common Methods
+//-----------------------------------------------------------------------------
+// Debug label function
+debug(simple string txt) =>
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Oscillator
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+oscGrp      = "Oscillator"
+oscTrendLen = input.int(50, "Trend Length", group = oscGrp)
+oscSigLen   = input(9, "Signal Length", group = oscGrp)
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+var oscAlpha = 2 / (oscTrendLen + 1)
+var oscUp1 = 0., var oscUp2 = 0.
+var oscDn1 = 0., var oscDn2 = 0.
+
+oscClose = close
+oscOpen = open
+
+oscUp1 := nz(math.max(oscClose, oscOpen, oscUp1[1] - (oscUp1[1] - oscClose) * oscAlpha), oscClose)
+oscUp2 := nz(math.max(oscClose * oscClose, oscOpen * oscOpen, oscUp2[1] - (oscUp2[1] - oscClose * oscClose) * oscAlpha), oscClose * oscClose)
+
+oscDn1 := nz(math.min(oscClose, oscOpen, oscDn1[1] + (oscClose - oscDn1[1]) * oscAlpha), oscClose)
+oscDn2 := nz(math.min(oscClose * oscClose, oscOpen * oscOpen, oscDn2[1] + (oscClose * oscClose - oscDn2[1]) * oscAlpha), oscClose * oscClose)
+
+oscBull = math.sqrt(oscDn2 - oscDn1 * oscDn1)
+oscBear = math.sqrt(oscUp2 - oscUp1 * oscUp1)
+oscSig = ta.ema(math.max(oscBull, oscBear), oscSigLen)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(oscBull, 'Bullish Line', AQUA_COLOR, display = display.pane)
+plot(oscBear, 'Bearish Line', PURPLE_COLOR, display = display.pane)
+plot(oscSig, 'Signal Line', ORANGE_COLOR, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// KAMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+kamaGrp         = "Kaufman Adaptive Moving Average"
+kamaShowed      = input.bool(true, "Show", group = kamaGrp)
+kamaSrc         = input.source(close, title = "Source", group = kamaGrp)
+
+kama1Grp        = "K1"
+kama1Showed     = input.bool(true, title = "K1", group = kamaGrp, inline = kama1Grp)
+kama1Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama1Grp)
+kama1Len        = input.int(21, title = "", group = kamaGrp, inline = kama1Grp)
+kama1FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama1Grp)
+kama1SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama1Grp)
+
+kama2Grp        = "K2"
+kama2Showed     = input.bool(true, title = "K2", group = kamaGrp, inline = kama2Grp)
+kama2Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama2Grp)
+kama2Len        = input.int(21, title = "", group = kamaGrp, inline = kama2Grp)
+kama2FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama2Grp)
+kama2SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama2Grp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+getKama(src, len, fastEmaLen, slowEmaLen) =>
+    mom = math.abs(ta.change(src, len))
+    volatility = math.sum(math.abs(ta.change(src)), len)
+    efficiencyRatio = volatility != 0 ? mom / volatility : 0
+    fastAlpha = 2 / (fastEmaLen + 1)
+    slowAlpha = 2 / (slowEmaLen + 1)
+    alpha = math.pow(efficiencyRatio * (fastAlpha - slowAlpha) + slowAlpha, 2)
+    kama = 0.0
+    kama := alpha * src + (1 - alpha) * nz(kama[1], src)
+
+getDefHtf() =>
+    switch timeframe.period
+        "3"   => "30"
+		"5"   => "60"
+		"15"  => "240"
+        "30"  => "480"
+		"60"  => "D"
+		"240" => "W"
+        "1D"  => "M"
+        "1M"  => "12M"
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+kama1 = request.security(syminfo.tickerid, kama1Tf, getKama(kamaSrc, kama1Len, kama1FastEmaLen, kama1SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+kama2 = request.security(syminfo.tickerid, kama2Tf != "" ? kama2Tf : getDefHtf(), getKama(kamaSrc, kama2Len, kama2FastEmaLen, kama2SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(kamaShowed and kama1Showed ? kama1 : na, title = "KAMA 1", linewidth = 1, color = AQUA_COLOR, display = display.pane, force_overlay = true)
+plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, color = PURPLE_COLOR, display = display.pane, force_overlay = true)
+
+//-----------------------------------------------------------------------------
