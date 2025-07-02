@@ -60,9 +60,14 @@ obvBorderDnColor = input.color(defval = BLUE_COLOR, title = "", inline = "bocol"
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-obvTw = high - math.max(open, close) 
-obvBw = math.min(open, close) - low 
-obvBody = math.abs(close - open) 
+obvHaClose = (open + high + low + close) / 4
+obvHaOpen  = (open[1] + close[1]) / 2     
+obvHaHigh  = math.max(high, math.max(open, close))
+obvHaLow   = math.min(low,  math.min(open, close))
+
+obvTw = obvHaHigh - math.max(obvHaOpen, obvHaClose) 
+obvBw = math.min(obvHaOpen, obvHaClose) - obvHaLow 
+obvBody = math.abs(obvHaClose - obvHaOpen) 
 
 obvGetRate(cond) =>
     ret = 0.5 * (obvTw + obvBw + (cond ? 2 * obvBody : 0)) / (obvTw + obvBw + obvBody) 
@@ -72,28 +77,28 @@ obvGetRate(cond) =>
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-obvDeltaUp =  volume * obvGetRate(open <= close) 
-obvDeltaDn = volume * obvGetRate(open > close)
-obvDelta = close >= open ? obvDeltaUp : -obvDeltaDn
+obvDeltaUp =  volume * obvGetRate(obvHaOpen <= obvHaClose) 
+obvDeltaDn = volume * obvGetRate(obvHaOpen > obvHaClose)
+obvDelta = obvHaClose >= obvHaOpen ? obvDeltaUp : -obvDeltaDn
 obvCumDelta = ta.cum(obvDelta)
-float obvOpen = obvCumDelta[1]
-float obvHigh = math.max(obvCumDelta, obvCumDelta[1])
-float obvLow = math.min(obvCumDelta, obvCumDelta[1])
-float obvClose = obvCumDelta
-float obvHaClose = na
-float obvHaOpen = na
-float obvHaHigh = na
-float obvHaLow = na
-obvHaClose := (obvOpen + obvHigh + obvLow + obvClose) / 4
-obvHaOpen  := na(obvHaOpen[1]) ? (obvOpen + obvClose) / 2 : (obvHaOpen[1] + obvHaClose[1]) / 2
-obvHaHigh  := math.max(obvHigh, math.max(obvHaOpen, obvHaClose))
-obvHaLow   := math.min(obvLow, math.min(obvHaOpen, obvHaClose))
+float obvCumDeltaOpen = obvCumDelta[1]
+float obvCumDeltaHigh = math.max(obvCumDelta, obvCumDelta[1])
+float obvCumDeltaLow = math.min(obvCumDelta, obvCumDelta[1])
+float obvCumDeltaClose = obvCumDelta
+float obvClose = na
+float obvOpen = na
+float obvHigh = na
+float obvLow = na
+obvClose := (obvCumDeltaOpen + obvCumDeltaHigh + obvCumDeltaLow + obvCumDeltaClose) / 4
+obvOpen  := na(obvOpen[1]) ? (obvCumDeltaOpen + obvCumDeltaClose) / 2 : (obvOpen[1] + obvClose[1]) / 2
+obvHigh  := math.max(obvCumDeltaHigh, math.max(obvOpen, obvClose))
+obvLow   := math.min(obvCumDeltaLow, math.min(obvOpen, obvClose))
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plotcandle(obvHaOpen, obvHaHigh, obvHaLow, obvHaClose, title = 'OBV Candles', color = obvHaOpen <= obvHaClose ? obvBodyUpColor : obvBodyDnColor, bordercolor = obvHaOpen <= obvHaClose ? obvBorderUpColor : obvBorderDnColor, wickcolor = obvHaOpen <= obvHaClose ? obvBorderUpColor : obvBorderDnColor, display = display.pane)
-plot(obvEma1Showed ? ta.ema(obvHaClose, obvEma1Len) : na, title = "EMA 1", color = obvEma1Color, display = display.pane)
-plot(obvEma2Showed ? ta.ema(obvHaClose, obvEma2Len) : na, title = "EMA 2", color = obvEma2Color, display = display.pane)
+plotcandle(obvOpen, obvHigh, obvLow, obvClose, title = 'OBV Candles', color = obvOpen <= obvClose ? obvBodyUpColor : obvBodyDnColor, bordercolor = obvOpen <= obvClose ? obvBorderUpColor : obvBorderDnColor, wickcolor = obvOpen <= obvClose ? obvBorderUpColor : obvBorderDnColor, display = display.pane)
+plot(obvEma1Showed ? ta.ema(obvClose, obvEma1Len) : na, title = "EMA 1", color = obvEma1Color, display = display.pane)
+plot(obvEma2Showed ? ta.ema(obvClose, obvEma2Len) : na, title = "EMA 2", color = obvEma2Color, display = display.pane)
 
 //-----------------------------------------------------------------------------
