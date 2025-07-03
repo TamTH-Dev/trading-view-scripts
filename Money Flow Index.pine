@@ -2,41 +2,52 @@
 // © tamth_
  
 //@version=6
-indicator(title="Money Flow Index", shorttitle="MFI", format=format.price, precision=2)
+indicator(title = "Money Flow Index", shorttitle = "MFI", format = format.price, precision = 2)
 
 //-----------------------------------------------------------------------------
 // Constants
 //-----------------------------------------------------------------------------
 // Colors
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR      = #dee2e6
-color BLACK_COLOR      = #000000
-color RED_COLOR        = #F72585
-color ORANGE_COLOR     = #fb5607
-color YELLOW_COLOR     = #ffbe0b
-color GREEN_COLOR      = #2a9d8f
-color AQUA_COLOR       = #4CC9F0
-color BLUE_COLOR       = #4361ee
-color PURPLE_COLOR     = #3F37C9
-color PINK_COLOR       = #B5179E
-color LIGHT_GRAY_COLOR = #364156
-color DARK_GRAY_COLOR  = #212d40
-color TEXT_COLOR       = #ced4da
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
 
 //-----------------------------------------------------------------------------
 // Common Variables
 //-----------------------------------------------------------------------------
-// Bar index and input
 series int barIdx = bar_index
 
 //-----------------------------------------------------------------------------
 // Common Methods
 //-----------------------------------------------------------------------------
-// Debug label function
 debug(simple string txt) =>
     var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
     label.set_xy(lbl, barIdx, ta.highest(10)[1])
     label.set_text(lbl, txt)
+
+getDefHtf() =>
+    switch timeframe.period
+        "1"   => "15"
+        "3"   => "30"
+		"5"   => "60"
+		"15"  => "240"
+        "30"  => "480"
+		"60"  => "D"
+		"240" => "W"
+        "1D"  => "M"
+        "1M"  => "12M"
+        => timeframe.period
 
 //-----------------------------------------------------------------------------
 
@@ -47,22 +58,31 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------
 mfiGrp = "Money Flow Index"
-mfiLen = input.int(14, title="Length", minval=1, maxval=2000, group=mfiGrp)
-mfiTf = input.timeframe("", "Timeframe", group=mfiGrp)
+fastMfiShowed = input.bool(true, title = "Fast MFI", group = mfiGrp, inline = "fastMfi")
+fastMfiLen    = input.int(14, title = "", minval = 1, group = mfiGrp, inline = "fastMfi")
+fastMfiTf     = input.timeframe("", title = "", group = mfiGrp, inline = "fastMfi")
+slowMfiShowed = input.bool(true, title = "Slow MFI", group = mfiGrp, inline = "slowMfi")
+slowMfiLen    = input.int(14, title = "", minval = 1, group = mfiGrp, inline = "slowMfi")
+slowMfiTf     = input.timeframe("", title = "", group = mfiGrp, inline = "slowMfi")
 
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-mfi = request.security(syminfo.tickerid, mfiTf, ta.mfi(hlc3, mfiLen), gaps=barmerge.gaps_on, lookahead=barmerge.lookahead_off)
+fastMfi = request.security(syminfo.tickerid, fastMfiTf, ta.mfi(hlc3, fastMfiLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+slowMfi = request.security(syminfo.tickerid, slowMfiTf != "" ? slowMfiTf : getDefHtf(), ta.mfi(hlc3, slowMfiLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(mfi, "MF", color=PURPLE_COLOR, display = display.pane)
-overbought=hline(80, title="Overbought", color=TRANSPARENT_COLOR)
-hline(50, "Middle Band", color=color.new(LIGHT_GRAY_COLOR, 20))
-oversold=hline(20, title="Oversold", color=TRANSPARENT_COLOR)
-fill(overbought, oversold, color=color.new(PURPLE_COLOR, 90), title="Background")
+plot(fastMfiShowed ? fastMfi : na, "Fast MFI", color = AQUA_COLOR, display = display.pane)
+plot(slowMfiShowed ? slowMfi : na, "Slow MFI", color = PURPLE_COLOR, display = display.pane)
+overbought = hline(80, title = "Overbought", color = TRANSPARENT_COLOR)
+oversold = hline(20, title = "Oversold", color = TRANSPARENT_COLOR)
+fill(overbought, oversold, color = color.new(PURPLE_COLOR, 90), title = "Main Zone")
+middleHighBand = hline(55, title = "Middle High Band", color = color.new(PINK_COLOR, 50), linestyle = hline.style_solid)
+middleLowBand = hline(45, title = "Middle Low Band", color = color.new(PINK_COLOR, 50), linestyle = hline.style_solid)
+fill(middleHighBand, middleLowBand, color = color.new(PINK_COLOR, 90), title = "Middle Zone")
+hline(50, "Middle Band", color = color.new(PINK_COLOR, 50))
 
 //-----------------------------------------------------------------------------
 
@@ -103,17 +123,6 @@ getKama(src, len, fastEmaLen, slowEmaLen) =>
     alpha = math.pow(efficiencyRatio * (fastAlpha - slowAlpha) + slowAlpha, 2)
     kama = 0.0
     kama := alpha * src + (1 - alpha) * nz(kama[1], src)
-
-getDefHtf() =>
-    switch timeframe.period
-        "3"   => "30"
-		"5"   => "60"
-		"15"  => "240"
-        "30"  => "480"
-		"60"  => "D"
-		"240" => "W"
-        "1D"  => "M"
-        "1M"  => "12M"
 
 //-----------------------------------------------------------------------------
 // Calculate
