@@ -1,0 +1,201 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+//@version=6
+indicator("Algo", overlay=true, precision=2, max_labels_count=500, max_lines_count=500, max_boxes_count=1000, max_bars_back=1000)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = color.new(#000000, 100)
+color WHITE_COLOR      = #ffffff
+color BLACK_COLOR      = #000000
+color RED_COLOR        = #F72585
+color ORANGE_COLOR     = #fb5607
+color YELLOW_COLOR     = #ffbe0b
+color GREEN_COLOR      = #2a9d8f
+color AQUA_COLOR       = #4CC9F0
+color BLUE_COLOR       = #4895EF
+color PURPLE_COLOR     = #3F37C9
+color PINK_COLOR       = #B5179E
+color LIGHT_GRAY_COLOR = #364156
+color DARK_GRAY_COLOR  = #212d40
+color TEXT_COLOR       = #ced4da
+
+//-----------------------------------------------------------------------------
+// Common Variables
+//-----------------------------------------------------------------------------
+// Bar index and input
+series int barIdx = bar_index
+
+//-----------------------------------------------------------------------------
+// Common Methods
+//-----------------------------------------------------------------------------
+// Debug label function
+debug(simple string txt) =>
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
+
+//-----------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// KAMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+kamaCommonGrp   = "kamaCommonGrp"
+kamaGrp         = "Kaufman Adaptive Moving Average"
+kamaShowed      = input.bool(true, "Show", group = kamaGrp)
+kamaSrc         = input.source(close, title = "Source", group = kamaGrp)
+
+kama1Grp        = "K1"
+kama1Showed     = input.bool(true, title = "K1", group = kamaGrp, inline = kama1Grp)
+kama1Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama1Grp)
+kama1Len        = input.int(21, title = "", group = kamaGrp, inline = kama1Grp)
+kama1FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama1Grp)
+kama1SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama1Grp)
+
+kama2Grp        = "K2"
+kama2Showed     = input.bool(true, title = "K2", group = kamaGrp, inline = kama2Grp)
+kama2Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama2Grp)
+kama2Len        = input.int(21, title = "", group = kamaGrp, inline = kama2Grp)
+kama2FastEmaLen = input.int(2, title = "", group = kamaGrp, inline = kama2Grp)
+kama2SlowEmaLen = input.int(30, title = "", group = kamaGrp, inline = kama2Grp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+getKama(src, len, fastEmaLen, slowEmaLen) =>
+    mom = math.abs(ta.change(src, len))
+    volatility = math.sum(math.abs(ta.change(src)), len)
+    efficiencyRatio = volatility != 0 ? mom / volatility : 0
+    fastAlpha = 2 / (fastEmaLen + 1)
+    slowAlpha = 2 / (slowEmaLen + 1)
+    alpha = math.pow(efficiencyRatio * (fastAlpha - slowAlpha) + slowAlpha, 2)
+    kama = 0.0
+    kama := alpha * src + (1 - alpha) * nz(kama[1], src)
+
+getDefHtf() =>
+    switch timeframe.period
+        "3"   => "30"
+		"5"   => "60"
+		"15"  => "240"
+        "30"  => "480"
+		"60"  => "D"
+		"240" => "W"
+        "1D"  => "M"
+        "1M"  => "12M"
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+kama1 = request.security(syminfo.tickerid, kama1Tf, getKama(kamaSrc, kama1Len, kama1FastEmaLen, kama1SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+kama2 = request.security(syminfo.tickerid, kama2Tf != "" ? kama2Tf : getDefHtf(), getKama(kamaSrc, kama2Len, kama2FastEmaLen, kama2SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(kamaShowed and kama1Showed ? kama1 : na, title = "KAMA 1", linewidth = 1, color = AQUA_COLOR, display = display.pane)
+plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Delta Volume Profile
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+dvpGrp = "Delta Volume Profile"
+dvpShowed = input.bool(true, "Show", group=dvpGrp)
+dvpLookback = input.int(200, "Lookback Length", group=dvpGrp)
+dvpPlusColor = input.color(PINK_COLOR, "Volume +", group=dvpGrp)
+dvpMinusColor = input.color(PURPLE_COLOR, "Volume -", group=dvpGrp)
+
+//-----------------------------------------------------------------------------
+// Calculate & Render
+//-----------------------------------------------------------------------------
+dvpMaxMin = array.new<float>()
+dvpStep = 0.
+dvpBins = 0
+
+dvpAtr = ta.atr(200)
+
+if barstate.islast and dvpShowed
+    for i = 0 to dvpLookback-1
+
+        h = high[i]
+        l = low[i]
+
+        dvpMaxMin.push(h)
+        dvpMaxMin.push(l)
+
+    dvpBins := int((dvpMaxMin.max() - dvpMaxMin.min()) / dvpAtr)
+    dvpStep := (dvpMaxMin.max() - dvpMaxMin.min()) / dvpBins
+
+dvpVolPlus = array.new<float>(dvpBins, 0)
+dvpVolMinus = array.new<float>(dvpBins, 0)
+
+if barstate.islast and dvpShowed
+    for i = 0 to dvpLookback-1
+        h = high[i]
+        l = low[i]
+        c = close[i]
+        o = open[i]
+        v = volume[i]
+
+        for k = 0 to dvpBins - 1
+
+            loww = dvpMaxMin.min() + dvpStep * k
+            mid = loww + dvpStep/2
+
+            if h > mid and l < mid 
+                if c > o
+                    dvpVolPlus.set(k, dvpVolPlus.get(k) + v)
+                else
+                    dvpVolMinus.set(k, dvpVolMinus.get(k) + v)
+
+var dvpBoxes = array.new<box>()
+var dvpLabels = array.new<label>()
+
+if barstate.islast and dvpShowed
+    if dvpBoxes.size() >= 0
+        for b in dvpBoxes
+            box.delete(b)
+        dvpBoxes.clear()
+
+    if dvpLabels.size() >= 0
+        for l in dvpLabels
+            label.delete(l)
+        dvpLabels.clear()
+
+    for i = 0 to dvpBins - 1
+        loww = dvpMaxMin.min() + dvpStep * i
+        highh = loww + dvpStep
+
+        value_plus = int(dvpVolPlus.get(i) / dvpVolPlus.sum()*200)
+        value_minus = int(dvpVolMinus.get(i) / dvpVolMinus.sum()*200)
+
+        max_plus = dvpVolPlus.get(i) == dvpVolPlus.max()
+        dvpMaxMinus = dvpVolMinus.get(i) == dvpVolMinus.max()
+
+        col_plus = color.from_gradient(dvpVolPlus.get(i), dvpVolPlus.min(), dvpVolPlus.max(), color.new(dvpPlusColor, 90), color.new(dvpPlusColor, 30))
+        col_minus = color.from_gradient(dvpVolMinus.get(i), dvpVolMinus.min(), dvpVolMinus.max(), color.new(dvpMinusColor, 90), color.new(dvpMinusColor, 30))
+
+        sum = value_plus + value_minus
+        tot = dvpVolPlus.sum() + dvpVolMinus.sum()
+
+        delta = ((dvpVolPlus.sum() - dvpVolMinus.sum()) / dvpVolMinus.sum()) * 100
+
+        b1=box.new(bar_index+50, highh, bar_index+50-value_plus, loww, chart.bg_color, bgcolor = max_plus ? dvpPlusColor : col_plus, text =  dvpVolPlus.get(i) != 0 ? "+"+str.tostring(dvpVolPlus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_right)
+        b2=box.new(bar_index+50, highh, bar_index+50+value_minus, loww, chart.bg_color, bgcolor = dvpMaxMinus ? dvpMinusColor : col_minus, text = dvpVolMinus.get(i) != 0 ? "-"+str.tostring(dvpVolMinus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_left)
+
+        dvpBoxes.push(b1)
+        dvpBoxes.push(b2)
+
+        dvpLabels.push(label.new(bar_index+50, dvpMaxMin.max(), "Delta: "+ str.tostring(delta, format.percent), color = delta > 0 ? dvpPlusColor : dvpMinusColor, textcolor = TEXT_COLOR, style = label.style_label_down, size = size.small))
+
+//-----------------------------------------------------------------------------

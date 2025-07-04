@@ -5,41 +5,325 @@
 indicator("Algo", overlay=true, precision=2, max_labels_count=500, max_lines_count=500, max_boxes_count=1000, max_bars_back=1000)
 
 
+
 //-----------------------------------------------------------------------------
 // Constants
 //-----------------------------------------------------------------------------
 // Colors
 color TRANSPARENT_COLOR = color.new(#000000, 100)
-color WHITE_COLOR      = #ffffff
-color BLACK_COLOR      = #000000
-color RED_COLOR        = #F72585
-color ORANGE_COLOR     = #fb5607
-color YELLOW_COLOR     = #ffbe0b
-color GREEN_COLOR      = #2a9d8f
-color AQUA_COLOR       = #4CC9F0
-color BLUE_COLOR       = #4895EF
-color PURPLE_COLOR     = #3F37C9
-color PINK_COLOR       = #B5179E
-color LIGHT_GRAY_COLOR = #364156
-color DARK_GRAY_COLOR  = #212d40
-color TEXT_COLOR       = #ced4da
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
 
 //-----------------------------------------------------------------------------
 // Common Variables
 //-----------------------------------------------------------------------------
-// Bar index and input
 series int barIdx = bar_index
 
 //-----------------------------------------------------------------------------
 // Common Methods
 //-----------------------------------------------------------------------------
-// Debug label function
 debug(simple string txt) =>
     var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
     label.set_xy(lbl, barIdx, ta.highest(10)[1])
     label.set_text(lbl, txt)
 
+getDefHtf() =>
+    switch timeframe.period
+        "1"   => "15"
+        "3"   => "30"
+		"5"   => "60"
+		"15"  => "240"
+        "30"  => "480"
+		"60"  => "D"
+		"240" => "W"
+        "1D"  => "M"
+        "1M"  => "12M"
+        => timeframe.period
+
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Supply/Demand
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+sdGrp = "Supply/Demand"
+swingLength = input.int(8, title = 'Swing Length', group = sdGrp)
+showLastXOb = input.int(4, title = 'Show Last X Order Blocks', minval = 1, maxval = 10, group = sdGrp)
+violationType = input.string('Wick', title = 'Violation Check', options = ['Wick', 'Close'], group = sdGrp)
+hideOverlap = input.string('True', title = 'Hide Overlap', options = ['True', 'False'], group = sdGrp)
+upObColor = input.color(GREEN_COLOR, title = 'Colors', group = sdGrp, inline = 'vs')
+downObColor = input.color(RED_COLOR, title = ' ', group = sdGrp, inline = 'vs')
+
+//-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+type swing
+	float y = na
+	int x = na
+	bool crossed = false
+
+type ob
+	float top = na
+	float btm = na
+	int barStart
+	float bullishStr
+	float bearishStr
+	box obBox
+	box bullishBox
+	box bearishBox
+	float vol
+	bool broken
+	line seperatorLine
+	line orderTextSeperator
+
+type market
+	string mssOrBos
+	int direction
+	line marketLine
+	int lastLineTime
+	label marketLabel
+
+//-----------------------------------------------------------------------------
+// Variables
+//-----------------------------------------------------------------------------
+var array<ob> bullishOb = array.new<ob>()
+var array<ob> bearishOb = array.new<ob>()
+var market marketStructure = market.new(na, na, na, 0)
+
+var float top = na
+var float btm = na
+top := ta.pivothigh(swingLength, swingLength)
+btm := ta.pivotlow(swingLength, swingLength)
+
+
+var swing topp = swing.new()
+var swing btmm = swing.new()
+if not na(top)
+    topp.x := time[swingLength]
+    topp.y := high[swingLength]
+    topp.crossed := false
+    topp.crossed
+
+if not na(btm)
+    btmm.x := time[swingLength]
+    btmm.y := low[swingLength]
+    btmm.crossed := false
+    btmm.crossed
+    
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+calculateStrengths(barIndex) =>
+    float bullishStrength = 0.0
+    float bearishStrength = 0.0
+    int barsToConsider = swingLength
+
+    for i = 0 to barsToConsider - 1 by 1
+        if barIndex - i >= 0
+            float openn = open[barIndex - i]
+            float highh = high[barIndex - i]
+            float loww = low[barIndex - i]
+            float closee = close[barIndex - i]
+            float volumee = volume[barIndex - i]
+
+            if openn > closee
+                bearishStrength := bearishStrength + volumee
+                bearishStrength
+            else
+                bullishStrength := bullishStrength + volumee
+                bullishStrength
+
+    [bullishStrength, bearishStrength]
+
+isOverlapping(newBlock, existingArray) =>
+    bool flag = false
+    if existingArray.size() > 0
+        for i = 0 to existingArray.size() - 1 by 1
+            existingBlock = array.get(existingArray, i)
+            if newBlock.top >= existingBlock.btm and newBlock.top <= existingBlock.top or newBlock.btm >= existingBlock.btm and newBlock.btm <= existingBlock.top
+                flag := true
+                flag
+    flag
+
+drawBox(volatilityBlock) =>
+    volatilityBlock.bullishBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.top, bottom = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, bgcolor = color.new(upObColor, 80), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.bearishBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, bottom = volatilityBlock.btm, bgcolor = color.new(downObColor, 80), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.obBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.top, bottom = volatilityBlock.btm, bgcolor = color.new(DARK_GRAY_COLOR, 75), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.seperatorLine := line.new(x1 = volatilityBlock.barStart, y1 = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, x2 = time, y2 = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, color = color.new(DARK_GRAY_COLOR, 50), width = 1, xloc = xloc.bar_time, style = line.style_dashed)
+    volatilityBlock.orderTextSeperator := line.new(x1 = volatilityBlock.barStart, y1 = volatilityBlock.top, x2 = volatilityBlock.barStart, y2 = volatilityBlock.btm, color = color.new(DARK_GRAY_COLOR, 50), xloc = xloc.bar_time, style = line.style_solid)
+    volatilityBlock.orderTextSeperator
+
+//-----------------------------------------------------------------------------
+// Calculate & Render
+//-----------------------------------------------------------------------------
+if close < btmm.y and btmm.crossed == false
+    btmm.crossed := true
+    marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == -1 ? 'bos' : 'mss'
+    marketStructure.direction := -1
+    lineColor = LIGHT_GRAY_COLOR
+    marketStructure.marketLine := line.new(x1 = btmm.x, y1 = btmm.y, x2 = time, y2 = btmm.y, xloc = xloc.bar_time, color = lineColor)
+    marketStructure.lastLineTime := btmm.x
+    labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
+    labelX = math.round(math.avg(btmm.x, time))
+    marketStructure.marketLabel := label.new(x = labelX, y = btmm.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_up, xloc = xloc.bar_time, size = size.tiny)
+
+    float highAndGreenTop = 0
+    float highAndGreenBtm = 0
+    int highAndGreenTime = 0
+    int selectedIndex = 0
+    float vol = na
+    for i = 1 to swingLength by 1
+        if close[i] > open[i] and high[i] > highAndGreenTop
+            highAndGreenTop := high[i]
+            highAndGreenBtm := low[i]
+            highAndGreenTime := time[i]
+            vol := volume[i]
+            selectedIndex := i
+            selectedIndex
+
+    [bullishStrength, bearishStrength] = calculateStrengths(selectedIndex)
+
+    newOb = ob.new(highAndGreenTop, highAndGreenBtm, highAndGreenTime)
+    newOb.bullishStr := bullishStrength
+    newOb.bearishStr := bearishStrength
+    newOb.vol := vol
+    newOb.broken := false
+
+    if not isOverlapping(newOb, bearishOb) and hideOverlap == 'True'
+        array.push(bearishOb, newOb)
+
+        drawBox(newOb)
+    if hideOverlap == 'False'
+        array.push(bearishOb, newOb)
+
+        drawBox(newOb)
+
+    if array.size(bearishOb) > showLastXOb
+        oldOb = array.shift(bearishOb)
+        box.delete(oldOb.bullishBox)
+        box.delete(oldOb.bearishBox)
+        box.delete(oldOb.obBox)
+        line.delete(oldOb.seperatorLine)
+        line.delete(oldOb.orderTextSeperator)
+
+else if close > topp.y and topp.crossed == false
+    topp.crossed := true
+    marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == 1 ? 'bos' : 'mss'
+    marketStructure.direction := 1
+    lineColor = LIGHT_GRAY_COLOR
+    marketStructure.marketLine := line.new(x1 = topp.x, y1 = topp.y, x2 = time, y2 = topp.y, xloc = xloc.bar_time, color = lineColor)
+    marketStructure.lastLineTime := topp.x
+    labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
+    labelX = math.round(math.avg(topp.x, time))
+    marketStructure.marketLabel := label.new(x = labelX, y = topp.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_down, xloc = xloc.bar_time, size = size.tiny)
+
+    float lowAndRedBtm = 999999999999
+    float lowAndRedTop = na
+    int lowAndRedTime = 0
+    int selectedIndex = 0
+    float vol = na
+    for i = 1 to swingLength by 1
+        if close[i] < open[i] and low[i] < lowAndRedBtm
+            lowAndRedBtm := low[i]
+            lowAndRedTop := high[i]
+            lowAndRedTime := time[i]
+            vol := volume[i]
+            selectedIndex := i
+            selectedIndex
+
+    [bullishStrength, bearishStrength] = calculateStrengths(selectedIndex)
+
+    newOb = ob.new(lowAndRedTop, lowAndRedBtm, lowAndRedTime)
+    newOb.bullishStr := bullishStrength
+    newOb.bearishStr := bearishStrength
+    newOb.vol := vol
+    newOb.broken := false
+
+    if not isOverlapping(newOb, bullishOb) and hideOverlap == 'True'
+        array.push(bullishOb, newOb)
+
+        drawBox(newOb)
+    if hideOverlap == 'False'
+        array.push(bullishOb, newOb)
+
+        drawBox(newOb)
+
+    if array.size(bullishOb) > showLastXOb
+        oldOb = array.shift(bullishOb)
+        box.delete(oldOb.bullishBox)
+        box.delete(oldOb.bearishBox)
+        box.delete(oldOb.obBox)
+        line.delete(oldOb.seperatorLine)
+        line.delete(oldOb.orderTextSeperator)
+
+if array.size(bullishOb) > 0
+    for i = 0 to array.size(bullishOb) - 1 by 1
+        currentOb = array.get(bullishOb, i)
+        totalStr = currentOb.bullishStr + currentOb.bearishStr
+        bullishBoxWidth = currentOb.bullishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        bearishBoxWidth = currentOb.bearishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        currentOb.bullishBox.set_right(math.round(currentOb.barStart + bullishBoxWidth))
+        currentOb.bearishBox.set_right(math.round(currentOb.barStart + bearishBoxWidth))
+        currentOb.obBox.set_right(time)
+        line.set_xy2(currentOb.seperatorLine, (currentOb.obBox.get_left() + time) / 2, currentOb.btm + (currentOb.top - currentOb.btm) / 2)
+
+        line.set_xy1(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.top)
+        line.set_xy2(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.btm)
+
+        violation = violationType == 'Wick' and low < currentOb.btm or violationType == 'Close' and close < currentOb.btm
+
+        if violation
+            box.delete(currentOb.bullishBox)
+            box.delete(currentOb.bearishBox)
+            box.delete(currentOb.obBox)
+            line.delete(currentOb.seperatorLine)
+            line.delete(currentOb.orderTextSeperator)
+            array.remove(bullishOb, i)
+            break
+
+if array.size(bearishOb) > 0
+    for i = 0 to array.size(bearishOb) - 1 by 1
+        currentOb = array.get(bearishOb, i)
+        totalStr = currentOb.bullishStr + currentOb.bearishStr
+        bullishBoxWidth = currentOb.bullishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        bearishBoxWidth = currentOb.bearishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        currentOb.bullishBox.set_right(math.round(currentOb.barStart + bullishBoxWidth))
+        currentOb.bearishBox.set_right(math.round(currentOb.barStart + bearishBoxWidth))
+        currentOb.obBox.set_right(time)
+        line.set_xy2(currentOb.seperatorLine, (currentOb.obBox.get_left() + time) / 2, currentOb.btm + (currentOb.top - currentOb.btm) / 2)
+
+        line.set_xy1(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.top)
+        line.set_xy2(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.btm)
+
+        violation = violationType == 'Wick' and high > currentOb.top or violationType == 'Close' and close > currentOb.top
+
+        if violation
+            box.delete(currentOb.bullishBox)
+            box.delete(currentOb.bearishBox)
+            box.delete(currentOb.obBox)
+            line.delete(currentOb.seperatorLine)
+            line.delete(currentOb.orderTextSeperator)
+            array.remove(bearishOb, i)
+            break
+
+//-----------------------------------------------------------------------------
+
 
 //-----------------------------------------------------------------------------
 // KAMAs
@@ -78,17 +362,6 @@ getKama(src, len, fastEmaLen, slowEmaLen) =>
     kama = 0.0
     kama := alpha * src + (1 - alpha) * nz(kama[1], src)
 
-getDefHtf() =>
-    switch timeframe.period
-        "3"   => "30"
-		"5"   => "60"
-		"15"  => "240"
-        "30"  => "480"
-		"60"  => "D"
-		"240" => "W"
-        "1D"  => "M"
-        "1M"  => "12M"
-
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
@@ -100,102 +373,5 @@ kama2 = request.security(syminfo.tickerid, kama2Tf != "" ? kama2Tf : getDefHtf()
 //-----------------------------------------------------------------------------
 plot(kamaShowed and kama1Showed ? kama1 : na, title = "KAMA 1", linewidth = 1, color = AQUA_COLOR, display = display.pane)
 plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
-
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Delta Volume Profile
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-dvpGrp = "Delta Volume Profile"
-dvpShowed = input.bool(true, "Show", group=dvpGrp)
-dvpLookback = input.int(200, "Lookback Length", group=dvpGrp)
-dvpPlusColor = input.color(PINK_COLOR, "Volume +", group=dvpGrp)
-dvpMinusColor = input.color(PURPLE_COLOR, "Volume -", group=dvpGrp)
-
-//-----------------------------------------------------------------------------
-// Calculate & Render
-//-----------------------------------------------------------------------------
-dvpMaxMin = array.new<float>()
-dvpStep = 0.
-dvpBins = 0
-
-dvpAtr = ta.atr(200)
-
-if barstate.islast and dvpShowed
-    for i = 0 to dvpLookback-1
-
-        h = high[i]
-        l = low[i]
-
-        dvpMaxMin.push(h)
-        dvpMaxMin.push(l)
-
-    dvpBins := int((dvpMaxMin.max() - dvpMaxMin.min()) / dvpAtr)
-    dvpStep := (dvpMaxMin.max() - dvpMaxMin.min()) / dvpBins
-
-dvpVolPlus = array.new<float>(dvpBins, 0)
-dvpVolMinus = array.new<float>(dvpBins, 0)
-
-if barstate.islast and dvpShowed
-    for i = 0 to dvpLookback-1
-        h = high[i]
-        l = low[i]
-        c = close[i]
-        o = open[i]
-        v = volume[i]
-
-        for k = 0 to dvpBins - 1
-
-            loww = dvpMaxMin.min() + dvpStep * k
-            mid = loww + dvpStep/2
-
-            if h > mid and l < mid 
-                if c > o
-                    dvpVolPlus.set(k, dvpVolPlus.get(k) + v)
-                else
-                    dvpVolMinus.set(k, dvpVolMinus.get(k) + v)
-
-var dvpBoxes = array.new<box>()
-var dvpLabels = array.new<label>()
-
-if barstate.islast and dvpShowed
-    if dvpBoxes.size() >= 0
-        for b in dvpBoxes
-            box.delete(b)
-        dvpBoxes.clear()
-
-    if dvpLabels.size() >= 0
-        for l in dvpLabels
-            label.delete(l)
-        dvpLabels.clear()
-
-    for i = 0 to dvpBins - 1
-        loww = dvpMaxMin.min() + dvpStep * i
-        highh = loww + dvpStep
-
-        value_plus = int(dvpVolPlus.get(i) / dvpVolPlus.sum()*200)
-        value_minus = int(dvpVolMinus.get(i) / dvpVolMinus.sum()*200)
-
-        max_plus = dvpVolPlus.get(i) == dvpVolPlus.max()
-        dvpMaxMinus = dvpVolMinus.get(i) == dvpVolMinus.max()
-
-        col_plus = color.from_gradient(dvpVolPlus.get(i), dvpVolPlus.min(), dvpVolPlus.max(), color.new(dvpPlusColor, 90), color.new(dvpPlusColor, 30))
-        col_minus = color.from_gradient(dvpVolMinus.get(i), dvpVolMinus.min(), dvpVolMinus.max(), color.new(dvpMinusColor, 90), color.new(dvpMinusColor, 30))
-
-        sum = value_plus + value_minus
-        tot = dvpVolPlus.sum() + dvpVolMinus.sum()
-
-        delta = ((dvpVolPlus.sum() - dvpVolMinus.sum()) / dvpVolMinus.sum()) * 100
-
-        b1=box.new(bar_index+50, highh, bar_index+50-value_plus, loww, chart.bg_color, bgcolor = max_plus ? dvpPlusColor : col_plus, text =  dvpVolPlus.get(i) != 0 ? "+"+str.tostring(dvpVolPlus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_right)
-        b2=box.new(bar_index+50, highh, bar_index+50+value_minus, loww, chart.bg_color, bgcolor = dvpMaxMinus ? dvpMinusColor : col_minus, text = dvpVolMinus.get(i) != 0 ? "-"+str.tostring(dvpVolMinus.get(i), format.volume) : "", text_color = TEXT_COLOR, text_size = size.small, text_halign = text.align_left)
-
-        dvpBoxes.push(b1)
-        dvpBoxes.push(b2)
-
-        dvpLabels.push(label.new(bar_index+50, dvpMaxMin.max(), "Delta: "+ str.tostring(delta, format.percent), color = delta > 0 ? dvpPlusColor : dvpMinusColor, textcolor = TEXT_COLOR, style = label.style_label_down, size = size.small))
 
 //-----------------------------------------------------------------------------
