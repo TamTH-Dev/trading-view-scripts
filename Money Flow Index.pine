@@ -68,8 +68,8 @@ slowMfiTf     = input.timeframe("", title = "", group = mfiGrp, inline = "slowMf
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-fastMfi = request.security(syminfo.tickerid, fastMfiTf, ta.mfi(hlc3, fastMfiLen), gaps = barmerge.gaps_on)
-slowMfi = request.security(syminfo.tickerid, slowMfiTf != "" ? slowMfiTf : getDefHtf(), ta.mfi(hlc3, slowMfiLen))
+fastMfi = request.security(syminfo.tickerid, fastMfiTf, ta.mfi(hlc3, fastMfiLen), barmerge.gaps_on)
+slowMfi = request.security(syminfo.tickerid, slowMfiTf != "" ? slowMfiTf : getDefHtf(), ta.mfi(hlc3, slowMfiLen), gaps = barmerge.gaps_on)
 
 //-----------------------------------------------------------------------------
 // Render
