@@ -68,8 +68,8 @@ slowMfiTf     = input.timeframe("", title = "", group = mfiGrp, inline = "slowMf
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-fastMfi = request.security(syminfo.tickerid, fastMfiTf, ta.mfi(hlc3, fastMfiLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
-slowMfi = request.security(syminfo.tickerid, slowMfiTf != "" ? slowMfiTf : getDefHtf(), ta.mfi(hlc3, slowMfiLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
+fastMfi = request.security(syminfo.tickerid, fastMfiTf, ta.mfi(hlc3, fastMfiLen), gaps = barmerge.gaps_on)
+slowMfi = request.security(syminfo.tickerid, slowMfiTf != "" ? slowMfiTf : getDefHtf(), ta.mfi(hlc3, slowMfiLen))
 
 //-----------------------------------------------------------------------------
 // Render
@@ -79,9 +79,6 @@ plot(slowMfiShowed ? slowMfi : na, "Slow MFI", color = PURPLE_COLOR, display = d
 overbought = hline(80, title = "Overbought", color = TRANSPARENT_COLOR)
 oversold = hline(20, title = "Oversold", color = TRANSPARENT_COLOR)
 fill(overbought, oversold, color = color.new(PURPLE_COLOR, 90), title = "Main Zone")
-hline(50, "Middle Band", color = color.new(PINK_COLOR, 60), linestyle = hline.style_solid)
-// middleHighBand = hline(52, title = "Middle High Band", color = color.new(PINK_COLOR, 50), linestyle = hline.style_solid)
-// middleLowBand = hline(48, title = "Middle Low Band", color = color.new(PINK_COLOR, 50), linestyle = hline.style_solid)
-// fill(middleHighBand, middleLowBand, color = color.new(PINK_COLOR, 90), title = "Middle Zone")
+hline(50, "Middle Line", color = color.new(PINK_COLOR, 70), linestyle = hline.style_solid)
 
 //-----------------------------------------------------------------------------
