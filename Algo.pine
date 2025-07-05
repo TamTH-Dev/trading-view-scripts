@@ -682,7 +682,7 @@ method RemainingTime(Helper helper, string HTF) =>
             r
         r
     else
-        'n/a'
+        'Closed'
 
 method HTFName(Helper helper, string HTF) =>
     helper.name := 'HTFName'
