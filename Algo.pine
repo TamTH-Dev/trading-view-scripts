@@ -48,6 +48,7 @@ getDefHtf() =>
 		"60"  => "D"
 		"240" => "W"
         "1D"  => "M"
+        "1W"  => "3M"
         "1M"  => "12M"
         => timeframe.period
 
@@ -177,11 +178,11 @@ if close < btmm.y and btmm.crossed == false
     marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == -1 ? 'bos' : 'mss'
     marketStructure.direction := -1
     lineColor = LIGHT_GRAY_COLOR
-    marketStructure.marketLine := line.new(x1 = btmm.x, y1 = btmm.y, x2 = time, y2 = btmm.y, xloc = xloc.bar_time, color = lineColor)
+    // marketStructure.marketLine := line.new(x1 = btmm.x, y1 = btmm.y, x2 = time, y2 = btmm.y, xloc = xloc.bar_time, color = lineColor)
     marketStructure.lastLineTime := btmm.x
     labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
     labelX = math.round(math.avg(btmm.x, time))
-    marketStructure.marketLabel := label.new(x = labelX, y = btmm.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_up, xloc = xloc.bar_time, size = size.tiny)
+    // marketStructure.marketLabel := label.new(x = labelX, y = btmm.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_up, xloc = xloc.bar_time, size = size.tiny)
 
     float highAndGreenTop = 0
     float highAndGreenBtm = 0
@@ -227,11 +228,11 @@ else if close > topp.y and topp.crossed == false
     marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == 1 ? 'bos' : 'mss'
     marketStructure.direction := 1
     lineColor = LIGHT_GRAY_COLOR
-    marketStructure.marketLine := line.new(x1 = topp.x, y1 = topp.y, x2 = time, y2 = topp.y, xloc = xloc.bar_time, color = lineColor)
+    // marketStructure.marketLine := line.new(x1 = topp.x, y1 = topp.y, x2 = time, y2 = topp.y, xloc = xloc.bar_time, color = lineColor)
     marketStructure.lastLineTime := topp.x
     labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
     labelX = math.round(math.avg(topp.x, time))
-    marketStructure.marketLabel := label.new(x = labelX, y = topp.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_down, xloc = xloc.bar_time, size = size.tiny)
+    // marketStructure.marketLabel := label.new(x = labelX, y = topp.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_down, xloc = xloc.bar_time, size = size.tiny)
 
     float lowAndRedBtm = 999999999999
     float lowAndRedTop = na
