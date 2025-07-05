@@ -8,7 +8,7 @@ indicator('Algo', overlay = true, max_boxes_count = 500, max_lines_count = 500, 
 // Constants
 //-----------------------------------------------------------------------------
 // Colors
-color TRANSPARENT_COLOR = color.new(#000000, 100)
+color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR       = #dee2e6
 color BLACK_COLOR       = #000000
 color RED_COLOR         = #F72585
@@ -217,43 +217,43 @@ string fvg_tooltip2 = 'Mitigated FVG Settings:\n\tShow/Hide mitigated (Applies t
 HTF_1_Settings.show := input.bool(true, '', inline = 'htf1', group = Fvg_Settings_HTF)
 htf_1 = input.timeframe('5', '', inline = 'htf1', group = Fvg_Settings_HTF)
 HTF_1_Settings.htf := htf_1
-HTF_1_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf1', group = Fvg_Settings_HTF)
-HTF_1_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf1', group = Fvg_Settings_HTF)
+HTF_1_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf1', group = Fvg_Settings_HTF)
+HTF_1_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf1', group = Fvg_Settings_HTF)
 HTF_1_Settings.max_count := input.int(20, '', inline = 'htf1', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 HTF_2_Settings.show := input.bool(true, '', inline = 'htf2', group = Fvg_Settings_HTF)
 htf_2 = input.timeframe('15', '', inline = 'htf2', group = Fvg_Settings_HTF)
 HTF_2_Settings.htf := htf_2
-HTF_2_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf2', group = Fvg_Settings_HTF)
-HTF_2_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf2', group = Fvg_Settings_HTF)
+HTF_2_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf2', group = Fvg_Settings_HTF)
+HTF_2_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf2', group = Fvg_Settings_HTF)
 HTF_2_Settings.max_count := input.int(20, '', inline = 'htf2', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 HTF_3_Settings.show := input.bool(true, '', inline = 'htf3', group = Fvg_Settings_HTF)
 htf_3 = input.timeframe('60', '', inline = 'htf3', group = Fvg_Settings_HTF)
 HTF_3_Settings.htf := htf_3
-HTF_3_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf3', group = Fvg_Settings_HTF)
-HTF_3_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf3', group = Fvg_Settings_HTF)
+HTF_3_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf3', group = Fvg_Settings_HTF)
+HTF_3_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf3', group = Fvg_Settings_HTF)
 HTF_3_Settings.max_count := input.int(20, '', inline = 'htf3', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 HTF_4_Settings.show := input.bool(true, '', inline = 'htf4', group = Fvg_Settings_HTF)
 htf_4 = input.timeframe('240', '', inline = 'htf4', group = Fvg_Settings_HTF)
 HTF_4_Settings.htf := htf_4
-HTF_4_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf4', group = Fvg_Settings_HTF)
-HTF_4_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf4', group = Fvg_Settings_HTF)
+HTF_4_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf4', group = Fvg_Settings_HTF)
+HTF_4_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf4', group = Fvg_Settings_HTF)
 HTF_4_Settings.max_count := input.int(10, '', inline = 'htf4', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 HTF_5_Settings.show := input.bool(true, '', inline = 'htf5', group = Fvg_Settings_HTF)
 htf_5 = input.timeframe('1D', '', inline = 'htf5', group = Fvg_Settings_HTF)
 HTF_5_Settings.htf := htf_5
-HTF_5_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf5', group = Fvg_Settings_HTF)
-HTF_5_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf5', group = Fvg_Settings_HTF)
+HTF_5_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf5', group = Fvg_Settings_HTF)
+HTF_5_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf5', group = Fvg_Settings_HTF)
 HTF_5_Settings.max_count := input.int(10, '', inline = 'htf5', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 HTF_6_Settings.show := input.bool(true, '', inline = 'htf6', group = Fvg_Settings_HTF)
 htf_6 = input.timeframe('1W', '', inline = 'htf6', group = Fvg_Settings_HTF)
 HTF_6_Settings.htf := htf_6
-HTF_6_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf6', group = Fvg_Settings_HTF)
-HTF_6_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf6', group = Fvg_Settings_HTF)
+HTF_6_Settings.color_bull := input.color(color.new(GREEN_COLOR, 25), '', inline = 'htf6', group = Fvg_Settings_HTF)
+HTF_6_Settings.color_bear := input.color(color.new(RED_COLOR, 25), '', inline = 'htf6', group = Fvg_Settings_HTF)
 HTF_6_Settings.max_count := input.int(2, '', inline = 'htf6', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
 
 fvg_settings.max_sets := input.int(6, 'Limit to next HTFs only', options = [1, 2, 3, 4, 5, 6])
@@ -261,7 +261,7 @@ fvg_settings.max_sets := input.int(6, 'Limit to next HTFs only', options = [1, 2
 fvg_settings.ltf_hide := input.bool(true, 'Hide Lower Timeframes')
 fvg_settings.ctf_hide := input.bool(true, 'Hide Current Timeframe')
 
-fvg_settings.fill := input.bool(true, 'Background Transparency', inline = 'fill')
+fvg_settings.fill := input.bool(false, 'Background Transparency', inline = 'fill')
 
 fvg_settings.extendby := input.string('When in Range', 'Extend lines', options = ['Extension Only', 'Current Candle Plus Extension', 'When in Range'])
 fvg_settings.extend := input.int(4, 'Distance from current candle', minval = 0)
@@ -283,8 +283,8 @@ fvg_settings.close_style := input.string('····', '', options = ['⎯⎯⎯',
 fvg_settings.close_size := input.int(1, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = 'close')
 
 fvg_settings.CE_show := input.bool(true, 'C.E.', group = Fvg_Settings_Display, inline = '3')
-fvg_settings.CE_bull_color := input.color(color.new(color.black, 60), '', group = Fvg_Settings_Display, inline = '3')
-fvg_settings.CE_bear_color := input.color(color.new(color.black, 60), '', group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_bull_color := input.color(TRANSPARENT_COLOR, '', group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_bear_color := input.color(TRANSPARENT_COLOR, '', group = Fvg_Settings_Display, inline = '3')
 fvg_settings.CE_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = Fvg_Settings_Display, inline = '3')
 fvg_settings.CE_size := input.int(1, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = '3')
 
