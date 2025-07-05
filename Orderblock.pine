@@ -1,0 +1,267 @@
+//-----------------------------------------------------------------------------
+// Supply/Demand
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+sdGrp = "Supply/Demand  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+swingLength = input.int(8, title = 'Swing Length', group = sdGrp)
+showLastXOb = input.int(4, title = 'Show Last X Order Blocks', minval = 1, maxval = 10, group = sdGrp)
+violationType = input.string('Wick', title = 'Violation Check', options = ['Wick', 'Close'], group = sdGrp)
+hideOverlap = input.string('True', title = 'Hide Overlap', options = ['True', 'False'], group = sdGrp)
+upObColor = input.color(GREEN_COLOR, title = 'Colors', group = sdGrp, inline = 'vs')
+downObColor = input.color(RED_COLOR, title = ' ', group = sdGrp, inline = 'vs')
+
+//-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+type SRSwing
+	float y = na
+	int x = na
+	bool crossed = false
+
+type SROb
+	float top = na
+	float btm = na
+	int barStart
+	float bullishStr
+	float bearishStr
+	box obBox
+	box bullishBox
+	box bearishBox
+	float vol
+	bool broken
+	line seperatorLine
+	line orderTextSeperator
+
+type SRMarket
+	string mssOrBos
+	int direction
+	line marketLine
+	int lastLineTime
+	label marketLabel
+
+//-----------------------------------------------------------------------------
+// Variables
+//-----------------------------------------------------------------------------
+var array<SROb> bullishOb = array.new<SROb>()
+var array<SROb> bearishOb = array.new<SROb>()
+var SRMarket marketStructure = SRMarket.new(na, na, na, 0)
+
+var float top = na
+var float btm = na
+top := ta.pivothigh(swingLength, swingLength)
+btm := ta.pivotlow(swingLength, swingLength)
+
+
+var SRSwing topp = SRSwing.new()
+var SRSwing btmm = SRSwing.new()
+if not na(top)
+    topp.x := time[swingLength]
+    topp.y := high[swingLength]
+    topp.crossed := false
+    topp.crossed
+
+if not na(btm)
+    btmm.x := time[swingLength]
+    btmm.y := low[swingLength]
+    btmm.crossed := false
+    btmm.crossed
+    
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+calculateStrengths(barIndex) =>
+    float bullishStrength = 0.0
+    float bearishStrength = 0.0
+    int barsToConsider = swingLength
+
+    for i = 0 to barsToConsider - 1 by 1
+        if barIndex - i >= 0
+            float openn = open[barIndex - i]
+            float highh = high[barIndex - i]
+            float loww = low[barIndex - i]
+            float closee = close[barIndex - i]
+            float volumee = volume[barIndex - i]
+
+            if openn > closee
+                bearishStrength := bearishStrength + volumee
+                bearishStrength
+            else
+                bullishStrength := bullishStrength + volumee
+                bullishStrength
+
+    [bullishStrength, bearishStrength]
+
+isOverlapping(newBlock, existingArray) =>
+    bool flag = false
+    if existingArray.size() > 0
+        for i = 0 to existingArray.size() - 1 by 1
+            existingBlock = array.get(existingArray, i)
+            if newBlock.top >= existingBlock.btm and newBlock.top <= existingBlock.top or newBlock.btm >= existingBlock.btm and newBlock.btm <= existingBlock.top
+                flag := true
+                flag
+    flag
+
+drawBox(volatilityBlock) =>
+    volatilityBlock.bullishBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.top, bottom = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, bgcolor = color.new(upObColor, 80), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.bearishBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, bottom = volatilityBlock.btm, bgcolor = color.new(downObColor, 80), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.obBox := box.new(left = volatilityBlock.barStart, right = time, top = volatilityBlock.top, bottom = volatilityBlock.btm, bgcolor = color.new(DARK_GRAY_COLOR, 75), border_color = na, xloc = xloc.bar_time)
+
+    volatilityBlock.seperatorLine := line.new(x1 = volatilityBlock.barStart, y1 = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, x2 = time, y2 = volatilityBlock.btm + (volatilityBlock.top - volatilityBlock.btm) / 2, color = color.new(DARK_GRAY_COLOR, 50), width = 1, xloc = xloc.bar_time, style = line.style_dashed)
+    volatilityBlock.orderTextSeperator := line.new(x1 = volatilityBlock.barStart, y1 = volatilityBlock.top, x2 = volatilityBlock.barStart, y2 = volatilityBlock.btm, color = color.new(DARK_GRAY_COLOR, 50), xloc = xloc.bar_time, style = line.style_solid)
+    volatilityBlock.orderTextSeperator
+
+//-----------------------------------------------------------------------------
+// Calculate & Render
+//-----------------------------------------------------------------------------
+if close < btmm.y and btmm.crossed == false
+    btmm.crossed := true
+    marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == -1 ? 'bos' : 'mss'
+    marketStructure.direction := -1
+    lineColor = LIGHT_GRAY_COLOR
+    // marketStructure.marketLine := line.new(x1 = btmm.x, y1 = btmm.y, x2 = time, y2 = btmm.y, xloc = xloc.bar_time, color = lineColor)
+    marketStructure.lastLineTime := btmm.x
+    labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
+    labelX = math.round(math.avg(btmm.x, time))
+    // marketStructure.marketLabel := label.new(x = labelX, y = btmm.y, text = labelText, color = TRANSPARENT_COLOR, textcolor = lineColor, style = label.style_label_up, xloc = xloc.bar_time, size = size.tiny)
+
+    float highAndGreenTop = 0
+    float highAndGreenBtm = 0
+    int highAndGreenTime = 0
+    int selectedIndex = 0
+    float vol = na
+    for i = 1 to swingLength by 1
+        if close[i] > open[i] and high[i] > highAndGreenTop
+            highAndGreenTop := high[i]
+            highAndGreenBtm := low[i]
+            highAndGreenTime := time[i]
+            vol := volume[i]
+            selectedIndex := i
+            selectedIndex
+
+    [bullishStrength, bearishStrength] = calculateStrengths(selectedIndex)
+
+    newOb = SROb.new(highAndGreenTop, highAndGreenBtm, highAndGreenTime)
+    newOb.bullishStr := bullishStrength
+    newOb.bearishStr := bearishStrength
+    newOb.vol := vol
+    newOb.broken := false
+
+    if not isOverlapping(newOb, bearishOb) and hideOverlap == 'True'
+        array.push(bearishOb, newOb)
+
+        drawBox(newOb)
+    if hideOverlap == 'False'
+        array.push(bearishOb, newOb)
+
+        drawBox(newOb)
+
+    if array.size(bearishOb) > showLastXOb
+        oldOb = array.shift(bearishOb)
+        box.delete(oldOb.bullishBox)
+        box.delete(oldOb.bearishBox)
+        box.delete(oldOb.obBox)
+        line.delete(oldOb.seperatorLine)
+        line.delete(oldOb.orderTextSeperator)
+
+else if close > topp.y and topp.crossed == false
+    topp.crossed := true
+    marketStructure.mssOrBos := na(marketStructure.mssOrBos) ? 'mss' : marketStructure.direction == 1 ? 'bos' : 'mss'
+    marketStructure.direction := 1
+    lineColor = LIGHT_GRAY_COLOR
+    marketStructure.lastLineTime := topp.x
+    labelText = marketStructure.mssOrBos == 'mss' ? 'MSS' : 'BOS'
+    labelX = math.round(math.avg(topp.x, time))
+
+    float lowAndRedBtm = 999999999999
+    float lowAndRedTop = na
+    int lowAndRedTime = 0
+    int selectedIndex = 0
+    float vol = na
+    for i = 1 to swingLength by 1
+        if close[i] < open[i] and low[i] < lowAndRedBtm
+            lowAndRedBtm := low[i]
+            lowAndRedTop := high[i]
+            lowAndRedTime := time[i]
+            vol := volume[i]
+            selectedIndex := i
+            selectedIndex
+
+    [bullishStrength, bearishStrength] = calculateStrengths(selectedIndex)
+
+    newOb = SROb.new(lowAndRedTop, lowAndRedBtm, lowAndRedTime)
+    newOb.bullishStr := bullishStrength
+    newOb.bearishStr := bearishStrength
+    newOb.vol := vol
+    newOb.broken := false
+
+    if not isOverlapping(newOb, bullishOb) and hideOverlap == 'True'
+        array.push(bullishOb, newOb)
+
+        drawBox(newOb)
+    if hideOverlap == 'False'
+        array.push(bullishOb, newOb)
+
+        drawBox(newOb)
+
+    if array.size(bullishOb) > showLastXOb
+        oldOb = array.shift(bullishOb)
+        box.delete(oldOb.bullishBox)
+        box.delete(oldOb.bearishBox)
+        box.delete(oldOb.obBox)
+        line.delete(oldOb.seperatorLine)
+        line.delete(oldOb.orderTextSeperator)
+
+if array.size(bullishOb) > 0
+    for i = 0 to array.size(bullishOb) - 1 by 1
+        currentOb = array.get(bullishOb, i)
+        totalStr = currentOb.bullishStr + currentOb.bearishStr
+        bullishBoxWidth = currentOb.bullishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        bearishBoxWidth = currentOb.bearishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        currentOb.bullishBox.set_right(math.round(currentOb.barStart + bullishBoxWidth))
+        currentOb.bearishBox.set_right(math.round(currentOb.barStart + bearishBoxWidth))
+        currentOb.obBox.set_right(time)
+        line.set_xy2(currentOb.seperatorLine, (currentOb.obBox.get_left() + time) / 2, currentOb.btm + (currentOb.top - currentOb.btm) / 2)
+
+        line.set_xy1(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.top)
+        line.set_xy2(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.btm)
+
+        violation = violationType == 'Wick' and low < currentOb.btm or violationType == 'Close' and close < currentOb.btm
+
+        if violation
+            box.delete(currentOb.bullishBox)
+            box.delete(currentOb.bearishBox)
+            box.delete(currentOb.obBox)
+            line.delete(currentOb.seperatorLine)
+            line.delete(currentOb.orderTextSeperator)
+            array.remove(bullishOb, i)
+            break
+
+if array.size(bearishOb) > 0
+    for i = 0 to array.size(bearishOb) - 1 by 1
+        currentOb = array.get(bearishOb, i)
+        totalStr = currentOb.bullishStr + currentOb.bearishStr
+        bullishBoxWidth = currentOb.bullishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        bearishBoxWidth = currentOb.bearishStr / totalStr * ((currentOb.obBox.get_left() + time) / 2 - currentOb.barStart)
+        currentOb.bullishBox.set_right(math.round(currentOb.barStart + bullishBoxWidth))
+        currentOb.bearishBox.set_right(math.round(currentOb.barStart + bearishBoxWidth))
+        currentOb.obBox.set_right(time)
+        line.set_xy2(currentOb.seperatorLine, (currentOb.obBox.get_left() + time) / 2, currentOb.btm + (currentOb.top - currentOb.btm) / 2)
+
+        line.set_xy1(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.top)
+        line.set_xy2(currentOb.orderTextSeperator, (currentOb.obBox.get_left() + time) / 2, currentOb.btm)
+
+        violation = violationType == 'Wick' and high > currentOb.top or violationType == 'Close' and close > currentOb.top
+
+        if violation
+            box.delete(currentOb.bullishBox)
+            box.delete(currentOb.bearishBox)
+            box.delete(currentOb.obBox)
+            line.delete(currentOb.seperatorLine)
+            line.delete(currentOb.orderTextSeperator)
+            array.remove(bearishOb, i)
+            break
+
+//-----------------------------------------------------------------------------
