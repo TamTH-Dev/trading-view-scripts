@@ -106,6 +106,696 @@ plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, c
 
 
 //-----------------------------------------------------------------------------
+// HTF FVGs
+//-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+type FVGSettings
+	string style
+	bool open_show
+	string open_style
+	int open_size
+	bool close_show
+	string close_style
+	int close_size
+	bool fill
+	int fill_percent
+	bool CE_show
+	string CE_style
+	int CE_size
+	color CE_bull_color
+	color CE_bear_color
+	bool link_show
+	string link_style
+	int link_size
+	int max_sets
+	bool mitigated_show
+	string mitigated_type
+	color mitigated_color_bull
+	color mitigated_color_bear
+	int mitigated_extend
+	bool ltf_hide
+	bool ctf_hide
+	bool label_show
+	bool label_open
+	bool label_close
+	bool label_ce
+	bool label_tf
+	bool label_type
+	bool label_level
+	color label_color
+	color label_bgcolor
+	string label_size
+	int extend
+	string extendby
+	int buffer
+    bool useProximity
+	int proximity
+	int labelfactor
+	float atrfactor
+
+type FVGImbalanceSettings
+	bool show
+	string htf
+	color color_bull
+	color color_bear
+	color color_bull_ce
+	color color_bear_ce
+	int max_count
+
+type FVGBox
+	line open
+	line close
+	line ce
+	line link
+	linefill fill
+	label label_open
+	label label_close
+	label label_ce
+
+type FVGImbalance
+	int open_time
+	int close_time
+	float open
+	float middle
+	float close
+	bool mitigated
+	int mitigated_time
+	bool isbullish
+	FVGBox box2
+
+type FVGImbalanceStructure
+	array<FVGImbalance> imbalance
+	FVGImbalanceSettings settings
+	int order = 1
+	int step = 0
+
+type FVGHelper
+	string name = 'Helper'
+
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+Fvg_Settings_HTF = 'FVG HTF'
+Fvg_Settings_Display = 'FVG Display'
+Fvg_Settings_Labels = 'FVG Labeling'
+Fvg_Settings_Labels_Levels = 'FVG Label Levels To Display'
+Fvg_Settings_Labels_Content = 'FVG Label Display Content'
+Fvg_Settings_Advanced = 'FVG Advanced Settings'
+
+FVGSettings fvg_settings = FVGSettings.new()
+FVGImbalanceSettings HTF_1_Settings = FVGImbalanceSettings.new()
+FVGImbalanceSettings HTF_2_Settings = FVGImbalanceSettings.new()
+FVGImbalanceSettings HTF_3_Settings = FVGImbalanceSettings.new()
+FVGImbalanceSettings HTF_4_Settings = FVGImbalanceSettings.new()
+FVGImbalanceSettings HTF_5_Settings = FVGImbalanceSettings.new()
+FVGImbalanceSettings HTF_6_Settings = FVGImbalanceSettings.new()
+
+string fvg_tooltip1 = 'HTF FVG Settings:\n\tShow/Hide timeframe\n\tTimeframe to display\n\tBullish FVG Color\n\tBearish FVG Color\n\tMaximum number of FVGs to display'
+string fvg_tooltip2 = 'Mitigated FVG Settings:\n\tShow/Hide mitigated (Applies to all).\n\tBullish FVG Color\n\tBearish FVG Color\n\tWhen to mark it as mitigated (Based on HTF timeframe, not current timeframe)'
+
+HTF_1_Settings.show := input.bool(true, '', inline = 'htf1', group = Fvg_Settings_HTF)
+htf_1 = input.timeframe('5', '', inline = 'htf1', group = Fvg_Settings_HTF)
+HTF_1_Settings.htf := htf_1
+HTF_1_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf1', group = Fvg_Settings_HTF)
+HTF_1_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf1', group = Fvg_Settings_HTF)
+HTF_1_Settings.max_count := input.int(20, '', inline = 'htf1', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+HTF_2_Settings.show := input.bool(true, '', inline = 'htf2', group = Fvg_Settings_HTF)
+htf_2 = input.timeframe('15', '', inline = 'htf2', group = Fvg_Settings_HTF)
+HTF_2_Settings.htf := htf_2
+HTF_2_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf2', group = Fvg_Settings_HTF)
+HTF_2_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf2', group = Fvg_Settings_HTF)
+HTF_2_Settings.max_count := input.int(20, '', inline = 'htf2', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+HTF_3_Settings.show := input.bool(true, '', inline = 'htf3', group = Fvg_Settings_HTF)
+htf_3 = input.timeframe('60', '', inline = 'htf3', group = Fvg_Settings_HTF)
+HTF_3_Settings.htf := htf_3
+HTF_3_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf3', group = Fvg_Settings_HTF)
+HTF_3_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf3', group = Fvg_Settings_HTF)
+HTF_3_Settings.max_count := input.int(20, '', inline = 'htf3', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+HTF_4_Settings.show := input.bool(true, '', inline = 'htf4', group = Fvg_Settings_HTF)
+htf_4 = input.timeframe('240', '', inline = 'htf4', group = Fvg_Settings_HTF)
+HTF_4_Settings.htf := htf_4
+HTF_4_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf4', group = Fvg_Settings_HTF)
+HTF_4_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf4', group = Fvg_Settings_HTF)
+HTF_4_Settings.max_count := input.int(10, '', inline = 'htf4', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+HTF_5_Settings.show := input.bool(true, '', inline = 'htf5', group = Fvg_Settings_HTF)
+htf_5 = input.timeframe('1D', '', inline = 'htf5', group = Fvg_Settings_HTF)
+HTF_5_Settings.htf := htf_5
+HTF_5_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf5', group = Fvg_Settings_HTF)
+HTF_5_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf5', group = Fvg_Settings_HTF)
+HTF_5_Settings.max_count := input.int(10, '', inline = 'htf5', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+HTF_6_Settings.show := input.bool(true, '', inline = 'htf6', group = Fvg_Settings_HTF)
+htf_6 = input.timeframe('1W', '', inline = 'htf6', group = Fvg_Settings_HTF)
+HTF_6_Settings.htf := htf_6
+HTF_6_Settings.color_bull := input.color(GREEN_COLOR, '', inline = 'htf6', group = Fvg_Settings_HTF)
+HTF_6_Settings.color_bear := input.color(RED_COLOR, '', inline = 'htf6', group = Fvg_Settings_HTF)
+HTF_6_Settings.max_count := input.int(2, '', inline = 'htf6', tooltip = fvg_tooltip1, group = Fvg_Settings_HTF)
+
+fvg_settings.max_sets := input.int(6, 'Limit to next HTFs only', options = [1, 2, 3, 4, 5, 6])
+
+fvg_settings.ltf_hide := input.bool(true, 'Hide Lower Timeframes')
+fvg_settings.ctf_hide := input.bool(true, 'Hide Current Timeframe')
+
+fvg_settings.fill := input.bool(true, 'Background Transparency', inline = 'fill')
+
+fvg_settings.extendby := input.string('When in Range', 'Extend lines', options = ['Extension Only', 'Current Candle Plus Extension', 'When in Range'])
+fvg_settings.extend := input.int(4, 'Distance from current candle', minval = 0)
+fvg_settings.buffer := input.int(4, 'Spacing between timeframes', minval = 0)
+fvg_settings.fill_percent := input.int(98, '', options = [98, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50], inline = 'fill')
+
+fvg_settings.mitigated_show := input.bool(false, 'Mitigated', inline = '2')
+fvg_settings.mitigated_color_bull := input.color(color.new(DARK_GRAY_COLOR, 60), '', inline = '2')
+fvg_settings.mitigated_color_bear := input.color(color.new(DARK_GRAY_COLOR, 60), '', inline = '2')
+fvg_settings.mitigated_type := input.string('Wick filled', 'when', options = ['None', 'Touched', 'Wick filled', 'Body filled', 'Wick filled half', 'Body filled half'], inline = '2', tooltip = fvg_tooltip2)
+fvg_settings.mitigated_extend := input.int(5, 'Extend mitigated lines', minval = 0)
+
+fvg_settings.open_show := input.bool(true, 'Open', group = Fvg_Settings_Display, inline = 'open')
+fvg_settings.open_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = Fvg_Settings_Display, inline = 'open')
+fvg_settings.open_size := input.int(1, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = 'open')
+
+fvg_settings.close_show := input.bool(true, 'Close', group = Fvg_Settings_Display, inline = 'close')
+fvg_settings.close_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = Fvg_Settings_Display, inline = 'close')
+fvg_settings.close_size := input.int(1, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = 'close')
+
+fvg_settings.CE_show := input.bool(true, 'C.E.', group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_bull_color := input.color(color.new(color.black, 60), '', group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_bear_color := input.color(color.new(color.black, 60), '', group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = Fvg_Settings_Display, inline = '3')
+fvg_settings.CE_size := input.int(1, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = '3')
+
+fvg_settings.link_show := input.bool(true, 'Link', group = Fvg_Settings_Display, inline = '4')
+fvg_settings.link_style := input.string('⎯⎯⎯', '', options = ['⎯⎯⎯', '----', '····'], group = Fvg_Settings_Display, inline = '4')
+fvg_settings.link_size := input.int(2, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = '4')
+
+fvg_settings.label_show := input.bool(true, 'Label', inline = 'label', group = Fvg_Settings_Labels)
+fvg_settings.label_color := input.color(LIGHT_GRAY_COLOR, '', group = Fvg_Settings_Labels, inline = 'label')
+fvg_settings.label_bgcolor := input.color(TRANSPARENT_COLOR, '', group = Fvg_Settings_Labels, inline = 'label')
+fvg_settings.label_size := input.string(size.small, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = Fvg_Settings_Labels, inline = 'label')
+
+fvg_settings.label_open := input.bool(false, 'Open', group = Fvg_Settings_Labels_Levels, inline = 'level')
+fvg_settings.label_close := input.bool(false, 'Close', group = Fvg_Settings_Labels_Levels, inline = 'level')
+fvg_settings.label_ce := input.bool(true, 'C.E.', group = Fvg_Settings_Labels_Levels, inline = 'level')
+
+fvg_settings.label_tf := input.bool(true, 'Timeframe', group = Fvg_Settings_Labels_Content, inline = 'level2')
+fvg_settings.label_type := input.bool(false, 'BISI / SIBI', group = Fvg_Settings_Labels_Content, inline = 'level3')
+fvg_settings.label_level := input.bool(false, 'Open / Close / C.E.', group = Fvg_Settings_Labels_Content, inline = 'level4')
+
+fvg_settings.useProximity := input.bool(true, 'Use Proximity to show to show/hide FVGs', group = Fvg_Settings_Advanced)
+fvg_settings.proximity := 11 - input.int(9, 'Proximity factor based on daily range', options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], group = Fvg_Settings_Advanced)
+fvg_settings.labelfactor := input.int(10, 'Combine labels factor for visibility', options = [20, 15, 10, 6, 5, 4, 3], group = Fvg_Settings_Advanced) / 10
+fvg_settings.atrfactor := input.int(10, 'Range should be within X candles', minval = 1, group = Fvg_Settings_Advanced)
+
+//-----------------------------------------------------------------------------
+// Variables
+//-----------------------------------------------------------------------------
+FVGHelper fvg_helper = FVGHelper.new()
+
+var FVGImbalanceStructure FVG_1 = FVGImbalanceStructure.new()
+var FVGImbalanceStructure FVG_2 = FVGImbalanceStructure.new()
+var FVGImbalanceStructure FVG_3 = FVGImbalanceStructure.new()
+var FVGImbalanceStructure FVG_4 = FVGImbalanceStructure.new()
+var FVGImbalanceStructure FVG_5 = FVGImbalanceStructure.new()
+var FVGImbalanceStructure FVG_6 = FVGImbalanceStructure.new()
+
+var array<FVGImbalance> FVGs_1 = array.new<FVGImbalance>()
+var array<FVGImbalance> FVGs_2 = array.new<FVGImbalance>()
+var array<FVGImbalance> FVGs_3 = array.new<FVGImbalance>()
+var array<FVGImbalance> FVGs_4 = array.new<FVGImbalance>()
+var array<FVGImbalance> FVGs_5 = array.new<FVGImbalance>()
+var array<FVGImbalance> FVGs_6 = array.new<FVGImbalance>()
+
+FVG_1.imbalance := FVGs_1
+FVG_1.settings := HTF_1_Settings
+FVG_2.imbalance := FVGs_2
+FVG_2.settings := HTF_2_Settings
+FVG_3.imbalance := FVGs_3
+FVG_3.settings := HTF_3_Settings
+FVG_4.imbalance := FVGs_4
+FVG_4.settings := HTF_4_Settings
+FVG_5.imbalance := FVGs_5
+FVG_5.settings := HTF_5_Settings
+FVG_6.imbalance := FVGs_6
+FVG_6.settings := HTF_6_Settings
+
+//Used internally for padding
+var int TF_1 = 0
+var int TF_2 = 0
+var int TF_3 = 0
+var int TF_4 = 0
+var int TF_5 = 0
+var int TF_6 = 0
+
+var float fvg_daily = 0
+var float fvg_monthly = 0
+
+int fvg_cspacer = time - time[1]
+
+var array<float> fvg_median = array.new_float()
+fvg_length = 500
+fvg_median.unshift(high - low)
+if fvg_median.size() > fvg_length
+    fvg_median.pop()
+float fvg_spacing = ta.sma(ta.sma(fvg_median.median(), fvg_length), fvg_length) * fvg_settings.labelfactor
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+method FVGLineStyle(FVGHelper helper, string style) =>
+    helper.name := style
+    out = switch style
+        '----' => line.style_dashed
+        '····' => line.style_dotted
+        => line.style_solid
+    out
+
+method FVGText(FVGHelper helper, string htf, string direction, string level, bool truncate) =>
+    helper.name := htf
+
+    string formatted = ''
+
+    if fvg_settings.label_tf
+        seconds = timeframe.in_seconds(htf)
+        if seconds < 60
+            formatted := str.tostring(seconds) + 's'
+            formatted
+        else if seconds / 60 < 60
+            formatted := str.tostring(seconds / 60) + 'm'
+            formatted
+        else if seconds / 60 / 60 < 24
+            formatted := str.tostring(seconds / 60 / 60) + 'H'
+            formatted
+        else
+            formatted := htf
+            formatted
+    if not truncate
+        if fvg_settings.label_type
+            if formatted != '' and direction != ''
+                formatted := formatted + ' '
+                formatted
+            formatted := formatted + direction
+            formatted
+
+        if fvg_settings.label_level
+            if formatted != '' and level != ''
+                formatted := formatted + ' '
+                formatted
+            formatted := formatted + level
+            formatted
+
+    formatted
+
+method FVGValidTimeframe(FVGHelper helper, tf) =>
+    bool valid = true
+
+    helper.name := tf
+    n1 = timeframe.in_seconds()
+    n2 = timeframe.in_seconds(tf)
+
+    if fvg_settings.ltf_hide and n1 > n2
+        valid := false
+        valid
+    if fvg_settings.ctf_hide and n1 == n2
+        valid := false
+        valid
+    valid
+
+method FVGProximityRange(FVGHelper helper, tf) =>
+    helper.name := tf
+    float range_high = 0
+    float range_low = 0
+    if timeframe.isseconds or timeframe.isminutes
+        range_high := close + fvg_daily / fvg_settings.proximity
+        range_low := close - fvg_daily / fvg_settings.proximity
+        range_low
+    if timeframe.isdaily
+        range_high := close + fvg_monthly * 3
+        range_low := close - fvg_monthly * 3
+        range_low
+    if timeframe.isweekly
+        range_high := close + fvg_monthly * 12
+        range_low := close - fvg_monthly * 12
+        range_low
+    [range_low, range_high]
+
+method FVGHTFEnabled(FVGHelper helper) =>
+    helper.name := 'HTFEnabled'
+    int enabled = 0
+    enabled := enabled + (FVG_1.settings.show and helper.FVGValidTimeframe(FVG_1.settings.htf) ? 1 : 0)
+    enabled := enabled + (FVG_2.settings.show and helper.FVGValidTimeframe(FVG_2.settings.htf) ? 1 : 0)
+    enabled := enabled + (FVG_3.settings.show and helper.FVGValidTimeframe(FVG_3.settings.htf) ? 1 : 0)
+    enabled := enabled + (FVG_4.settings.show and helper.FVGValidTimeframe(FVG_4.settings.htf) ? 1 : 0)
+    enabled := enabled + (FVG_5.settings.show and helper.FVGValidTimeframe(FVG_5.settings.htf) ? 1 : 0)
+    enabled := enabled + (FVG_6.settings.show and helper.FVGValidTimeframe(FVG_6.settings.htf) ? 1 : 0)
+
+    math.min(enabled, fvg_settings.max_sets)
+
+
+fvgFindLow(float price, int start, int default, bool inverse) =>
+    int inc = time - time[1]
+    int loc = default
+    int x = inverse ? 0 : (time - start) / inc
+    int y = inverse ? (time - start) / inc : 0
+
+    if x < 10000 and y < 10000
+        for i = x to y by 1
+            if low[i] == price
+                loc := time[i]
+                break
+    loc
+
+fvgFindHigh(float price, int start, int default, bool inverse) =>
+    int inc = time - time[1]
+    int loc = default
+    int x = inverse ? 0 : (time - start) / inc
+    int y = inverse ? (time - start) / inc : 0
+
+    if x < 10000 and y < 10000
+        for i = x to y by 1
+            if high[i] == price
+                loc := time[i]
+                break
+    loc
+
+fvgVisibleHTFs() =>
+    int step = 1
+
+    FVG_1.step := 1
+    for t in FVG_1.imbalance
+        if not na(t.box2)
+            FVG_1.step := step
+            step := step + 1
+            break
+
+    FVG_2.step := 1
+    for t in FVG_2.imbalance
+        if not na(t.box2)
+            FVG_2.step := step
+            step := step + 1
+            break
+
+    FVG_3.step := 1
+    for t in FVG_3.imbalance
+        if not na(t.box2)
+            FVG_3.step := step
+            step := step + 1
+            break
+
+    FVG_4.step := 1
+    for t in FVG_4.imbalance
+        if not na(t.box2)
+            FVG_4.step := step
+            step := step + 1
+            break
+
+    FVG_5.step := 1
+    for t in FVG_5.imbalance
+        if not na(t.box2)
+            FVG_5.step := step
+            step := step + 1
+            break
+
+    FVG_6.step := 1
+    for t in FVG_6.imbalance
+        if not na(t.box2)
+            FVG_6.step := step
+            step := step + 1
+            break
+
+//-----------------------------------------------------------------------------
+// Imbalance Methods
+//-----------------------------------------------------------------------------
+method FVGClear(FVGImbalance imb) =>
+    if not na(imb.box2)
+        line.delete(imb.box2.open)
+        line.delete(imb.box2.close)
+        line.delete(imb.box2.ce)
+        line.delete(imb.box2.link)
+        linefill.delete(imb.box2.fill)
+        label.delete(imb.box2.label_open)
+        label.delete(imb.box2.label_close)
+        label.delete(imb.box2.label_ce)
+        imb.box2 := na
+        imb.box2
+
+
+// AddZone is used to display and manage imbalance related boxes
+method FVGAddZone(FVGImbalanceStructure IS, FVGImbalance imb, int step) =>
+    bool visible = true
+    if IS.settings.show
+        int buffer = time + (time - time[1]) * (fvg_settings.extend + 1 + fvg_settings.buffer * (step - 1))
+
+        if imb.mitigated and not fvg_settings.mitigated_show
+            if not na(imb.box2)
+                visible := false
+                visible
+            imb.FVGClear()
+
+        if na(imb.box2)
+            color c = imb.isbullish ? IS.settings.color_bull : IS.settings.color_bear
+            color cce = imb.isbullish ? fvg_settings.CE_bull_color : fvg_settings.CE_bear_color
+
+            imb.box2 := FVGBox.new()
+            imb.box2.open := line.new(imb.open_time, imb.open, buffer, imb.open, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.open_style), color = fvg_settings.open_show ? c : TRANSPARENT_COLOR, width = fvg_settings.open_size)
+            imb.box2.close := line.new(imb.close_time, imb.close, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.close_style), color = fvg_settings.close_show ? c : TRANSPARENT_COLOR, width = fvg_settings.close_size)
+            if fvg_settings.link_show
+                imb.box2.link := line.new(buffer, imb.open, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.link_style), color = c, width = fvg_settings.link_size)
+                imb.box2.link
+            if fvg_settings.fill
+                imb.box2.fill := linefill.new(imb.box2.open, imb.box2.close, color.new(c, fvg_settings.fill_percent))
+                imb.box2.fill
+
+            if fvg_settings.CE_show
+                imb.box2.ce := line.new((imb.open_time + imb.close_time) / 2, imb.middle, buffer, imb.middle, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.CE_style), color = cce, width = fvg_settings.CE_size)
+                imb.box2.ce
+            if fvg_settings.label_show
+                if math.abs(imb.open - imb.close) >= fvg_spacing
+                    if fvg_settings.open_show or fvg_settings.fill
+                        if fvg_settings.label_open
+                            imb.box2.label_open := label.new(buffer, imb.open, text = fvg_helper.FVGText(IS.settings.htf, imb.isbullish ? 'BISI' : 'SIBI', 'Open', false), xloc = xloc.bar_time, textcolor = fvg_settings.label_color, style = label.style_label_left, color = fvg_settings.label_bgcolor, size = fvg_settings.label_size)
+                            imb.box2.label_open
+                    if fvg_settings.close_show or fvg_settings.fill
+                        if fvg_settings.label_close
+                            imb.box2.label_close := label.new(buffer, imb.close, text = fvg_helper.FVGText(IS.settings.htf, imb.isbullish ? 'BISI' : 'SIBI', 'Close', false), xloc = xloc.bar_time, textcolor = fvg_settings.label_color, style = label.style_label_left, color = fvg_settings.label_bgcolor, size = fvg_settings.label_size)
+                            imb.box2.label_close
+                    if fvg_settings.CE_show and fvg_settings.label_ce
+                        imb.box2.label_ce := label.new(buffer, imb.middle, text = fvg_helper.FVGText(IS.settings.htf, imb.isbullish ? 'BISI' : 'SIBI', 'ce', false), xloc = xloc.bar_time, textcolor = fvg_settings.label_color, style = label.style_label_left, color = fvg_settings.label_bgcolor, size = fvg_settings.label_size)
+                        imb.box2.label_ce
+                else
+                    if fvg_settings.CE_show
+                        imb.box2.label_ce := label.new(buffer, imb.middle, text = fvg_helper.FVGText(IS.settings.htf, imb.isbullish ? 'BISI' : 'SIBI', '', false), xloc = xloc.bar_time, textcolor = fvg_settings.label_color, style = label.style_label_left, color = fvg_settings.label_bgcolor, size = fvg_settings.label_size)
+                        imb.box2.label_ce
+    visible
+
+method FVGUpdateZone(FVGImbalanceStructure IS) =>
+    if barstate.islast
+        fvgVisibleHTFs()
+        int level = IS.step
+        for imb in IS.imbalance
+            if not na(imb.box2)
+                int buffer = 0
+                if imb.mitigated
+                    buffer := imb.close_time + fvg_cspacer * fvg_settings.mitigated_extend
+                    line.set_color(imb.box2.open, imb.isbullish ? fvg_settings.mitigated_color_bull : fvg_settings.mitigated_color_bear)
+                    line.set_color(imb.box2.close, imb.isbullish ? fvg_settings.mitigated_color_bull : fvg_settings.mitigated_color_bear)
+                    line.set_color(imb.box2.ce, imb.isbullish ? fvg_settings.mitigated_color_bull : fvg_settings.mitigated_color_bear)
+                    line.set_color(imb.box2.link, imb.isbullish ? fvg_settings.mitigated_color_bull : fvg_settings.mitigated_color_bear)
+                    linefill.set_color(imb.box2.fill, color.new(imb.isbullish ? fvg_settings.mitigated_color_bull : fvg_settings.mitigated_color_bear, fvg_settings.fill_percent))
+                else
+                    if fvg_settings.extendby == 'Extension Only'
+                        buffer := (imb.close_time < chart.left_visible_bar_time ? chart.left_visible_bar_time : imb.close_time) + fvg_cspacer * (fvg_settings.extend + 1)
+                        buffer
+                    else
+                        if fvg_settings.extendby == 'When in Range'
+                            float atrlength = ta.atr(14) * fvg_settings.atrfactor
+                            if math.max(imb.open, imb.close) > close - atrlength and math.min(imb.open, imb.close) < close + atrlength
+                                buffer := time + fvg_cspacer * (fvg_settings.extend + 1 + (level - 1) * fvg_settings.buffer)
+                                buffer
+                            else
+                                buffer := imb.close_time + fvg_cspacer * (fvg_settings.extend + 1)
+                                buffer
+                        else
+                            buffer := time + fvg_cspacer * (fvg_settings.extend + 1 + (level - 1) * fvg_settings.buffer)
+                            buffer
+
+                line.set_x2(imb.box2.open, buffer)
+                line.set_x2(imb.box2.close, buffer)
+                line.set_x1(imb.box2.link, buffer)
+                line.set_x2(imb.box2.link, buffer)
+                if fvg_settings.label_show
+                    label.set_x(imb.box2.label_open, buffer)
+                    label.set_x(imb.box2.label_close, buffer)
+                    label.set_x(imb.box2.label_ce, buffer)
+
+                if fvg_settings.CE_show
+                    line.set_x2(imb.box2.ce, buffer)
+                if imb.mitigated
+                    if na(imb.box2.label_ce)
+                        imb.box2.label_ce := label.new(buffer, imb.middle, text = fvg_helper.FVGText(IS.settings.htf, '', '', true), xloc = xloc.bar_time, textcolor = fvg_settings.label_color, style = label.style_label_left, color = fvg_settings.label_bgcolor, size = fvg_settings.label_size)
+                        imb.box2.label_ce
+                    else
+                        label.set_text(imb.box2.label_ce, fvg_helper.FVGText(IS.settings.htf, '', '', true))
+                    label.delete(imb.box2.label_open)
+                    label.delete(imb.box2.label_close)
+
+// AddImbalance adds a newly discovered imbalance. this applies for both FVG and Volume Imbalance
+method FVGAddImbalance(FVGImbalanceStructure IS, float o, float c, int o_time, int c_time) =>
+    FVGImbalance imb = FVGImbalance.new()
+    imb.open_time := o < c ? fvgFindHigh(o, o_time, o_time, false) : fvgFindLow(o, o_time, o_time, false) // o_time
+    imb.close_time := o < c ? fvgFindLow(c, o_time, c_time, true) : fvgFindHigh(c, o_time, c_time, true) // c_time
+    imb.open := o
+    imb.middle := (o + c) / 2
+    imb.close := c
+    imb.isbullish := o < c
+    IS.imbalance.unshift(imb)
+
+    if IS.imbalance.size() > IS.settings.max_count
+        temp = IS.imbalance.pop()
+        temp.FVGClear()
+    IS
+
+// CheckMitigated checks if the imbalance has been mitigated based on the settings
+method FVGCheckMitigated(FVGImbalanceStructure IS, o, h, l, c, bool isHTF) =>
+    if IS.imbalance.size() > 0
+        for i = IS.imbalance.size() - 1 to 0 by 1
+            imb = IS.imbalance.get(i)
+
+            if not imb.mitigated
+                switch fvg_settings.mitigated_type
+                    'None' => 
+                	    imb.mitigated := false
+                	    imb.mitigated
+                    'Touched' => 
+                	    imb.mitigated := (imb.open <= imb.close ? low < imb.close : high > imb.close)
+                	    imb.mitigated
+                    'Wick filled' => 
+                	    imb.mitigated := (imb.open <= imb.close ? low <= imb.open : high >= imb.open)
+                	    imb.mitigated
+                    'Body filled' => 
+                	    imb.mitigated := isHTF and (imb.open < imb.close ? math.min(o, c) <= imb.open : math.max(o, c) >= imb.open)
+                	    imb.mitigated
+                    'Wick filled half' => 
+                	    imb.mitigated := imb.open <= imb.close ? low <= imb.middle : high >= imb.middle
+                	    imb.mitigated
+                    'Body filled half' => 
+                	    imb.mitigated := isHTF and (imb.open <= imb.close ? math.min(o, c) <= imb.middle : math.max(o, c) >= imb.middle)
+                	    imb.mitigated
+                if imb.mitigated
+                    if not fvg_settings.mitigated_show
+                        imb.FVGClear()
+                        IS.imbalance.remove(i)
+                    else
+                        imb.mitigated_time := time
+                        imb.mitigated_time
+                    IS.FVGUpdateZone()
+    IS
+
+method FVGProximityTest(FVGImbalanceStructure IS) =>
+    if IS.imbalance.size() > 0
+        [rl, rh] = fvg_helper.FVGProximityRange(IS.settings.htf)
+        for i = 0 to IS.imbalance.size() - 1 by 1
+            imb = IS.imbalance.get(i)
+            if (math.max(imb.open, imb.close) > rl and math.min(imb.open, imb.close) < rh) or not fvg_settings.useProximity
+                IS.FVGAddZone(imb, IS.order)
+            else
+                imb.FVGClear()
+    IS
+
+// FindImbalance looks for imbalances and, if found, adds it to the list
+method FVGFindImbalance(FVGImbalanceStructure IS, o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2) =>
+    if IS.settings.show
+        if h < l2
+            IS.FVGAddImbalance(l2, h, t2, t)
+        if l > h2
+            IS.FVGAddImbalance(h2, l, t2, t)
+    IS
+
+method FVGProcess(FVGImbalanceStructure IS, float o, float h, float l, float c, int t, float o1, float h1, float l1, float c1, int t1, float o2, float h2, float l2, float c2, int t2) =>
+    bool show = false
+
+    if IS.settings.show
+        if fvg_helper.FVGValidTimeframe(IS.settings.htf)
+            IS.FVGFindImbalance(o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2)
+
+fvgGetHTF(string htf, int i) =>
+    [open[i], high[i], low[i], close[i], time[i]]
+
+method fvgCheck(FVGImbalanceStructure IS, string htf) =>
+    bool newCandle = bool(ta.change(time(htf, "america/New_York")))
+    if newCandle
+        int inc = 1 //barstate.isrealtime ? 1 : 0
+        [o, h, l, c, t]        = request.security(syminfo.tickerid, htf, fvgGetHTF(htf, inc), lookahead = barmerge.lookahead_on)
+        [o1, h1, l1, c1, t1]   = request.security(syminfo.tickerid, htf, fvgGetHTF(htf, inc+1), lookahead = barmerge.lookahead_on)
+        [o2, h2, l2, c2, t2]   = request.security(syminfo.tickerid, htf, fvgGetHTF(htf, inc+2), lookahead = barmerge.lookahead_on)
+        if not na(o)
+            IS.FVGProcess(o, h, l, c, t, o1, h1, l1, c1, t1, o2, h2, l2, c2, t2)
+            IS.FVGProximityTest()
+            IS.FVGCheckMitigated(o, h, l, c, bool(ta.change(time(htf, "america/New_York"))))
+
+    IS.FVGCheckMitigated(open, high, low, close, newCandle)
+
+    IS.FVGUpdateZone()
+
+//-----------------------------------------------------------------------------
+// Calculate & Render
+//-----------------------------------------------------------------------------
+// daily and monthly are used for proximity test on higher timeframes
+fvg_daily := request.security(syminfo.tickerid, '1D', ta.atr(14))
+fvg_monthly := request.security(syminfo.tickerid, '1M', ta.atr(14))
+
+int fvg_cnt = 0
+int fvg_last = fvg_helper.FVGHTFEnabled()
+
+if true// barstate.isconfirmed
+    if FVG_1.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_1)
+            fvg_cnt := fvg_cnt + 1
+            FVG_1.order := fvg_cnt
+            FVG_1.fvgCheck(htf_1)
+
+    if FVG_2.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_2)
+            if fvg_cnt < fvg_last
+                fvg_cnt := fvg_cnt + 1
+                FVG_2.order := fvg_cnt
+                FVG_2.fvgCheck(htf_2)
+
+    if FVG_3.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_3)
+            if fvg_cnt < fvg_last
+                fvg_cnt := fvg_cnt + 1
+                FVG_3.order := fvg_cnt
+                FVG_3.fvgCheck(htf_3)
+
+    if FVG_4.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_4)
+            if fvg_cnt < fvg_last
+                fvg_cnt := fvg_cnt + 1
+                FVG_4.order := fvg_cnt
+                FVG_4.fvgCheck(htf_4)
+
+    if FVG_5.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_5)
+            if fvg_cnt < fvg_last
+                fvg_cnt := fvg_cnt + 1
+                FVG_5.order := fvg_cnt
+                FVG_5.fvgCheck(htf_5)
+
+    if FVG_6.settings.show
+        if fvg_helper.FVGValidTimeframe(htf_6)
+            if fvg_cnt < fvg_last
+                fvg_cnt := fvg_cnt + 1
+                FVG_6.order := fvg_cnt
+                FVG_6.fvgCheck(htf_6)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 // HTF Candles
 //-----------------------------------------------------------------------------
 // Types
