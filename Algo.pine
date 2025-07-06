@@ -1700,8 +1700,8 @@ type EqualLevels
 //-----------------------------------------------------------------------------
 int MAX_BUFFER = 1000 // internal maximum node count limit for performance
 
-ICT_Group = 'Market Structure ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
-ICT_Labelas = 'Label Format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Market_Structure_Group = 'Market Structure ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Label_Format_Group = 'Label Format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 
 settings_liquidity = 'Liquidity Levels ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 settings_liquidity_style = 'Liquidity Style ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -1730,30 +1730,30 @@ inline_displacement = 'displacement'
 
 OFSettings Trend_Settings = OFSettings.new()
 
-Trend_Settings.ST_show := input.bool(false, 'Short', group = ICT_Group, inline = inline_st)
-Trend_Settings.ST_color_bull := input.color(color.black, '', group = ICT_Group, inline = inline_st)
-Trend_Settings.ST_color_bear := input.color(color.black, '', group = ICT_Group, inline = inline_st)
-Trend_Settings.ST_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_st)
+Trend_Settings.ST_show := input.bool(false, 'Short', group = Market_Structure_Group, inline = inline_st)
+Trend_Settings.ST_color_bull := input.color(color.black, '', group = Market_Structure_Group, inline = inline_st)
+Trend_Settings.ST_color_bear := input.color(color.black, '', group = Market_Structure_Group, inline = inline_st)
+Trend_Settings.ST_label_color := input.color(TRANSPARENT_COLOR, '', group = Market_Structure_Group, inline = inline_st)
 
-Trend_Settings.IT_show := input.bool(false, 'Intermediate', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_color_bull := input.color(color.new(AQUA_COLOR, 0), '', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_color_bear := input.color(color.new(AQUA_COLOR, 0), '', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_show := input.bool(false, 'Intermediate', group = Market_Structure_Group, inline = inline_it)
+Trend_Settings.IT_color_bull := input.color(color.new(AQUA_COLOR, 0), '', group = Market_Structure_Group, inline = inline_it)
+Trend_Settings.IT_color_bear := input.color(color.new(AQUA_COLOR, 0), '', group = Market_Structure_Group, inline = inline_it)
+Trend_Settings.IT_label_color := input.color(TRANSPARENT_COLOR, '', group = Market_Structure_Group, inline = inline_it)
 
-Trend_Settings.LT_show := input.bool(false, 'Long', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_color_bull := input.color(color.new(PURPLE_COLOR, 0), '', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_color_bear := input.color(color.new(PURPLE_COLOR, 0), '', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_show := input.bool(false, 'Long', group = Market_Structure_Group, inline = inline_lt)
+Trend_Settings.LT_color_bull := input.color(color.new(PURPLE_COLOR, 0), '', group = Market_Structure_Group, inline = inline_lt)
+Trend_Settings.LT_color_bear := input.color(color.new(PURPLE_COLOR, 0), '', group = Market_Structure_Group, inline = inline_lt)
+Trend_Settings.LT_label_color := input.color(TRANSPARENT_COLOR, '', group = Market_Structure_Group, inline = inline_lt)
 
-Trend_Settings.ST_label := input.string('High/Low', 'Short', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '1')
-Trend_Settings.ST_text_size := input.string(size.tiny, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '1')
+Trend_Settings.ST_label := input.string('High/Low', 'Short', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = Label_Format_Group, inline = '1')
+Trend_Settings.ST_text_size := input.string(size.tiny, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = Label_Format_Group, inline = '1')
 
-Trend_Settings.IT_label := input.string('High/Low', 'Intermediate', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '2')
-Trend_Settings.IT_text_size := input.string(size.small, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '2')
-Trend_Settings.LT_label := input.string('High/Low', 'Long', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '3')
-Trend_Settings.LT_text_size := input.string(size.normal, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '3')
+Trend_Settings.IT_label := input.string('High/Low', 'Intermediate', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = Label_Format_Group, inline = '2')
+Trend_Settings.IT_text_size := input.string(size.small, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = Label_Format_Group, inline = '2')
+Trend_Settings.LT_label := input.string('High/Low', 'Long', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = Label_Format_Group, inline = '3')
+Trend_Settings.LT_text_size := input.string(size.normal, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = Label_Format_Group, inline = '3')
 
-Trend_Settings.max_labels := input.int(50, 'Maximum number of labels', group = ICT_Labelas)
+Trend_Settings.max_labels := input.int(50, 'Maximum number of labels', group = Label_Format_Group)
 
 Trend_Settings.ST_liquidity_show := input.bool(false, 'Short', group = settings_liquidity, inline = inline_st_liquidity)
 Trend_Settings.ST_liquidity_open_color := input.color(color.new(color.black, 50), '', group = settings_liquidity, inline = inline_st_liquidity)
