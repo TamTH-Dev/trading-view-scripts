@@ -1569,3 +1569,694 @@ if candle_htf6.settings.show and candle_helper.CandleValidTimeframe(candle_htf6.
     candle_htf6.CandleMonitor().CandleUpdate(candle_offset, showTrace).CandleFindImbalance()
 
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Order Flow
+//-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+type OFSettings
+	string liquidity_open_style
+	string liquidity_claimed_style
+
+	string ST_label
+	string IT_label
+	string LT_label
+
+	bool ST_show
+	string ST_text_size
+	color ST_color_bull
+	color ST_color_bear
+	color ST_label_color
+	bool ST_liquidity_show
+	color ST_liquidity_open_color
+	int ST_liquidity_size
+	color ST_liquidity_claimed_color
+
+	bool IT_show
+	string IT_text_size
+	color IT_color_bull
+	color IT_color_bear
+	color IT_label_color
+	bool IT_liquidity_show
+	color IT_liquidity_open_color
+	int IT_liquidity_size
+	color IT_liquidity_claimed_color
+
+	bool LT_show
+	string LT_text_size
+	color LT_color_bull
+	color LT_color_bear
+	color LT_label_color
+	bool LT_liquidity_show
+	color LT_liquidity_open_color
+	int LT_liquidity_size
+	color LT_liquidity_claimed_color
+
+	int max_labels
+
+	bool liquidity_open_show
+	int max_lines
+	int max_claimed_lines
+	int extend
+
+	bool EQ_show
+	int EQ_max
+	int EQ_max_claimed
+	bool EQ_link_show
+	color EQ_link_color
+	string EQ_link_style
+	int EQ_link_size
+	bool EQ_line_extend
+	color EQ_color_bull
+	color EQ_color_bear
+	string EQ_style
+	string EQ_claimed_style
+
+	int EQ_size
+	bool EQ_shade
+	color EQ_shade_bull
+	color EQ_shade_bear
+
+	int EQ_Tolerance
+
+	bool displacement_show
+	bool displacement_fvg
+	int displacement_length
+	int displacement_factor
+	color displacement_bull
+	color displacement_bear
+
+type Pivot
+	int index = 0
+	int time = 0
+	float price = 0
+	int time_last = 0
+	bool claimed = false
+	bool isHigh = false
+	bool isLow = false
+	bool isSHigherHigh = false
+	bool isSLowerLow = false
+	bool isIHigherHigh = false
+	bool isILowerLow = false
+	bool isLHigherHigh = false
+	bool isLLowerLow = false
+	bool isST = true
+	bool isIT = false
+	bool isLT = false
+	label lbl = na
+	line ln = na
+
+type MarketStructure
+	string name
+	array<Pivot> ST
+	array<Pivot> STH
+	array<Pivot> ITH
+	array<Pivot> LTH
+	array<Pivot> STL
+	array<Pivot> ITL
+	array<Pivot> LTL
+	OFSettings settings
+
+type EqualLevels
+	float price
+	float start
+	float end
+	int start_time
+	int end_time
+	int start_index
+	int end_index
+	bool isHigh
+	bool isLow
+	bool isClaimed
+	int claimed_time
+	line line_eq
+	line line_link
+	box box_link
+
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+int MAX_BUFFER = 1000 // internal maximum node count limit for performance
+
+ICT_Group = 'ICT Market Structure ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+ICT_Labelas = 'Label Format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+
+settings_liquidity = 'Liquidity Levels ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+settings_liquidity_style = 'Liquidity Style ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+settings_eq = 'Relative Equal Highs and Lows ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+settings_displacement = 'Displacement ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+FVG_Group = 'Fair Value Gap ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+FVG_HP_Group = 'For High Probability Fair Value Gap ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Imb_Group = 'Volume Imbalance ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+Gap_Group = 'Open Gaps ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+
+inline_st = 'ST'
+inline_st_liquidity = 'ST liquidity'
+
+inline_it = 'IT'
+inline_it_liquidity = 'IT liquidity'
+inline_lt = 'LT'
+inline_lt_liquidity = 'LT liquidity'
+
+inline_liquidity_open = 'open liquidity'
+inline_liquidity_claimed = 'claimed liquidity'
+
+inline_eq = 'EQ'
+inline_eq_link = 'EQ Link'
+inline_eq_shade = 'EQ Shade'
+inline_displacement = 'displacement'
+
+OFSettings Trend_Settings = OFSettings.new()
+
+Trend_Settings.ST_show := input.bool(false, 'Short', group = ICT_Group, inline = inline_st)
+Trend_Settings.ST_color_bull := input.color(color.black, '', group = ICT_Group, inline = inline_st)
+Trend_Settings.ST_color_bear := input.color(color.black, '', group = ICT_Group, inline = inline_st)
+Trend_Settings.ST_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_st)
+
+Trend_Settings.IT_show := input.bool(true, 'Intermediate', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_color_bull := input.color(color.new(color.purple, 0), '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_color_bear := input.color(color.new(color.purple, 0), '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_it)
+
+Trend_Settings.LT_show := input.bool(true, 'Long', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_color_bull := input.color(color.new(color.blue, 0), '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_color_bear := input.color(color.new(color.blue, 0), '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_lt)
+
+Trend_Settings.ST_label := input.string('High/Low', 'Short', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '1')
+Trend_Settings.ST_text_size := input.string(size.tiny, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '1')
+
+Trend_Settings.IT_label := input.string('High/Low', 'Intermediate', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '2')
+Trend_Settings.IT_text_size := input.string(size.small, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '2')
+Trend_Settings.LT_label := input.string('High/Low', 'Long', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '3')
+Trend_Settings.LT_text_size := input.string(size.normal, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '3')
+
+Trend_Settings.max_labels := input.int(50, 'Maximum number of labels', group = ICT_Labelas)
+
+Trend_Settings.ST_liquidity_show := input.bool(false, 'Short', group = settings_liquidity, inline = inline_st_liquidity)
+Trend_Settings.ST_liquidity_open_color := input.color(color.new(color.black, 50), '', group = settings_liquidity, inline = inline_st_liquidity)
+Trend_Settings.ST_liquidity_claimed_color := input.color(color.new(color.black, 50), '', group = settings_liquidity, inline = inline_st_liquidity)
+Trend_Settings.ST_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_st_liquidity)
+
+Trend_Settings.IT_liquidity_show := input.bool(true, 'Intermediate', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_open_color := input.color(color.new(color.purple, 50), '', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_claimed_color := input.color(color.new(color.purple, 50), '', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_it_liquidity)
+
+Trend_Settings.LT_liquidity_show := input.bool(true, 'Long', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_open_color := input.color(color.new(color.blue, 50), '', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_claimed_color := input.color(color.new(color.blue, 50), '', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_lt_liquidity)
+
+Trend_Settings.liquidity_open_style := input.string('⎯⎯⎯', 'Open', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
+Trend_Settings.liquidity_claimed_style := input.string('····', 'Claimed', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
+Trend_Settings.extend := input.int(5, title = 'Extend', minval = 1, group = settings_liquidity_style)
+Trend_Settings.max_lines := input.int(50, 'Maximum number of lines', minval = 1, maxval = 250, group = settings_liquidity_style)
+Trend_Settings.max_claimed_lines := input.int(5, 'Maximum number of claimed lines', minval = 0, maxval = 250, group = settings_liquidity_style)
+
+Trend_Settings.EQ_show := input.bool(true, 'Equal Levels', group = settings_eq, inline = inline_eq)
+Trend_Settings.EQ_color_bull := input.color(LIGHT_GRAY_COLOR, '', group = settings_eq, inline = inline_eq)
+Trend_Settings.EQ_color_bear := input.color(LIGHT_GRAY_COLOR, '', group = settings_eq, inline = inline_eq)
+Trend_Settings.EQ_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_eq, inline = inline_eq)
+
+Trend_Settings.EQ_style := input.string('⎯⎯⎯', '', options = ['⎯⎯⎯', '----', '····'], group = settings_eq, inline = inline_eq)
+
+Trend_Settings.EQ_link_show := input.bool(true, 'link Levels', group = settings_eq, inline = inline_eq_link)
+Trend_Settings.EQ_link_color := input.color(DARK_GRAY_COLOR, '', group = settings_eq, inline = inline_eq_link)
+Trend_Settings.EQ_link_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_eq, inline = inline_eq_link)
+Trend_Settings.EQ_link_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = settings_eq, inline = inline_eq_link)
+
+Trend_Settings.EQ_shade := input.bool(true, 'Highlight', group = settings_eq, inline = inline_eq_shade)
+Trend_Settings.EQ_shade_bull := input.color(color.new(BLUE_COLOR, 90), '', group = settings_eq, inline = inline_eq_shade)
+Trend_Settings.EQ_shade_bear := input.color(color.new(ORANGE_COLOR, 90), '', group = settings_eq, inline = inline_eq_shade)
+Trend_Settings.EQ_claimed_style := input.string('····', 'Claimed Style', options = ['⎯⎯⎯', '----', '····'], group = settings_eq)
+Trend_Settings.EQ_Tolerance := input.int(2, 'Distance Tolerance', options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], group = settings_eq) / 10
+
+Trend_Settings.EQ_max := input.int(20, 'Maximum number of Equal Levels', minval = 1, group = settings_eq)
+Trend_Settings.EQ_max_claimed := input.int(5, 'Maximum number of Claimed Levels', minval = 1, group = settings_eq)
+
+//-----------------------------------------------------------------------------
+// Variables
+//-----------------------------------------------------------------------------
+Helper of_helper = Helper.new()
+
+var MarketStructure Term = MarketStructure.new('Term')
+var array<Pivot> ST_array = array.new<Pivot>()
+var array<Pivot> IT_array = array.new<Pivot>()
+var array<Pivot> LT_array = array.new<Pivot>()
+var array<Pivot> STH_array = array.new<Pivot>()
+var array<Pivot> ITH_array = array.new<Pivot>()
+var array<Pivot> LTH_array = array.new<Pivot>()
+var array<Pivot> STL_array = array.new<Pivot>()
+var array<Pivot> ITL_array = array.new<Pivot>()
+var array<Pivot> LTL_array = array.new<Pivot>()
+Term.ST := ST_array
+Term.STH := STH_array
+Term.ITH := ITH_array
+Term.LTH := LTH_array
+Term.STL := STL_array
+Term.ITL := ITL_array
+Term.LTL := LTL_array
+Term.settings := Trend_Settings
+
+var array<EqualLevels> EQs = array.new<EqualLevels>()
+
+var array<label> labels = array.new_label()
+var array<EqualLevels> EQ_claimed = array.new<EqualLevels>()
+var line tester = line.new(na, na, na, na, color = TRANSPARENT_COLOR)
+
+body = math.abs(open - close)
+std = ta.stdev(math.abs(open - close), Trend_Settings.displacement_length)
+
+var array<float> median = array.new_float()
+length = 14
+median.unshift(ta.atr(length))
+if median.size() > length
+    median.pop()
+float spacing = median.median() * Trend_Settings.EQ_Tolerance
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+// SkipEQHigh returns the first bar_index of before the equal highs
+// This is used to compare pivot points, if two at equal levels
+// then we need to compare it to previous high, otherwise it will
+// not identify the right STH/STL
+method SkipEQHigh(Helper helper, int idx) =>
+    helper.name := 'Skip EQ Highs'
+    i = idx
+    while high[i] == high[i - 1]
+        i := i + 1
+        i
+    i
+    // SkipEQLows returns the first bar_index of before the equal lows
+method SkipEQLow(Helper helper, int idx) =>
+    helper.name := 'Skip EQ Lows'
+    i = idx
+    while low[i] == low[i - 1]
+        i := i + 1
+        i
+    i
+
+// Same as above, but works on pivot points. it also doesn't care for
+// high or low since Pivot is a single price point
+method SkipEQPivot(array<Pivot> p, int idx) =>
+    i = idx
+    if p.size() >= i
+        while p.get(i).price == p.get(i - 1).price and p.size() <= i - 1
+            i := i + 1
+            i
+    i
+
+method OFAddEQ(array<EqualLevels> this, Pivot p1, Pivot p2) =>
+    EqualLevels eq = EqualLevels.new()
+    eq.start := p1.price
+    eq.start_time := p1.time
+    eq.start_index := p1.index
+    eq.end := p2.price
+    eq.end_time := p2.time
+    eq.end_index := p2.index
+    eq.isHigh := p1.isHigh
+    eq.isLow := p1.isLow
+
+    if Trend_Settings.EQ_show
+        int start_time = 0
+        if eq.isHigh
+            eq.price := eq.start > eq.end ? eq.start : eq.end
+            start_time := eq.start > eq.end ? eq.start_time : eq.end_time
+            start_time
+        else
+            eq.price := eq.start < eq.end ? eq.start : eq.end
+            start_time := eq.start < eq.end ? eq.start_time : eq.end_time
+            start_time
+        eq.line_eq := line.new(eq.start_time, eq.price, time, eq.price, xloc = xloc.bar_time, style = of_helper.LineStyle(Trend_Settings.EQ_style), color = eq.isHigh ? Trend_Settings.EQ_color_bull : Trend_Settings.EQ_color_bear, width = Trend_Settings.EQ_size)
+        if Trend_Settings.EQ_link_show
+            eq.line_link := line.new(eq.start_time, eq.start, eq.end_time, eq.end, xloc = xloc.bar_time, style = of_helper.LineStyle(Trend_Settings.EQ_link_style), color = Trend_Settings.EQ_link_color, width = Trend_Settings.EQ_link_size)
+            eq.line_link
+        if Trend_Settings.EQ_shade
+            eq.box_link := box.new(eq.start_time, eq.start, eq.end_time, eq.end, xloc = xloc.bar_time, border_color = TRANSPARENT_COLOR, bgcolor = eq.isHigh ? Trend_Settings.EQ_shade_bull : Trend_Settings.EQ_shade_bear)
+            eq.box_link
+        this.unshift(eq)
+
+        if this.size() > Trend_Settings.EQ_max + Trend_Settings.EQ_max_claimed
+            EqualLevels t = this.pop()
+            t.line_eq.delete()
+            t.line_link.delete()
+            t.box_link.delete()
+    this
+
+OFTestEQ(Pivot p1, Pivot p2) =>
+    bool valid = true
+    tester.set_xy1(p1.index, p1.price)
+    tester.set_xy2(p2.index, p2.price)
+    for i = p1.index + 1 to p2.index - 1 by 1
+        bool isHigh = p1.isHigh
+        float p = tester.get_price(i)
+        int j = bar_index - i
+        if isHigh and high[j] > p or not isHigh and low[j] < p
+            valid := false
+            valid
+    valid
+
+method OFProcessEQ(array<EqualLevels> this, Pivot p1, Pivot p2) =>
+    bool matched = false
+    for p in this
+        if p.start_index == p1.index and not p.isClaimed
+
+            if p.end <= p2.price and p.isHigh or p.end >= p2.price and p.isLow
+
+                if OFTestEQ(p1, p2)
+                    p.end := p2.price
+                    p.end_time := p2.time
+                    p.end_index := p2.index
+                    p.line_link.set_xy2(p.end_time, p.end)
+                    p.box_link.set_rightbottom(p.end_time, p.end)
+            matched := true
+            break
+        if (p.end_index == p2.index or p.end_index == p1.index) and (p.isLow == p1.isLow or p.isLow == p2.isLow)
+            matched := true
+            break
+
+    if not matched
+        if OFTestEQ(p1, p2)
+            this.OFAddEQ(p1, p2)
+    this
+
+method OFFindEQ(MarketStructure MS, Pivot pivot) =>
+    if MS.settings.EQ_show or MS.settings.EQ_link_show
+
+        if MS.ST.size() > 2
+            for p in MS.ST
+                if (p.isHigh and pivot.isHigh or p.isLow and pivot.isLow) and p.index != pivot.index
+
+                    if math.abs(p.price - pivot.price) < spacing
+                        EQs.OFProcessEQ(p, pivot)
+    MS
+
+method OfGetLabel(Pivot pivot) =>
+    string lbl = ''
+    if Trend_Settings.ST_show and pivot.isST and (not pivot.isIT or not Trend_Settings.IT_show) and (not pivot.isLT or not Trend_Settings.LT_show)
+        switch Trend_Settings.ST_label
+            'S/I/L Term' => 
+        	    lbl := lbl + 'ST'
+        	    lbl := lbl + (pivot.isHigh ? 'H' : 'L')
+        	    lbl
+            'High/Low' => 
+        	    lbl := lbl + 'ST'
+        	    lbl := lbl + (pivot.isHigh ? pivot.isSHigherHigh ? '-HH' : '-LH' : pivot.isSLowerLow ? '-LL' : '-HL')
+        	    lbl
+            => 
+        	    if str.length(Trend_Settings.ST_label) == 1
+        	        lbl := Trend_Settings.ST_label
+        	        lbl
+        	    else
+        	        array<string> symb = str.split(Trend_Settings.ST_label, '')
+        	        lbl := lbl + (pivot.isHigh ? symb.get(1) : symb.get(0))
+        	        lbl
+
+    if Trend_Settings.IT_show and pivot.isIT and (not pivot.isLT or not Trend_Settings.LT_show)
+        switch Trend_Settings.IT_label
+            'S/I/L Term' => 
+        	    lbl := lbl + 'IT'
+        	    lbl := lbl + (pivot.isHigh ? 'H' : 'L')
+        	    lbl
+            'High/Low' => 
+        	    lbl := lbl + 'IT'
+        	    lbl := lbl + (pivot.isHigh ? pivot.isIHigherHigh ? '-HH' : '-LH' : pivot.isILowerLow ? '-LL' : '-HL')
+        	    lbl
+            => 
+        	    if str.length(Trend_Settings.IT_label) == 1
+        	        lbl := Trend_Settings.IT_label
+        	        lbl
+        	    else
+        	        array<string> symb = str.split(Trend_Settings.IT_label, '')
+        	        lbl := lbl + (pivot.isHigh ? symb.get(1) : symb.get(0))
+        	        lbl
+    if Trend_Settings.LT_show and pivot.isLT
+        switch Trend_Settings.LT_label
+            'S/I/L Term' => 
+        	    lbl := lbl + 'LT'
+        	    lbl := lbl + (pivot.isHigh ? 'H' : 'L')
+        	    lbl
+            'High/Low' => 
+        	    lbl := lbl + 'LT'
+        	    lbl := lbl + (pivot.isHigh ? pivot.isLHigherHigh ? '-HH' : '-LH' : pivot.isLLowerLow ? '-LL' : '-HL')
+        	    lbl
+            => 
+        	    if str.length(Trend_Settings.LT_label) == 1
+        	        lbl := Trend_Settings.LT_label
+        	        lbl
+        	    else
+        	        array<string> symb = str.split(Trend_Settings.LT_label, '')
+        	        lbl := lbl + (pivot.isHigh ? symb.get(1) : symb.get(0))
+        	        lbl
+    lbl
+
+// Calculates and returns the Pivot Point settings
+// based on what is configured in the properties window
+method OFGetLabelSettings(MarketStructure MS, Pivot pivot) =>
+    color lbl_color = na
+    string lbl_text_size = na
+    color txt_color = na
+    string lbl_style = na
+
+    if MS.settings.ST_show
+        lbl_color := MS.settings.ST_label_color
+        lbl_text_size := MS.settings.ST_text_size
+        txt_color := pivot.isHigh ? MS.settings.ST_color_bull : MS.settings.ST_color_bear
+        txt_color
+
+    if MS.settings.IT_show
+        if pivot.isIT
+            lbl_color := MS.settings.IT_label_color
+            lbl_text_size := MS.settings.IT_text_size
+            txt_color := pivot.isHigh ? MS.settings.IT_color_bull : MS.settings.IT_color_bear
+            txt_color
+
+    if MS.settings.LT_show
+        if pivot.isLT
+            lbl_color := MS.settings.LT_label_color
+            lbl_text_size := MS.settings.LT_text_size
+            txt_color := pivot.isHigh ? MS.settings.LT_color_bull : MS.settings.LT_color_bear
+            txt_color
+
+    if MS.settings.ST_show or MS.settings.IT_show or MS.settings.LT_show
+        lbl_style := pivot.isHigh ? label.style_label_down : label.style_label_up
+        lbl_style
+
+    [lbl_color, lbl_text_size, txt_color, lbl_style, pivot.OfGetLabel()]
+
+// Displays the Pivot label with the proper settings. it is used for both adding the initial
+// Pivot and renaming/adjusting it if it is converted from STH to ITH for example
+method OFDrawLabel(MarketStructure MS, Pivot pivot) =>
+    [lbl_color, lbl_text_size, txt_color, lbl_style, lbl] = MS.OFGetLabelSettings(pivot)
+    if na(pivot.lbl)
+        pivot.lbl := label.new(pivot.time, pivot.price, xloc = xloc.bar_time, color = lbl_color, size = lbl_text_size, textcolor = txt_color, style = lbl_style, text = lbl)
+    else
+        label.set_style(pivot.lbl, lbl_style)
+        label.set_color(pivot.lbl, lbl_color)
+        label.set_size(pivot.lbl, lbl_text_size)
+        label.set_textcolor(pivot.lbl, txt_color)
+        label.set_text(pivot.lbl, lbl)
+    MS
+
+// Adds the liquidity lines
+method OFDrawLiquidity(MarketStructure MS, Pivot pivot) =>
+    color liquidity_open_color = pivot.isLT and MS.settings.LT_liquidity_show ? MS.settings.LT_liquidity_open_color : pivot.isIT and MS.settings.IT_liquidity_show ? MS.settings.IT_liquidity_open_color : MS.settings.ST_liquidity_open_color
+    color liquidity_claimed_color = pivot.isLT and MS.settings.LT_liquidity_show ? MS.settings.LT_liquidity_claimed_color : pivot.isIT and MS.settings.IT_liquidity_show ? MS.settings.IT_liquidity_claimed_color : MS.settings.ST_liquidity_claimed_color
+    int liquidity_size = pivot.isLT and MS.settings.LT_liquidity_show ? MS.settings.LT_liquidity_size : pivot.isIT and MS.settings.IT_liquidity_show ? MS.settings.IT_liquidity_size : MS.settings.ST_liquidity_size
+
+    if MS.settings.ST_liquidity_show or MS.settings.IT_liquidity_show and pivot.isIT or MS.settings.LT_liquidity_show and pivot.isLT
+        if na(pivot.ln)
+            pivot.ln := line.new(pivot.time, pivot.price, pivot.claimed ? pivot.time_last : time + (time - time[1]) * MS.settings.extend, pivot.price, xloc = xloc.bar_time, style = of_helper.LineStyle(pivot.claimed ? MS.settings.liquidity_claimed_style : MS.settings.liquidity_open_style), color = pivot.claimed ? liquidity_claimed_color : liquidity_open_color, width = liquidity_size)
+            pivot.ln
+        else
+            line.set_color(pivot.ln, pivot.claimed ? liquidity_claimed_color : liquidity_open_color)
+            line.set_width(pivot.ln, liquidity_size)
+            line.set_x2(pivot.ln, pivot.claimed ? pivot.time_last : time + (time - time[1]) * MS.settings.extend)
+            line.set_style(pivot.ln, of_helper.LineStyle(pivot.claimed ? MS.settings.liquidity_claimed_style : MS.settings.liquidity_open_style))
+    MS
+
+// Handles the addition of newly discovered ST[H/L] Pivot Point
+method OFAddMS(MarketStructure MS, float p_price, int p_time, int p_index, bool isHigh) =>
+    Pivot pivot = Pivot.new()
+    pivot.price := p_price
+    pivot.time := p_time
+    pivot.isST := true
+    pivot.index := p_index
+
+    MS.ST.unshift(pivot)
+
+    if isHigh
+        pivot.isHigh := true
+        if MS.STH.size() > 0
+            Pivot p = MS.STH.first()
+            if p.price <= p_price
+                pivot.isSHigherHigh := true
+                pivot.isSHigherHigh
+        MS.STH.unshift(pivot)
+    else
+        pivot.isLow := true
+        if MS.STL.size() > 0
+            Pivot p = MS.STL.first()
+            if p.price >= p_price
+                pivot.isSLowerLow := true
+                pivot.isSLowerLow
+        MS.STL.unshift(pivot)
+    MS.OFFindEQ(pivot)
+
+    if MS.ST.size() > MAX_BUFFER
+        Pivot temp = MS.ST.pop()
+        line.delete(temp.ln)
+        label.delete(temp.lbl)
+
+    MS
+
+// Rechecks the Pivot points and renames the Pivot point from ST to IT
+method OFFindIT(MarketStructure MS) =>
+    if MS.STH.size() > 3
+        h1 = MS.STH.first()
+        h2 = MS.STH.get(1)
+        h3 = MS.STH.get(MS.STH.SkipEQPivot(2))
+        if h2.price > h3.price and h2.price > h1.price and not h2.isIT
+            h2.isIT := true
+            if MS.ITH.size() > 0
+                Pivot p = MS.ITH.first()
+                if p.price <= h2.price
+                    h2.isIHigherHigh := true
+                    h2.isIHigherHigh
+            MS.ITH.unshift(h2)
+
+    if MS.STL.size() > 2
+        l1 = MS.STL.first()
+        l2 = MS.STL.get(1)
+        l3 = MS.STL.get(MS.STL.SkipEQPivot(2))
+        if l2.price < l3.price and l2.price < l1.price and not l2.isIT
+            l2.isIT := true
+            if MS.ITL.size() > 0
+                Pivot p = MS.ITL.first()
+                if p.price >= l2.price
+                    l2.isILowerLow := true
+                    l2.isILowerLow
+            MS.ITL.unshift(l2)
+    MS
+
+// Rechecks the IT Pivot points and renames the Pivot point from IT to LT
+method OFFindLT(MarketStructure MS) =>
+    if MS.ITH.size() > 2
+        h1 = MS.ITH.first()
+        h2 = MS.ITH.get(1)
+        h3 = MS.ITH.get(2)
+        if h2.price > h3.price and h2.price > h1.price and not h2.isLT
+            h2.isLT := true
+
+            if MS.LTH.size() > 0
+                Pivot p = MS.LTH.first()
+                if p.price <= h2.price
+                    h2.isLHigherHigh := true
+                    h2.isLHigherHigh
+
+            MS.LTH.unshift(h2)
+
+    if MS.ITL.size() > 2
+        l1 = MS.ITL.first()
+        l2 = MS.ITL.get(1)
+        l3 = MS.ITL.get(MS.ITL.SkipEQPivot(2))
+
+        if l2.price < l3.price and l2.price < l1.price and not l2.isLT
+            l2.isLT := true
+
+            if MS.LTL.size() > 0
+                Pivot p = MS.LTL.first()
+                if p.price >= l2.price
+                    l2.isLLowerLow := true
+                    l2.isLLowerLow
+
+            MS.LTL.unshift(l2)
+    MS
+
+// Checks for ST[H/L] and calls the Add method
+method OFFindST(MarketStructure MS) =>
+    h = high[1] > high[of_helper.SkipEQHigh(2)] and high[1] > high
+    l = low[1] < low[of_helper.SkipEQLow(2)] and low[1] < low
+
+    if h
+        MS.OFAddMS(high[1], time[1], bar_index[1], true)
+    if l
+        MS.OFAddMS(low[1], time[1], bar_index[1], false)
+    MS
+
+// Checks if liquidity has been swept
+method OFCheckClaimed(MarketStructure MS) =>
+    Pivot claimed = na
+    if MS.ST.size() > 0
+        for i = MS.ST.size() - 1 to 0 by 1
+            pivot = MS.ST.get(i)
+            if not pivot.claimed
+                if pivot.isHigh and high > pivot.price or pivot.isLow and low < pivot.price
+                    pivot.claimed := true
+                    pivot.time_last := time
+                    pivot.time_last
+    for eq in EQs
+        if not eq.isClaimed
+            if eq.isHigh
+                eq.isClaimed := high > eq.price
+                eq.isClaimed
+            if eq.isLow
+                eq.isClaimed := low < eq.price
+                eq.isClaimed
+            if eq.isClaimed
+                eq.claimed_time := time
+                EQ_claimed.unshift(eq)
+
+                if EQ_claimed.size() > Trend_Settings.EQ_max_claimed
+                    EqualLevels t = EQ_claimed.pop()
+                    t.line_eq.delete()
+                    t.line_link.delete()
+                    t.box_link.delete()
+
+            if not na(eq.line_eq)
+                if not eq.isClaimed
+                    eq.line_eq.set_x2(time + (time - time[1]) * MS.settings.extend)
+                else 
+                    eq.line_eq.set_x2(time)
+                    eq.line_eq.set_style(of_helper.LineStyle(Trend_Settings.EQ_claimed_style))
+    claimed
+
+method OFRenderMS(MarketStructure MS) =>
+    int add = 0
+    int claim = 0
+    for pivot in MS.ST
+        if pivot.claimed and claim < MS.settings.max_claimed_lines or not pivot.claimed and add < MS.settings.max_lines
+            MS.OFDrawLiquidity(pivot)
+            if pivot.claimed
+                claim := claim + 1
+                claim
+            else
+                add := add + 1
+                add
+        if claim == MS.settings.max_claimed_lines and add == MS.settings.max_lines
+            break
+    add := 0
+
+    for pivot in MS.ST
+        if MS.settings.ST_show or MS.settings.IT_show and pivot.isIT or MS.settings.LT_show and pivot.isLT and add < MS.settings.max_labels
+            MS.OFDrawLabel(pivot)
+            add := add + 1
+        if add == MS.settings.max_labels
+            break
+
+//-----------------------------------------------------------------------------
+// Process
+//-----------------------------------------------------------------------------
+if last_bar_index - bar_index < 1000
+    if barstate.isconfirmed
+        Term.OFFindST().OFFindIT().OFFindLT()
+        Term.OFCheckClaimed()
+
+    if barstate.islast
+        Term.OFRenderMS()
+
+//-----------------------------------------------------------------------------
