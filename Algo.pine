@@ -1772,7 +1772,7 @@ Trend_Settings.LT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], gro
 
 Trend_Settings.liquidity_open_style := input.string('⎯⎯⎯', 'Open', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
 Trend_Settings.liquidity_claimed_style := input.string('----', 'Claimed', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
-Trend_Settings.extend := input.int(5, title = 'Extend', minval = 1, group = settings_liquidity_style)
+Trend_Settings.extend := input.int(2, title = 'Extend', minval = 1, group = settings_liquidity_style)
 Trend_Settings.max_lines := input.int(50, 'Maximum number of lines', minval = 1, maxval = 250, group = settings_liquidity_style)
 Trend_Settings.max_claimed_lines := input.int(5, 'Maximum number of claimed lines', minval = 0, maxval = 250, group = settings_liquidity_style)
 
