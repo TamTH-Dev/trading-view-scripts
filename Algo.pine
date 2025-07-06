@@ -1700,7 +1700,7 @@ type EqualLevels
 //-----------------------------------------------------------------------------
 int MAX_BUFFER = 1000 // internal maximum node count limit for performance
 
-ICT_Group = 'ICT Market Structure ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+ICT_Group = 'Market Structure ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 ICT_Labelas = 'Label Format ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
 
 settings_liquidity = 'Liquidity Levels ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
@@ -1733,17 +1733,17 @@ OFSettings Trend_Settings = OFSettings.new()
 Trend_Settings.ST_show := input.bool(false, 'Short', group = ICT_Group, inline = inline_st)
 Trend_Settings.ST_color_bull := input.color(color.black, '', group = ICT_Group, inline = inline_st)
 Trend_Settings.ST_color_bear := input.color(color.black, '', group = ICT_Group, inline = inline_st)
-Trend_Settings.ST_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_st)
+Trend_Settings.ST_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_st)
 
-Trend_Settings.IT_show := input.bool(true, 'Intermediate', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_color_bull := input.color(color.new(color.purple, 0), '', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_color_bear := input.color(color.new(color.purple, 0), '', group = ICT_Group, inline = inline_it)
-Trend_Settings.IT_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_show := input.bool(false, 'Intermediate', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_color_bull := input.color(color.new(AQUA_COLOR, 0), '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_color_bear := input.color(color.new(AQUA_COLOR, 0), '', group = ICT_Group, inline = inline_it)
+Trend_Settings.IT_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_it)
 
-Trend_Settings.LT_show := input.bool(true, 'Long', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_color_bull := input.color(color.new(color.blue, 0), '', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_color_bear := input.color(color.new(color.blue, 0), '', group = ICT_Group, inline = inline_lt)
-Trend_Settings.LT_label_color := input.color(#ffffff00, '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_show := input.bool(false, 'Long', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_color_bull := input.color(color.new(PURPLE_COLOR, 0), '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_color_bear := input.color(color.new(PURPLE_COLOR, 0), '', group = ICT_Group, inline = inline_lt)
+Trend_Settings.LT_label_color := input.color(TRANSPARENT_COLOR, '', group = ICT_Group, inline = inline_lt)
 
 Trend_Settings.ST_label := input.string('High/Low', 'Short', options = ['■', '□', '▣', '◆', '◇', '◈', '●', '○', '◉', '▲▼', '△▽', '↑↓', 'S/I/L Term', 'High/Low'], group = ICT_Labelas, inline = '1')
 Trend_Settings.ST_text_size := input.string(size.tiny, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = ICT_Labelas, inline = '1')
@@ -1761,36 +1761,36 @@ Trend_Settings.ST_liquidity_claimed_color := input.color(color.new(color.black, 
 Trend_Settings.ST_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_st_liquidity)
 
 Trend_Settings.IT_liquidity_show := input.bool(true, 'Intermediate', group = settings_liquidity, inline = inline_it_liquidity)
-Trend_Settings.IT_liquidity_open_color := input.color(color.new(color.purple, 50), '', group = settings_liquidity, inline = inline_it_liquidity)
-Trend_Settings.IT_liquidity_claimed_color := input.color(color.new(color.purple, 50), '', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_open_color := input.color(color.new(AQUA_COLOR, 60), '', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_claimed_color := input.color(color.new(AQUA_COLOR, 40), '', group = settings_liquidity, inline = inline_it_liquidity)
 Trend_Settings.IT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_it_liquidity)
 
 Trend_Settings.LT_liquidity_show := input.bool(true, 'Long', group = settings_liquidity, inline = inline_lt_liquidity)
-Trend_Settings.LT_liquidity_open_color := input.color(color.new(color.blue, 50), '', group = settings_liquidity, inline = inline_lt_liquidity)
-Trend_Settings.LT_liquidity_claimed_color := input.color(color.new(color.blue, 50), '', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_open_color := input.color(color.new(PURPLE_COLOR, 60), '', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_claimed_color := input.color(color.new(PINK_COLOR, 40), '', group = settings_liquidity, inline = inline_lt_liquidity)
 Trend_Settings.LT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_lt_liquidity)
 
 Trend_Settings.liquidity_open_style := input.string('⎯⎯⎯', 'Open', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
-Trend_Settings.liquidity_claimed_style := input.string('····', 'Claimed', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
+Trend_Settings.liquidity_claimed_style := input.string('----', 'Claimed', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
 Trend_Settings.extend := input.int(5, title = 'Extend', minval = 1, group = settings_liquidity_style)
 Trend_Settings.max_lines := input.int(50, 'Maximum number of lines', minval = 1, maxval = 250, group = settings_liquidity_style)
 Trend_Settings.max_claimed_lines := input.int(5, 'Maximum number of claimed lines', minval = 0, maxval = 250, group = settings_liquidity_style)
 
 Trend_Settings.EQ_show := input.bool(true, 'Equal Levels', group = settings_eq, inline = inline_eq)
-Trend_Settings.EQ_color_bull := input.color(LIGHT_GRAY_COLOR, '', group = settings_eq, inline = inline_eq)
-Trend_Settings.EQ_color_bear := input.color(LIGHT_GRAY_COLOR, '', group = settings_eq, inline = inline_eq)
+Trend_Settings.EQ_color_bull := input.color(TRANSPARENT_COLOR, '', group = settings_eq, inline = inline_eq)
+Trend_Settings.EQ_color_bear := input.color(TRANSPARENT_COLOR, '', group = settings_eq, inline = inline_eq)
 Trend_Settings.EQ_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_eq, inline = inline_eq)
 
 Trend_Settings.EQ_style := input.string('⎯⎯⎯', '', options = ['⎯⎯⎯', '----', '····'], group = settings_eq, inline = inline_eq)
 
-Trend_Settings.EQ_link_show := input.bool(true, 'link Levels', group = settings_eq, inline = inline_eq_link)
-Trend_Settings.EQ_link_color := input.color(DARK_GRAY_COLOR, '', group = settings_eq, inline = inline_eq_link)
+Trend_Settings.EQ_link_show := input.bool(true, 'Link Levels', group = settings_eq, inline = inline_eq_link)
+Trend_Settings.EQ_link_color := input.color(LIGHT_GRAY_COLOR, '', group = settings_eq, inline = inline_eq_link)
 Trend_Settings.EQ_link_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_eq, inline = inline_eq_link)
 Trend_Settings.EQ_link_style := input.string('····', '', options = ['⎯⎯⎯', '----', '····'], group = settings_eq, inline = inline_eq_link)
 
 Trend_Settings.EQ_shade := input.bool(true, 'Highlight', group = settings_eq, inline = inline_eq_shade)
-Trend_Settings.EQ_shade_bull := input.color(color.new(BLUE_COLOR, 90), '', group = settings_eq, inline = inline_eq_shade)
-Trend_Settings.EQ_shade_bear := input.color(color.new(ORANGE_COLOR, 90), '', group = settings_eq, inline = inline_eq_shade)
+Trend_Settings.EQ_shade_bull := input.color(color.new(AQUA_COLOR, 95), '', group = settings_eq, inline = inline_eq_shade)
+Trend_Settings.EQ_shade_bear := input.color(color.new(PURPLE_COLOR, 90), '', group = settings_eq, inline = inline_eq_shade)
 Trend_Settings.EQ_claimed_style := input.string('····', 'Claimed Style', options = ['⎯⎯⎯', '----', '····'], group = settings_eq)
 Trend_Settings.EQ_Tolerance := input.int(2, 'Distance Tolerance', options = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], group = settings_eq) / 10
 
