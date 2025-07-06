@@ -29,6 +29,12 @@ color TEXT_COLOR        = #ced4da
 series int barIdx = bar_index
 
 //-----------------------------------------------------------------------------
+// Types
+//-----------------------------------------------------------------------------
+type Helper
+	string name = 'Helper'
+
+//-----------------------------------------------------------------------------
 // Common Methods
 //-----------------------------------------------------------------------------
 debug(simple string txt) =>
@@ -49,6 +55,27 @@ getDefHtf() =>
         "1W"  => "3M"
         "1M"  => "12M"
         => timeframe.period
+
+
+method LineStyle(Helper helper, string style) =>
+    helper.name := style
+    out = switch style
+        '----' => line.style_dashed
+        '····' => line.style_dotted
+        => line.style_solid
+    out
+
+method DayOfWeek(Helper helper, int index) =>
+    helper.name := 'DOW'
+    switch
+        index == 1 => 'M'
+        index == 2 => 'T'
+        index == 3 => 'W'
+        index == 4 => 'T'
+        index == 5 => 'F'
+        index == 6 => 'S'
+        index == 7 => 'S'
+        na(index) => ''
 
 //-----------------------------------------------------------------------------
 
@@ -190,9 +217,6 @@ type FVGImbalanceStructure
 	int order = 1
 	int step = 0
 
-type FVGHelper
-	string name = 'Helper'
-
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
@@ -313,7 +337,7 @@ fvg_settings.atrfactor := input.int(10, 'Range should be within X candles', minv
 //-----------------------------------------------------------------------------
 // Variables
 //-----------------------------------------------------------------------------
-FVGHelper fvg_helper = FVGHelper.new()
+Helper fvg_helper = Helper.new()
 
 var FVGImbalanceStructure FVG_1 = FVGImbalanceStructure.new()
 var FVGImbalanceStructure FVG_2 = FVGImbalanceStructure.new()
@@ -365,15 +389,9 @@ float fvg_spacing = ta.sma(ta.sma(fvg_median.median(), fvg_length), fvg_length) 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-method FVGLineStyle(FVGHelper helper, string style) =>
-    helper.name := style
-    out = switch style
-        '----' => line.style_dashed
-        '····' => line.style_dotted
-        => line.style_solid
-    out
 
-method FVGText(FVGHelper helper, string htf, string direction, string level, bool truncate) =>
+
+method FVGText(Helper helper, string htf, string direction, string level, bool truncate) =>
     helper.name := htf
 
     string formatted = ''
@@ -409,7 +427,7 @@ method FVGText(FVGHelper helper, string htf, string direction, string level, boo
 
     formatted
 
-method FVGValidTimeframe(FVGHelper helper, tf) =>
+method FVGValidTimeframe(Helper helper, tf) =>
     bool valid = true
 
     helper.name := tf
@@ -424,7 +442,7 @@ method FVGValidTimeframe(FVGHelper helper, tf) =>
         valid
     valid
 
-method FVGProximityRange(FVGHelper helper, tf) =>
+method FVGProximityRange(Helper helper, tf) =>
     helper.name := tf
     float range_high = 0
     float range_low = 0
@@ -442,7 +460,7 @@ method FVGProximityRange(FVGHelper helper, tf) =>
         range_low
     [range_low, range_high]
 
-method FVGHTFEnabled(FVGHelper helper) =>
+method FVGHTFEnabled(Helper helper) =>
     helper.name := 'HTFEnabled'
     int enabled = 0
     enabled := enabled + (FVG_1.settings.show and helper.FVGValidTimeframe(FVG_1.settings.htf) ? 1 : 0)
@@ -560,17 +578,17 @@ method FVGAddZone(FVGImbalanceStructure IS, FVGImbalance imb, int step) =>
             color cce = imb.isbullish ? fvg_settings.CE_bull_color : fvg_settings.CE_bear_color
 
             imb.box2 := FVGBox.new()
-            imb.box2.open := line.new(imb.open_time, imb.open, buffer, imb.open, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.open_style), color = fvg_settings.open_show ? c : TRANSPARENT_COLOR, width = fvg_settings.open_size)
-            imb.box2.close := line.new(imb.close_time, imb.close, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.close_style), color = fvg_settings.close_show ? c : TRANSPARENT_COLOR, width = fvg_settings.close_size)
+            imb.box2.open := line.new(imb.open_time, imb.open, buffer, imb.open, xloc = xloc.bar_time, style = fvg_helper.LineStyle(fvg_settings.open_style), color = fvg_settings.open_show ? c : TRANSPARENT_COLOR, width = fvg_settings.open_size)
+            imb.box2.close := line.new(imb.close_time, imb.close, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.LineStyle(fvg_settings.close_style), color = fvg_settings.close_show ? c : TRANSPARENT_COLOR, width = fvg_settings.close_size)
             if fvg_settings.link_show
-                imb.box2.link := line.new(buffer, imb.open, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.link_style), color = c, width = fvg_settings.link_size)
+                imb.box2.link := line.new(buffer, imb.open, buffer, imb.close, xloc = xloc.bar_time, style = fvg_helper.LineStyle(fvg_settings.link_style), color = c, width = fvg_settings.link_size)
                 imb.box2.link
             if fvg_settings.fill
                 imb.box2.fill := linefill.new(imb.box2.open, imb.box2.close, color.new(c, fvg_settings.fill_percent))
                 imb.box2.fill
 
             if fvg_settings.CE_show
-                imb.box2.ce := line.new((imb.open_time + imb.close_time) / 2, imb.middle, buffer, imb.middle, xloc = xloc.bar_time, style = fvg_helper.FVGLineStyle(fvg_settings.CE_style), color = cce, width = fvg_settings.CE_size)
+                imb.box2.ce := line.new((imb.open_time + imb.close_time) / 2, imb.middle, buffer, imb.middle, xloc = xloc.bar_time, style = fvg_helper.LineStyle(fvg_settings.CE_style), color = cce, width = fvg_settings.CE_size)
                 imb.box2.ce
             if fvg_settings.label_show
                 if math.abs(imb.open - imb.close) >= fvg_spacing
@@ -891,9 +909,6 @@ type CandleSet
 	label tfTimerTop
     label tfTimerBottom
 
-type CandleHelper
-	string name = 'Helper'
-
 CandleSettings candle_settings = CandleSettings.new()
 
 var CandeSettingsHTF CandleSettingsHTF1 = CandeSettingsHTF.new()
@@ -1044,33 +1059,15 @@ candle_settings.label_size             := input.string(size.small, '', [size.tin
 //-----------------------------------------------------------------------------
 // Variables
 //-----------------------------------------------------------------------------
-CandleHelper candle_helper = CandleHelper.new()
+Helper candle_helper = Helper.new()
 var CandeTrace candle_trace = CandeTrace.new()
 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-method CandleLineStyle(CandleHelper helper, string style) =>
-    helper.name := style
-    out = switch style
-        '----' => line.style_dashed
-        '····' => line.style_dotted
-        => line.style_solid
-    out
 
-method CandleDayOfWeek(CandleHelper helper, int index) =>
-    helper.name := 'DOW'
-    switch
-        index == 1 => 'M'
-        index == 2 => 'T'
-        index == 3 => 'W'
-        index == 4 => 'T'
-        index == 5 => 'F'
-        index == 6 => 'S'
-        index == 7 => 'S'
-        na(index) => ''
 
-method CandleValidTimeframe(CandleHelper helper, string HTF) =>
+method CandleValidTimeframe(Helper helper, string HTF) =>
     helper.name := HTF
     if timeframe.in_seconds(HTF) >= timeframe.in_seconds('D') and timeframe.in_seconds(HTF) > timeframe.in_seconds()
         true
@@ -1081,7 +1078,7 @@ method CandleValidTimeframe(CandleHelper helper, string HTF) =>
         n1 < n2 and math.round(n2 / n1) == n2 / n1
 
 
-method CandleRemainingTime(CandleHelper helper, string HTF) =>
+method CandleRemainingTime(Helper helper, string HTF) =>
     helper.name := HTF
     if barstate.isrealtime
         timeRemaining = (time_close(HTF) - timenow) / 1000
@@ -1102,9 +1099,9 @@ method CandleRemainingTime(CandleHelper helper, string HTF) =>
             r
         r
     else
-        'Closed'
+        'n/a'
 
-method CandleHTFName(CandleHelper helper, string HTF) =>
+method CandleHTFName(Helper helper, string HTF) =>
     helper.name := 'HTFName'
     formatted = HTF
 
@@ -1120,7 +1117,7 @@ method CandleHTFName(CandleHelper helper, string HTF) =>
         formatted
     formatted
 
-method CandleHTFEnabled(CandleHelper helper) =>
+method CandleHTFEnabled(Helper helper) =>
     helper.name := 'HTFEnabled'
     int enabled = 0
     enabled := enabled + (candle_htf1.settings.show ? 1 : 0)
@@ -1133,7 +1130,7 @@ method CandleHTFEnabled(CandleHelper helper) =>
 
     last
 
-method CandleSetHigh(CandleHelper helper, array<Candle> candles, float h) =>
+method CandleSetHigh(Helper helper, array<Candle> candles, float h) =>
     helper.name := 'CandlesSetHigh'
     float _h = h
     if array.size(candles) > 0
@@ -1144,7 +1141,7 @@ method CandleSetHigh(CandleHelper helper, array<Candle> candles, float h) =>
                 _h
     _h
 
-method CandleSetLow(CandleHelper helper, array<Candle> candles, float l) =>
+method CandleSetLow(Helper helper, array<Candle> candles, float l) =>
     helper.name := 'CandlesSetLow'
     float _l = l
     if array.size(candles) > 0
@@ -1155,7 +1152,7 @@ method CandleSetLow(CandleHelper helper, array<Candle> candles, float l) =>
                 _l
     _l
 
-method CandlesHigh(CandleHelper helper, array<Candle> candles) =>
+method CandlesHigh(Helper helper, array<Candle> candles) =>
     helper.name := 'CandlesHigh'
     h = 0.0
     int candle_cnt = 0
@@ -1186,7 +1183,7 @@ method CandlesHigh(CandleHelper helper, array<Candle> candles) =>
                 h := c.h
     h
 
-method CandlesLow(CandleHelper helper, array<Candle> candles, float h) =>
+method CandlesLow(Helper helper, array<Candle> candles, float h) =>
     helper.name := 'CandlesLow'
     l = h
     int candle_cnt = 0
@@ -1369,7 +1366,7 @@ method CandleMonitor(CandleSet candleSet) =>
         candle.l_idx := bar_index
         candle.dow := switch
             candleSet.settings.htf == '1D' =>
-                candle_helper.CandleDayOfWeek(dayofweek(time_tradingday, "America/New_York"))
+                candle_helper.DayOfWeek(dayofweek(time_tradingday, "America/New_York"))
             str.tonumber(candleSet.settings.htf) < 60 =>
                 str.format_time(candle.o_time, 'm', 'America/New_York')
             str.tonumber(candleSet.settings.htf) >= 60 =>
@@ -1424,7 +1421,7 @@ method CandleUpdate(CandleSet candleSet, int offset, bool showTrace) =>
             if candle_settings.trace_show and showTrace
                 if bar_index - candle.o_idx < 5000
                     if na(candle_trace.o)
-                        candle_trace.o := line.new(candle.o_idx, candle.o, box.get_left(candle.body), candle.o, xloc = xloc.bar_index, color = candle_settings.trace_o_color, style = candle_helper.CandleLineStyle(candle_settings.trace_o_style), width = candle_settings.trace_o_size)
+                        candle_trace.o := line.new(candle.o_idx, candle.o, box.get_left(candle.body), candle.o, xloc = xloc.bar_index, color = candle_settings.trace_o_color, style = candle_helper.LineStyle(candle_settings.trace_o_style), width = candle_settings.trace_o_size)
                         candle_trace.o
                     else
                         line.set_xy1(candle_trace.o, candle.o_idx, candle.o)
@@ -1440,7 +1437,7 @@ method CandleUpdate(CandleSet candleSet, int offset, bool showTrace) =>
 
                 if bar_index - candle.c_idx < 5000
                     if na(candle_trace.c)
-                        candle_trace.c := line.new(candle.c_idx, candle.c, box.get_left(candle.body), candle.c, xloc = xloc.bar_index, color = candle_settings.trace_c_color, style = candle_helper.CandleLineStyle(candle_settings.trace_c_style), width = candle_settings.trace_c_size)
+                        candle_trace.c := line.new(candle.c_idx, candle.c, box.get_left(candle.body), candle.c, xloc = xloc.bar_index, color = candle_settings.trace_c_color, style = candle_helper.LineStyle(candle_settings.trace_c_style), width = candle_settings.trace_c_size)
                         candle_trace.c
                     else
                         line.set_xy1(candle_trace.c, candle.c_idx, candle.c)
@@ -1456,7 +1453,7 @@ method CandleUpdate(CandleSet candleSet, int offset, bool showTrace) =>
 
                 if bar_index - candle.h_idx < 5000
                     if na(candle_trace.h)
-                        candle_trace.h := line.new(candle.h_idx, candle.h, line.get_x1(candle.wick_up), candle.h, xloc = xloc.bar_index, color = candle_settings.trace_h_color, style = candle_helper.CandleLineStyle(candle_settings.trace_h_style), width = candle_settings.trace_h_size)
+                        candle_trace.h := line.new(candle.h_idx, candle.h, line.get_x1(candle.wick_up), candle.h, xloc = xloc.bar_index, color = candle_settings.trace_h_color, style = candle_helper.LineStyle(candle_settings.trace_h_style), width = candle_settings.trace_h_size)
                         candle_trace.h
                     else
                         line.set_xy1(candle_trace.h, candle.h_idx, candle.h)
@@ -1472,7 +1469,7 @@ method CandleUpdate(CandleSet candleSet, int offset, bool showTrace) =>
 
                 if bar_index - candle.l_idx < 5000
                     if na(candle_trace.l)
-                        candle_trace.l := line.new(candle.l_idx, candle.l, line.get_x1(candle.wick_down), candle.l, xloc = xloc.bar_index, color = candle_settings.trace_l_color, style = candle_helper.CandleLineStyle(candle_settings.trace_l_style), width = candle_settings.trace_l_size)
+                        candle_trace.l := line.new(candle.l_idx, candle.l, line.get_x1(candle.wick_down), candle.l, xloc = xloc.bar_index, color = candle_settings.trace_l_color, style = candle_helper.LineStyle(candle_settings.trace_l_style), width = candle_settings.trace_l_size)
                         candle_trace.l
                     else
                         line.set_xy1(candle_trace.l, candle.l_idx, candle.l)
