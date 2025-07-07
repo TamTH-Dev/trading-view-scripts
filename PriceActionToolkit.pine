@@ -67,7 +67,7 @@ atrLen         = input.int(14, "Length", group = atrGrp)
 //-----------------------------------------------------------------------------
 atr = ta.atr(atrLen)
 if atrShowed and barstate.isconfirmed
-    table.cell(table.new(position.bottom_right, 1, 1), 0, 0, str.format("ATR: {0}", atr), bgcolor = TRANSPARENT_COLOR, text_color = TEXT_COLOR, text_size = size.small)
+    table.cell(table.new(position.bottom_right, 1, 1), 0, 0, str.format("ATR: {0}", str.tostring(atr, '#.#####')), bgcolor = TRANSPARENT_COLOR, text_color = TEXT_COLOR, text_size = size.small)
 
 //-----------------------------------------------------------------------------
 
