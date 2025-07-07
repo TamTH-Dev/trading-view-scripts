@@ -2,7 +2,7 @@
 // © tamth_
 
 //@version=6
-indicator('Algo', overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
+indicator('SMC', overlay = true, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
 
 //-----------------------------------------------------------------------------
 // Constants
@@ -42,21 +42,6 @@ debug(simple string txt) =>
     label.set_xy(lbl, barIdx, ta.highest(10)[1])
     label.set_text(lbl, txt)
 
-getDefHtf() =>
-    switch timeframe.period
-        "1"   => "15"
-        "3"   => "30"
-		"5"   => "60"
-		"15"  => "240"
-        "30"  => "480"
-		"60"  => "D"
-		"240" => "W"
-        "1D"  => "M"
-        "1W"  => "3M"
-        "1M"  => "12M"
-        => timeframe.period
-
-
 method LineStyle(Helper helper, string style) =>
     helper.name := style
     out = switch style
@@ -76,58 +61,6 @@ method DayOfWeek(Helper helper, int index) =>
         index == 6 => 'S'
         index == 7 => 'S'
         na(index) => ''
-
-//-----------------------------------------------------------------------------
-
-
-
-//-----------------------------------------------------------------------------
-// KAMAs
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-kamaGrp         = "Kaufman Adaptive Moving Average"
-kamaShowed      = input.bool(true, "Show", group = kamaGrp)
-kamaSrc         = input.source(close, title = "Source", group = kamaGrp)
-
-kama1Grp        = "K1"
-kama1Showed     = input.bool(true, title = "K1", group = kamaGrp, inline = kama1Grp)
-kama1Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama1Grp)
-kama1Len        = input.int(21, title = "Length", group = kamaGrp)
-kama1FastEmaLen = input.int(2, title = "Fast EMA Length", group = kamaGrp)
-kama1SlowEmaLen = input.int(30, title = "Slow EMA Length", group = kamaGrp)
-
-kama2Grp        = "K2"
-kama2Showed     = input.bool(true, title = "K2", group = kamaGrp, inline = kama2Grp)
-kama2Tf         = input.timeframe("", title = "", group = kamaGrp, inline = kama2Grp)
-kama2Len        = input.int(21, title = "Length", group = kamaGrp)
-kama2FastEmaLen = input.int(2, title = "Fast EMA Length", group = kamaGrp)
-kama2SlowEmaLen = input.int(30, title = "Slow EMA Length", group = kamaGrp)
-
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-getKama(src, len, fastEmaLen, slowEmaLen) =>
-    mom = math.abs(ta.change(src, len))
-    volatility = math.sum(math.abs(ta.change(src)), len)
-    efficiencyRatio = volatility != 0 ? mom / volatility : 0
-    fastAlpha = 2 / (fastEmaLen + 1)
-    slowAlpha = 2 / (slowEmaLen + 1)
-    alpha = math.pow(efficiencyRatio * (fastAlpha - slowAlpha) + slowAlpha, 2)
-    kama = 0.0
-    kama := alpha * src + (1 - alpha) * nz(kama[1], src)
-
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-kama1 = request.security(syminfo.tickerid, kama1Tf, getKama(kamaSrc, kama1Len, kama1FastEmaLen, kama1SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
-kama2 = request.security(syminfo.tickerid, kama2Tf != "" ? kama2Tf : getDefHtf(), getKama(kamaSrc, kama2Len, kama2FastEmaLen, kama2SlowEmaLen), gaps = barmerge.gaps_on, lookahead = barmerge.lookahead_off)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-plot(kamaShowed and kama1Showed ? kama1 : na, title = "KAMA 1", linewidth = 1, color = AQUA_COLOR, display = display.pane)
-plot(kamaShowed and kama2Showed ? kama2 : na, title = "KAMA 2", linewidth = 1, color = PURPLE_COLOR, display = display.pane)
 
 //-----------------------------------------------------------------------------
 
@@ -290,7 +223,7 @@ fvg_settings.fill := input.bool(false, 'Background Transparency', inline = 'fill
 fvg_settings.extendby := input.string('When in Range', 'Extend lines', options = ['Extension Only', 'Current Candle Plus Extension', 'When in Range'])
 fvg_settings.extend := input.int(4, 'Distance from current candle', minval = 0)
 fvg_settings.buffer := input.int(4, 'Spacing between timeframes', minval = 0)
-fvg_settings.fill_percent := input.int(98, '', options = [98, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50], inline = 'fill')
+fvg_settings.fill_percent := input.int(50, '', options = [98, 95, 90, 85, 80, 75, 70, 65, 60, 55, 50], inline = 'fill')
 
 fvg_settings.mitigated_show := input.bool(false, 'Mitigated', inline = '2')
 fvg_settings.mitigated_color_bull := input.color(color.new(DARK_GRAY_COLOR, 60), '', inline = '2')
@@ -317,7 +250,7 @@ fvg_settings.link_style := input.string('⎯⎯⎯', '', options = ['⎯⎯⎯',
 fvg_settings.link_size := input.int(2, '', options = [1, 2, 3, 4], group = Fvg_Settings_Display, inline = '4')
 
 fvg_settings.label_show := input.bool(true, 'Label', inline = 'label', group = Fvg_Settings_Labels)
-fvg_settings.label_color := input.color(LIGHT_GRAY_COLOR, '', group = Fvg_Settings_Labels, inline = 'label')
+fvg_settings.label_color := input.color(color.new(TEXT_COLOR, 50), '', group = Fvg_Settings_Labels, inline = 'label')
 fvg_settings.label_bgcolor := input.color(TRANSPARENT_COLOR, '', group = Fvg_Settings_Labels, inline = 'label')
 fvg_settings.label_size := input.string(size.small, '', [size.tiny, size.small, size.normal, size.large, size.huge], group = Fvg_Settings_Labels, inline = 'label')
 
@@ -1011,7 +944,7 @@ candle_settings.bear_border            := input.color(BLUE_COLOR, '', inline = '
 candle_settings.bull_wick              := input.color(LIGHT_GRAY_COLOR, 'Wick', inline = 'wick', group = group_style)
 candle_settings.bear_wick              := input.color(LIGHT_GRAY_COLOR, '', inline = 'wick', group = group_style)
 
-candle_settings.offset                 := input.int(20, 'padding from current candles', minval = 1, group = group_style)
+candle_settings.offset                 := input.int(30, 'padding from current candles', minval = 1, group = group_style)
 candle_settings.buffer                 := input.int(1, 'space between candles', minval = 1, maxval = 4, group = group_style)
 candle_settings.htf_buffer             := input.int(10, 'space between Higher Timeframes', minval = 1, maxval = 10, group = group_style)
 candle_settings.width                  := input.int(1, 'Candle Width', minval = 1, maxval = 4, group = group_style) * 2
@@ -1760,14 +1693,14 @@ Trend_Settings.ST_liquidity_open_color := input.color(color.new(color.black, 50)
 Trend_Settings.ST_liquidity_claimed_color := input.color(color.new(color.black, 50), '', group = settings_liquidity, inline = inline_st_liquidity)
 Trend_Settings.ST_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_st_liquidity)
 
-Trend_Settings.IT_liquidity_show := input.bool(true, 'Intermediate', group = settings_liquidity, inline = inline_it_liquidity)
+Trend_Settings.IT_liquidity_show := input.bool(false, 'Intermediate', group = settings_liquidity, inline = inline_it_liquidity)
 Trend_Settings.IT_liquidity_open_color := input.color(color.new(AQUA_COLOR, 60), '', group = settings_liquidity, inline = inline_it_liquidity)
 Trend_Settings.IT_liquidity_claimed_color := input.color(color.new(AQUA_COLOR, 40), '', group = settings_liquidity, inline = inline_it_liquidity)
 Trend_Settings.IT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_it_liquidity)
 
 Trend_Settings.LT_liquidity_show := input.bool(true, 'Long', group = settings_liquidity, inline = inline_lt_liquidity)
 Trend_Settings.LT_liquidity_open_color := input.color(color.new(PURPLE_COLOR, 60), '', group = settings_liquidity, inline = inline_lt_liquidity)
-Trend_Settings.LT_liquidity_claimed_color := input.color(color.new(PINK_COLOR, 40), '', group = settings_liquidity, inline = inline_lt_liquidity)
+Trend_Settings.LT_liquidity_claimed_color := input.color(color.new(PURPLE_COLOR, 40), '', group = settings_liquidity, inline = inline_lt_liquidity)
 Trend_Settings.LT_liquidity_size := input.int(1, '', options = [1, 2, 3, 4], group = settings_liquidity, inline = inline_lt_liquidity)
 
 Trend_Settings.liquidity_open_style := input.string('⎯⎯⎯', 'Open', options = ['⎯⎯⎯', '----', '····'], group = settings_liquidity_style)
