@@ -1,0 +1,86 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+//@version=6
+indicator("Oscillator", overlay = false, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
+
+//-----------------------------------------------------------------------------
+// Common Variables
+//-----------------------------------------------------------------------------
+series int barIdx = bar_index
+
+//-----------------------------------------------------------------------------
+// Common Methods
+//-----------------------------------------------------------------------------
+debug(simple string txt) =>
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+baseLength = input.int(14, title = "Base Length", minval = 1)
+higherTF = input.timeframe("D", title = "Higher Time Frame")
+ltfTransparency = input.int(10, title = "LTF Transparency", minval = 0, maxval = 100)
+htfMinTransparency = input.int(60, title = "HTF Min Transparency", minval = 0, maxval = 100)
+htfMaxTransparency = input.int(90, title = "HTF Max Transparency", minval = 0, maxval = 100)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+calcMidPoint(h, l) => (h + l) / 2
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+curHigh = ta.highest(high, baseLength)
+curLow = ta.lowest(low, baseLength)
+curMidPoint = calcMidPoint(curHigh, curLow)
+
+htfHigh = request.security(syminfo.tickerid, higherTF, ta.highest(high, baseLength))
+htfLow = request.security(syminfo.tickerid, higherTF, ta.lowest(low, baseLength))
+htfMidPoint = calcMidPoint(htfHigh, htfLow)
+
+divergence = close - curMidPoint
+htfDivergence = close - htfMidPoint
+
+ltfColorUp = color.new(AQUA_COLOR, ltfTransparency)
+ltfColorDown = color.new(PURPLE_COLOR, ltfTransparency)
+
+htfTransparencyValue = math.abs(htfDivergence) / ta.highest(math.abs(htfDivergence), 100) * (htfMaxTransparency - htfMinTransparency) + htfMinTransparency
+htfColorUp = color.new(AQUA_COLOR, int(htfTransparencyValue))
+htfColorDown = color.new(PURPLE_COLOR, int(htfTransparencyValue))
+htfTransparency = math.round(math.abs(htfDivergence) / 2 * (htfMaxTransparency - htfMinTransparency) + htfMinTransparency)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(divergence, title = "LTF Divergence", color = (divergence >= 0 ? ltfColorUp : ltfColorDown), style = plot.style_histogram, linewidth = 3, display = display.pane)
+plot(htfDivergence, title = "HTF Divergence", color = (htfDivergence >= 0 ? htfColorUp : htfColorDown), style = plot.style_area, linewidth = 2, display = display.pane)
+hline(0, "Middle Line", color = color.new(PINK_COLOR, 60), linestyle = hline.style_solid)
+
+//-----------------------------------------------------------------------------
