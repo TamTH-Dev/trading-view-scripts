@@ -44,7 +44,6 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------
 baseLength = input.int(14, title = "Base Length", minval = 1)
-higherTF = input.timeframe("D", title = "Higher Time Frame")
 ltfTransparency = input.int(10, title = "LTF Transparency", minval = 0, maxval = 100)
 htfMinTransparency = input.int(60, title = "HTF Min Transparency", minval = 0, maxval = 100)
 htfMaxTransparency = input.int(90, title = "HTF Max Transparency", minval = 0, maxval = 100)
@@ -54,6 +53,22 @@ htfMaxTransparency = input.int(90, title = "HTF Max Transparency", minval = 0, m
 //-----------------------------------------------------------------------------
 calcMidPoint(h, l) => (h + l) / 2
 
+getHTF4x(tf) =>
+    switch tf
+        "1"     => "4"
+        "3"     => "12"
+        "5"     => "20"
+        "15"    => "60"
+        "30"    => "120"
+        "60"    => "240"
+        "120"   => "480"
+        "240"   => "960"
+        "1D"    => "4D"
+        "1W"    => "1M"
+        "1M"    => "4M"
+        "4M"    => "16M"
+        => na
+
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
@@ -61,8 +76,9 @@ curHigh = ta.highest(high, baseLength)
 curLow = ta.lowest(low, baseLength)
 curMidPoint = calcMidPoint(curHigh, curLow)
 
-htfHigh = request.security(syminfo.tickerid, higherTF, ta.highest(high, baseLength))
-htfLow = request.security(syminfo.tickerid, higherTF, ta.lowest(low, baseLength))
+htf = not na(getHTF4x(timeframe.period)) ? getHTF4x(timeframe.period) : timeframe.period
+htfHigh = request.security(syminfo.tickerid, htf, ta.highest(high, baseLength))
+htfLow = request.security(syminfo.tickerid, htf, ta.lowest(low, baseLength))
 htfMidPoint = calcMidPoint(htfHigh, htfLow)
 
 divergence = close - curMidPoint
