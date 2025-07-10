@@ -44,14 +44,27 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------
 baseLength = input.int(14, title = "Base Length", minval = 1)
-ltfTransparency = input.int(10, title = "LTF Transparency", minval = 0, maxval = 100)
-htfMinTransparency = input.int(60, title = "HTF Min Transparency", minval = 0, maxval = 100)
-htfMaxTransparency = input.int(90, title = "HTF Max Transparency", minval = 0, maxval = 100)
 
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
 calcMidPoint(h, l) => (h + l) / 2
+
+getHTF2x(tf) =>
+    switch tf
+        "1"     => "2"
+        "3"     => "6"
+        "5"     => "10"
+        "15"    => "30"
+        "30"    => "60"
+        "60"    => "120"
+        "120"   => "240"
+        "240"   => "480"
+        "1D"    => "2D"
+        "1W"    => "2W"
+        "1M"    => "2M"
+        "4M"    => "8M"
+        => na
 
 getHTF4x(tf) =>
     switch tf
@@ -76,27 +89,35 @@ curHigh = ta.highest(high, baseLength)
 curLow = ta.lowest(low, baseLength)
 curMidPoint = calcMidPoint(curHigh, curLow)
 
-htf = not na(getHTF4x(timeframe.period)) ? getHTF4x(timeframe.period) : timeframe.period
-htfHigh = request.security(syminfo.tickerid, htf, ta.highest(high, baseLength))
-htfLow = request.security(syminfo.tickerid, htf, ta.lowest(low, baseLength))
-htfMidPoint = calcMidPoint(htfHigh, htfLow)
+htf2x = not na(getHTF4x(timeframe.period)) ? getHTF2x(timeframe.period) : timeframe.period
+htf2xHigh = request.security(syminfo.tickerid, htf2x, ta.highest(high, baseLength))
+htf2xLow = request.security(syminfo.tickerid, htf2x, ta.lowest(low, baseLength))
+htf2xMidPoint = calcMidPoint(htf2xHigh, htf2xLow)
+
+htf4x = not na(getHTF4x(timeframe.period)) ? getHTF4x(timeframe.period) : timeframe.period
+htf4xHigh = request.security(syminfo.tickerid, htf4x, ta.highest(high, baseLength))
+htf4xLow = request.security(syminfo.tickerid, htf4x, ta.lowest(low, baseLength))
+htf4xMidPoint = calcMidPoint(htf4xHigh, htf4xLow)
 
 divergence = close - curMidPoint
-htfDivergence = close - htfMidPoint
+htf2xDivergence = close - htf2xMidPoint
+htf4xDivergence = close - htf4xMidPoint
 
-ltfColorUp = color.new(AQUA_COLOR, ltfTransparency)
-ltfColorDown = color.new(PURPLE_COLOR, ltfTransparency)
+ltfColorUp = color.new(AQUA_COLOR, 60)
+ltfColorDown = color.new(PURPLE_COLOR, 60)
 
-htfTransparencyValue = math.abs(htfDivergence) / ta.highest(math.abs(htfDivergence), 100) * (htfMaxTransparency - htfMinTransparency) + htfMinTransparency
-htfColorUp = color.new(AQUA_COLOR, int(htfTransparencyValue))
-htfColorDown = color.new(PURPLE_COLOR, int(htfTransparencyValue))
-htfTransparency = math.round(math.abs(htfDivergence) / 2 * (htfMaxTransparency - htfMinTransparency) + htfMinTransparency)
+htf2xColorUp = color.new(AQUA_COLOR, 60)
+htf2xColorDown = color.new(PURPLE_COLOR, 60)
+
+htf4xColorUp = color.new(AQUA_COLOR, 60)
+htf4xColorDown = color.new(PURPLE_COLOR, 60)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(divergence, title = "LTF Divergence", color = (divergence >= 0 ? ltfColorUp : ltfColorDown), style = plot.style_histogram, linewidth = 3, display = display.pane)
-plot(htfDivergence, title = "HTF Divergence", color = (htfDivergence >= 0 ? htfColorUp : htfColorDown), style = plot.style_area, linewidth = 2, display = display.pane)
+plot(divergence, title = "LTF Divergence", color = (divergence >= 0 ? ltfColorUp : ltfColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
+plot(htf2xDivergence, title = "HTF 2x Divergence", color = (htf2xDivergence >= 0 ? htf2xColorUp : htf2xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
+plot(htf4xDivergence, title = "HTF 4x Divergence", color = (htf4xDivergence >= 0 ? htf4xColorUp : htf4xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
 hline(0, "Middle Line", color = color.new(PINK_COLOR, 60), linestyle = hline.style_solid)
 
 //-----------------------------------------------------------------------------
