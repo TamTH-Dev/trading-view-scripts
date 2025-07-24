@@ -43,81 +43,79 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-baseLength = input.int(14, title = "Base Length", minval = 1)
+mfi_len = input.int(14, "MFI length")
+upper_level = input.int(70, "Upper MFI Level", minval = 50)
+lower_level = input.int(30, "Lower MFI Level", maxval = 50)
+min_channel_len = input.int(15, "Minimal bars length of the channel")
 
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-calcMidPoint(h, l) => (h + l) / 2
+upper_col = input.color(AQUA_COLOR, "↑", inline = "colors")
+lower_col = input.color(PURPLE_COLOR, "↓", inline = "colors")
 
-getHTF2x(tf) =>
-    switch tf
-        "1"     => "2"
-        "3"     => "6"
-        "5"     => "10"
-        "15"    => "30"
-        "30"    => "60"
-        "60"    => "120"
-        "120"   => "240"
-        "240"   => "480"
-        "1D"    => "2D"
-        "1W"    => "2W"
-        "1M"    => "2M"
-        "4M"    => "8M"
-        => na
-
-getHTF4x(tf) =>
-    switch tf
-        "1"     => "4"
-        "3"     => "12"
-        "5"     => "20"
-        "15"    => "60"
-        "30"    => "120"
-        "60"    => "240"
-        "120"   => "480"
-        "240"   => "960"
-        "1D"    => "4D"
-        "1W"    => "1M"
-        "1M"    => "4M"
-        "4M"    => "16M"
-        => na
+var start = int(na)
+var trigger = false
+var float upper = na 
+var float lower = na
+var channel_color = color(na)
+color bar_color = na
 
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-curHigh = ta.highest(high, baseLength)
-curLow = ta.lowest(low, baseLength)
-curMidPoint = calcMidPoint(curHigh, curLow)
+mfi = ta.mfi(close, mfi_len)
 
-htf2x = not na(getHTF4x(timeframe.period)) ? getHTF2x(timeframe.period) : timeframe.period
-htf2xHigh = request.security(syminfo.tickerid, htf2x, ta.highest(high, baseLength))
-htf2xLow = request.security(syminfo.tickerid, htf2x, ta.lowest(low, baseLength))
-htf2xMidPoint = calcMidPoint(htf2xHigh, htf2xLow)
+channel_upper = ta.crossover(mfi, 70) and not trigger 
+channel_lower = ta.crossunder(mfi, 30) and not trigger 
 
-htf4x = not na(getHTF4x(timeframe.period)) ? getHTF4x(timeframe.period) : timeframe.period
-htf4xHigh = request.security(syminfo.tickerid, htf4x, ta.highest(high, baseLength))
-htf4xLow = request.security(syminfo.tickerid, htf4x, ta.lowest(low, baseLength))
-htf4xMidPoint = calcMidPoint(htf4xHigh, htf4xLow)
+mfi_color = color.from_gradient(mfi, 30, 70, lower_col, upper_col)
 
-divergence = close - curMidPoint
-htf2xDivergence = close - htf2xMidPoint
-htf4xDivergence = close - htf4xMidPoint
+if channel_upper
+    label.new(bar_index, mfi, style = label.style_circle, size = size.tiny, color = color.new(mfi_color, 60))
 
-ltfColorUp = color.new(AQUA_COLOR, 60)
-ltfColorDown = color.new(PURPLE_COLOR, 60)
+    start := bar_index
+    trigger := true
+    upper := high
+    lower := low
+    channel_color := mfi_color
+    bar_color := mfi_color
 
-htf2xColorUp = color.new(AQUA_COLOR, 60)
-htf2xColorDown = color.new(PURPLE_COLOR, 60)
+if channel_lower
+    label.new(bar_index, mfi, style = label.style_circle, size = size.tiny, color = color.new(mfi_color, 60))
 
-htf4xColorUp = color.new(AQUA_COLOR, 60)
-htf4xColorDown = color.new(PURPLE_COLOR, 60)
+    start := bar_index
+    trigger := true
+    upper := high
+    lower := low
+    channel_color := mfi_color
+    bar_color := mfi_color
+
+
+if bar_index-start >= min_channel_len 
+    trigger := false
+
+
+trigger_change = channel_upper != channel_upper[1] or channel_lower != channel_lower[1]
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(divergence, title = "LTF Divergence", color = (divergence >= 0 ? ltfColorUp : ltfColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
-plot(htf2xDivergence, title = "HTF 2x Divergence", color = (htf2xDivergence >= 0 ? htf2xColorUp : htf2xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
-plot(htf4xDivergence, title = "HTF 4x Divergence", color = (htf4xDivergence >= 0 ? htf4xColorUp : htf4xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
-hline(0, "Middle Line", color = color.new(PINK_COLOR, 60), linestyle = hline.style_solid)
+barcolor(bar_color)
+pmfi = plot(mfi, "MFI", color = mfi_color, linewidth = 2, display = display.pane)
+p50 = plot(50, color = LIGHT_GRAY_COLOR, editable = false, display = display.pane)
+plower = plot(lower_level, "Lower MFI Level", color = bar_index % 3 == 0 ? na : LIGHT_GRAY_COLOR, display = display.pane)
+pupper = plot(upper_level, "Upper MFI Level", color = bar_index % 3 == 0 ? na : LIGHT_GRAY_COLOR, display = display.pane)
+
+fill(pmfi, pupper, mfi >= upper_level ? color.new(mfi_color, 80) : na)
+fill(pmfi, plower, mfi <= lower_level ? color.new(mfi_color, 80) : na)
+
+plot(trigger_change ? float(na) : upper, force_overlay = true, style = plot.style_linebr, offset = -1, color = color.new(channel_color, 50), editable = false, display = display.pane)
+plot(trigger_change ? float(na) : lower, force_overlay = true, style = plot.style_linebr, offset = -1, color = color.new(channel_color, 50), editable = false, display = display.pane)
+
+p1 = plot(trigger_change ? float(na) : upper, force_overlay = true, style = plot.style_linebr, color = color.new(channel_color, 70), linewidth = 3, editable = false, display = display.pane)
+p2 = plot(trigger_change ? float(na) : lower, force_overlay = true, style = plot.style_linebr, color = color.new(channel_color, 70), linewidth = 3, editable = false, display = display.pane)
+
+fill(p1, p2, color.new(channel_color, 95))
+
+plot(trigger_change ? float(na) : math.avg(upper, lower), force_overlay = true, style = plot.style_linebr, offset = -1, color = LIGHT_GRAY_COLOR, editable = false, display = display.pane)
+plot(trigger_change ? float(na) : math.avg(upper, lower), force_overlay = true, style = plot.style_linebr, color = LIGHT_GRAY_COLOR, editable = false, display = display.pane)
 
 //-----------------------------------------------------------------------------

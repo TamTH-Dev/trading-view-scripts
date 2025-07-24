@@ -1,0 +1,123 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+//@version=6
+indicator("Oscillator", overlay = false, max_boxes_count = 500, max_lines_count = 500, max_labels_count = 500, max_bars_back = 5000)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
+
+//-----------------------------------------------------------------------------
+// Common Variables
+//-----------------------------------------------------------------------------
+series int barIdx = bar_index
+
+//-----------------------------------------------------------------------------
+// Common Methods
+//-----------------------------------------------------------------------------
+debug(simple string txt) =>
+    var label lbl = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
+    label.set_xy(lbl, barIdx, ta.highest(10)[1])
+    label.set_text(lbl, txt)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+baseLength = input.int(14, title = "Base Length", minval = 1)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+calcMidPoint(h, l) => (h + l) / 2
+
+getHTF2x(tf) =>
+    switch tf
+        "1"     => "2"
+        "3"     => "6"
+        "5"     => "10"
+        "15"    => "30"
+        "30"    => "60"
+        "60"    => "120"
+        "120"   => "240"
+        "240"   => "480"
+        "1D"    => "2D"
+        "1W"    => "2W"
+        "1M"    => "2M"
+        "4M"    => "8M"
+        => na
+
+getHTF4x(tf) =>
+    switch tf
+        "1"     => "4"
+        "3"     => "12"
+        "5"     => "20"
+        "15"    => "60"
+        "30"    => "120"
+        "60"    => "240"
+        "120"   => "480"
+        "240"   => "960"
+        "1D"    => "4D"
+        "1W"    => "1M"
+        "1M"    => "4M"
+        "4M"    => "16M"
+        => na
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+curHigh = ta.highest(high, baseLength)
+curLow = ta.lowest(low, baseLength)
+curMidPoint = calcMidPoint(curHigh, curLow)
+
+htf2x = not na(getHTF4x(timeframe.period)) ? getHTF2x(timeframe.period) : timeframe.period
+htf2xHigh = request.security(syminfo.tickerid, htf2x, ta.highest(high, baseLength))
+htf2xLow = request.security(syminfo.tickerid, htf2x, ta.lowest(low, baseLength))
+htf2xMidPoint = calcMidPoint(htf2xHigh, htf2xLow)
+
+htf4x = not na(getHTF4x(timeframe.period)) ? getHTF4x(timeframe.period) : timeframe.period
+htf4xHigh = request.security(syminfo.tickerid, htf4x, ta.highest(high, baseLength))
+htf4xLow = request.security(syminfo.tickerid, htf4x, ta.lowest(low, baseLength))
+htf4xMidPoint = calcMidPoint(htf4xHigh, htf4xLow)
+
+divergence = close - curMidPoint
+htf2xDivergence = close - htf2xMidPoint
+htf4xDivergence = close - htf4xMidPoint
+
+ltfColorUp = color.new(AQUA_COLOR, 60)
+ltfColorDown = color.new(PURPLE_COLOR, 60)
+
+htf2xColorUp = color.new(AQUA_COLOR, 60)
+htf2xColorDown = color.new(PURPLE_COLOR, 60)
+
+htf4xColorUp = color.new(AQUA_COLOR, 60)
+htf4xColorDown = color.new(PURPLE_COLOR, 60)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(divergence, title = "LTF Divergence", color = (divergence >= 0 ? ltfColorUp : ltfColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
+plot(htf2xDivergence, title = "HTF 2x Divergence", color = (htf2xDivergence >= 0 ? htf2xColorUp : htf2xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
+plot(htf4xDivergence, title = "HTF 4x Divergence", color = (htf4xDivergence >= 0 ? htf4xColorUp : htf4xColorDown), style = plot.style_columns, linewidth = 3, display = display.pane)
+hline(0, "Middle Line", color = color.new(PINK_COLOR, 60), linestyle = hline.style_solid)
+
+//-----------------------------------------------------------------------------
