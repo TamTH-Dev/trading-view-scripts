@@ -52,10 +52,10 @@ swing    = input.int(5, "swing High/Low", group="Lookback")
 reflect  = input.int(10, "Significant High/Low", group="Lookback")
 offset   = input.int(1, "Consider Bar From High/Low", group="Lookback")
 
-bullBorder = input.color(color.new(#64b5f6, 60), "", inline="0", group="Pivot Color")
-bullBgCol  = input.color(color.new(#64b5f6, 95), "", inline="0", group="Pivot Color")
-bearBorder = input.color(color.new(#ffeb3b, 60), "", inline="1", group="Pivot Color")
-bearBgCol  = input.color(color.new(#ffeb3b, 95), "", inline="1", group="Pivot Color")
+bullBorder = input.color(color.new(AQUA_COLOR, 40), "", inline="0", group="Pivot Color")
+bullBgCol  = input.color(color.new(AQUA_COLOR, 95), "", inline="0", group="Pivot Color")
+bearBorder = input.color(color.new(PINK_COLOR, 40), "", inline="1", group="Pivot Color")
+bearBgCol  = input.color(color.new(PINK_COLOR, 95), "", inline="1", group="Pivot Color")
 
 //-----------------------------------------------------------------------------
 // Constants
