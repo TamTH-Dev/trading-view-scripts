@@ -44,10 +44,10 @@ debug(simple string txt) =>
 // Settings
 //-----------------------------------------------------------------------------
 mfi_len = input.int(14, "MFI length")
+ma_len = input.int(14, "MA length")
 upper_level = input.int(70, "Upper MFI Level", minval = 50)
 lower_level = input.int(30, "Lower MFI Level", maxval = 50)
 min_channel_len = input.int(15, "Minimal bars length of the channel")
-
 upper_col = input.color(AQUA_COLOR, "↑", inline = "colors")
 lower_col = input.color(PURPLE_COLOR, "↓", inline = "colors")
 
@@ -62,6 +62,7 @@ color bar_color = na
 // Calculate
 //-----------------------------------------------------------------------------
 mfi = ta.mfi(close, mfi_len)
+ma = ta.sma(mfi, ma_len)
 
 channel_upper = ta.crossover(mfi, 70) and not trigger 
 channel_lower = ta.crossunder(mfi, 30) and not trigger 
@@ -100,6 +101,7 @@ trigger_change = channel_upper != channel_upper[1] or channel_lower != channel_l
 //-----------------------------------------------------------------------------
 barcolor(bar_color)
 pmfi = plot(mfi, "MFI", color = mfi_color, linewidth = 2, display = display.pane)
+pma = plot(ma, "MA", color = color.orange, linewidth = 2, display = display.pane) 
 p50 = plot(50, color = LIGHT_GRAY_COLOR, editable = false, display = display.pane)
 plower = plot(lower_level, "Lower MFI Level", color = bar_index % 3 == 0 ? na : LIGHT_GRAY_COLOR, display = display.pane)
 pupper = plot(upper_level, "Upper MFI Level", color = bar_index % 3 == 0 ? na : LIGHT_GRAY_COLOR, display = display.pane)
