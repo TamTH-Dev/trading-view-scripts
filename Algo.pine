@@ -35,11 +35,11 @@ color TEXT_COLOR        = #ced4da
 left   = input.int(20, "Look Left", group="Zones")
 right  = input.int(15, "Look Right", group="Zones")
 nPiv   = input.int(4, "Number of Pivots", group="Zones")
-atrLen = input.int(200, "ATR Length", group="Zones")
-mult   = input.float(0.25, "Zone Width (ATR)", group="Zones", step=0.1)
+atrLen = input.int(30, "ATR Length", group="Zones")
+mult   = input.float(0.5, "Zone Width (ATR)", group="Zones", step=0.1)
 per    = input.float(5, "Max Zone Percent", group="Zones")
 max    = input.float(10, "Max Boxes for Patterns", group="Zones")
-src    = input.string("High/Low Body", "Source For Pivots", group="Zones", options=["HA", "High/Low", "High/Low Body"])
+src    = input.string("HA", "Source For Pivots", group="Zones", options=["HA", "High/Low", "High/Low Body"])
 alignZones = input.bool(true, "Align Zones", group="Zones")
 extend     = input.bool(false, "Extend Right", group="Zones")
 lLab       = input.bool(false, "Show Level Labels", group="Zones")
@@ -52,9 +52,9 @@ swing    = input.int(5, "swing High/Low", group="Lookback")
 reflect  = input.int(10, "Significant High/Low", group="Lookback")
 offset   = input.int(1, "Consider Bar From High/Low", group="Lookback")
 
-bullBorder = input.color(color.new(AQUA_COLOR, 40), "", inline="0", group="Pivot Color")
+bullBorder = input.color(color.new(AQUA_COLOR, 60), "", inline="0", group="Pivot Color")
 bullBgCol  = input.color(color.new(AQUA_COLOR, 95), "", inline="0", group="Pivot Color")
-bearBorder = input.color(color.new(PINK_COLOR, 40), "", inline="1", group="Pivot Color")
+bearBorder = input.color(color.new(PINK_COLOR, 60), "", inline="1", group="Pivot Color")
 bearBgCol  = input.color(color.new(PINK_COLOR, 95), "", inline="1", group="Pivot Color")
 
 //-----------------------------------------------------------------------------
@@ -279,5 +279,42 @@ _level(pivotLows, lowsBull)
 //-----------------------------------------------------------------------------
 alertcondition(resBreak, 'Resistance break', 'Resistance broke on {{interval}} chart. Price is {{close}}')
 alertcondition(supBreak, 'Support break', 'Support broke on {{interval}} chart. Price is {{close}}')
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Reversal Signals
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+long = input.int(25, title="Long Length", group="Reversal Signals")
+short = input.int(5, title="Short Length", group="Reversal Signals")
+signal = input.int(14, title="Signal Length", group="Reversal Signals")
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+double_smooth(src, long, short) =>
+	fist_smooth = ta.ema(src, long)
+	ta.ema(fist_smooth, short)
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+pc = ta.change(close)
+double_smoothed_pc = double_smooth(pc, long, short)
+double_smoothed_abs_pc = double_smooth(math.abs(pc), long, short)
+tsi_value = 100 * (double_smoothed_pc / double_smoothed_abs_pc)
+
+tsi_ema = ta.ema(tsi_value, signal)
+data = tsi_value > tsi_value[1] and tsi_value < tsi_ema
+dtat = tsi_value < tsi_value[1] and tsi_value > tsi_ema
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plotshape(data, style=shape.triangleup, location=location.belowbar, color=WHITE_COLOR)
+plotshape(dtat, style=shape.triangledown, location=location.abovebar, color=BLUE_COLOR)
 
 //-----------------------------------------------------------------------------
