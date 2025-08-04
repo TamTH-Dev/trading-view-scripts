@@ -47,11 +47,14 @@ debug(simple string txt) =>
 //-----------------------------------------------------------------------------
 obvGrp = "On Balance Volume"
 obvEma1Showed = input.bool(defval = true, title = "EMA 1", inline = "ema1", group = obvGrp)
-obvEma1Len = input.int(defval = 50, title = "", minval = 1, inline = "ema1", group = obvGrp)
+obvEma1Len = input.int(defval = 21, title = "", minval = 1, inline = "ema1", group = obvGrp)
 obvEma1Color = input.color(defval = AQUA_COLOR, title = "", inline = "ema1", group = obvGrp)
 obvEma2Showed = input.bool(defval = true, title = "EMA 2", inline = "ema2", group = obvGrp)
-obvEma2Len = input.int(defval = 200, title = "", minval = 1, inline = "ema2", group = obvGrp)
+obvEma2Len = input.int(defval = 55, title = "", minval = 1, inline = "ema2", group = obvGrp)
 obvEma2Color = input.color(defval = PURPLE_COLOR, title = "", inline = "ema2", group = obvGrp)
+obvEma3Showed = input.bool(defval = true, title = "EMA 3", inline = "ema3", group = obvGrp)
+obvEma3Len = input.int(defval = 144, title = "", minval = 1, inline = "ema3", group = obvGrp)
+obvEma3Color = input.color(defval = PINK_COLOR, title = "", inline = "ema3", group = obvGrp)
 obvBodyUpColor = input.color(defval = TRANSPARENT_COLOR, title = "Body", inline = "bcol", group = obvGrp)
 obvBodyDnColor = input.color(defval = TRANSPARENT_COLOR, title = "", inline = "bcol", group = obvGrp)
 obvBorderUpColor = input.color(defval = WHITE_COLOR, title = "Border", inline = "bocol", group = obvGrp)
@@ -60,10 +63,14 @@ obvBorderDnColor = input.color(defval = BLUE_COLOR, title = "", inline = "bocol"
 //-----------------------------------------------------------------------------
 // Methods
 //-----------------------------------------------------------------------------
-obvHaClose = (open + high + low + close) / 4
-obvHaOpen  = (open[1] + close[1]) / 2     
-obvHaHigh  = math.max(high, math.max(open, close))
-obvHaLow   = math.min(low,  math.min(open, close))
+// obvHaClose = (open + high + low + close) / 4
+// obvHaOpen  = (open[1] + close[1]) / 2     
+// obvHaHigh  = math.max(high, math.max(open, close))
+// obvHaLow   = math.min(low,  math.min(open, close))
+obvHaClose = close
+obvHaOpen  = open    
+obvHaHigh  = high
+obvHaLow   = low
 
 obvTw = obvHaHigh - math.max(obvHaOpen, obvHaClose) 
 obvBw = math.min(obvHaOpen, obvHaClose) - obvHaLow 
@@ -100,5 +107,6 @@ obvLow   := math.min(obvCumDeltaLow, math.min(obvOpen, obvClose))
 plotcandle(obvOpen, obvHigh, obvLow, obvClose, title = 'OBV Candles', color = obvOpen <= obvClose ? obvBodyUpColor : obvBodyDnColor, bordercolor = obvOpen <= obvClose ? obvBorderUpColor : obvBorderDnColor, wickcolor = obvOpen <= obvClose ? obvBorderUpColor : obvBorderDnColor, display = display.pane)
 plot(obvEma1Showed ? ta.ema(obvClose, obvEma1Len) : na, title = "EMA 1", color = obvEma1Color, display = display.pane)
 plot(obvEma2Showed ? ta.ema(obvClose, obvEma2Len) : na, title = "EMA 2", color = obvEma2Color, display = display.pane)
+plot(obvEma3Showed ? ta.ema(obvClose, obvEma3Len) : na, title = "EMA 3", color = obvEma3Color, display = display.pane)
 
 //-----------------------------------------------------------------------------
