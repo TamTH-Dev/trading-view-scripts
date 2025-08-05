@@ -1,32 +1,35 @@
 // This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
 // © tamth_
 
-// @version=5
+// @version=6
 indicator("Market Cipher B", overlay = false)
 
 
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 //  Constants
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
+// Colors
 color TRANSPARENT_COLOR = #ffffff00
-color WHITE_COLOR = #ffffff
-color RED_COLOR = #e91e62
-color AQUA_COLOR = #00bbf9
-color LIGHT_GRAY_COLOR = #364156
-color DARK_GRAY_COLOR = #212d40
-color GREEN_COLOR = #008170
-color PURPLE_COLOR = #764AF1
-color YELLOW_COLOR = #f2e40a
-color ORANGE_COLOR = #f2aa0a
-color TXT_COLOR = #787b86
-color BLOCK_COLOR = #5d606b19
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
 
 
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Common Functions
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
 debug(simple string txt) =>
     // Create label on the first bar
     var label = label.new(bar_index, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
@@ -35,9 +38,9 @@ debug(simple string txt) =>
     label.set_text(label, txt)
 
 
-//-----------------------------------------------------------------------------*
+//-----------------------------------------------------------------------------
 // Settings
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
 string thresholdGrp = "Threshold"
 bool thresholdShowed = input.bool(true, title = "Show", group = thresholdGrp)
 int overboughtThreshold = input.int(60, title = "Overbought Threshold", group = thresholdGrp)
@@ -59,17 +62,17 @@ bool mfoBarShowed = input.bool(false, title = "Support Bar", group = mfoGrp)
 int mfoPrd = input.int(60, title = "Period", group = mfoGrp)
 int mfoMult = input.int(150, title = "Area Multiplier", group = mfoGrp)
 string rsiGrp = "RSI"
-bool rsiShowed = input.bool(false, title = "Show", group = rsiGrp)
+bool rsiShowed = input.bool(true, title = "Show", group = rsiGrp)
 int rsiPrd = input.int(40, title = "Period", group = rsiGrp)
 string stochRsiGrp = "Stochastic RSI"
-bool stochRsiShowed = input.bool(false, title = "Show", group = stochRsiGrp)
+bool stochRsiShowed = input.bool(true, title = "Show", group = stochRsiGrp)
 int stochRsiPrd = input.int(81, title = "Period", group = stochRsiGrp)
 string vwapGrp = "VWAP"
 bool vwapShowed = input.bool(true, title = "Show", group = vwapGrp)
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
 // Functions
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
 getTopFractal(series float src) => src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
 getBotFractal(series float src) => src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
 fractalize(series float src) =>
@@ -113,9 +116,9 @@ getRsi(series float _close, series float _high, series float _low) =>
 getStochRsi(series float _close, series float _high, series float _low) =>
     ta.sma(ta.stoch(_close, _high, _low, stochRsiPrd), 2)
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
 // Get values
-//-----------------------------------------------------------------------------{
+//-----------------------------------------------------------------------------
 series float _close = request.security(syminfo.tickerid, timeframe.period, close)
 series float _high = request.security(syminfo.tickerid, timeframe.period, high)
 series float _low = request.security(syminfo.tickerid, timeframe.period, low)
@@ -126,37 +129,39 @@ float mfo = getMfo()
 [wtLongTopFractal, wtLongBotFractal, wtLongLowPrev, isWtLongBearishDiv, isWtLongBullishDiv] = getDivPoints(laggingWt, wtLongBearishDivLevel, wtLongBullishDivLevel)
 [wtShortTopFractal, wtShortBotFractal, wtShortLowPrev, isWtShortBearishDiv, isWtShortBullishDiv] =  getDivPoints(laggingWt, wtShortBrearishDivLevel, wtShortBullishDivLevel)
 
-//-----------------------------------------------------------------------------}
+//-----------------------------------------------------------------------------
 // Render values
-//-----------------------------------------------------------------------------{
-plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = color.new(AQUA_COLOR, 60), display = display.pane, linewidth = 4)
+//-----------------------------------------------------------------------------
+plot(thresholdShowed ? overboughtThreshold : na, title = "Overbought Threshold", color = color.new(GREEN_COLOR, 60), display = display.pane, linewidth = 4)
 plot(thresholdShowed ? oversoldThreshold : na, title = "Oversold Threshold", color = color.new(RED_COLOR, 60), display = display.pane, linewidth = 4)
 
 var mfoBarTopLine = plot(mfoShowed and mfoBarShowed ? -100 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
 var mfoBarBotLine = plot(mfoShowed and mfoBarShowed ? -105 : na, title = "MFO Bar", color = color.new(WHITE_COLOR, 100), editable = false, display = display.pane)
-fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? color.new(AQUA_COLOR, 40) : color.new(RED_COLOR, 40))
+fill(mfoBarTopLine, mfoBarBotLine, title = "MFO Bar", color = mfo > 0 ? color.new(GREEN_COLOR, 40) : color.new(RED_COLOR, 40))
 
 plot(wtShowed ? leadingWt : na, title = "Leading Wave Trend", color = LIGHT_GRAY_COLOR, linewidth = 1, style = plot.style_area)
 plot(wtShowed ? laggingWt : na, title = "Lagging Wave Trend", color = color.new(DARK_GRAY_COLOR, 50), linewidth = 1, style = plot.style_area)
 
 plot(vwapShowed ? vwap : na, title = "VWAP", color = color.new(YELLOW_COLOR, 40), style = plot.style_area)
 
-plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(AQUA_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
+plot(mfoShowed ? mfo : na, title = "MFO", color = mfo > 0 ? color.new(GREEN_COLOR, 60) : color.new(RED_COLOR, 60), linewidth = 2, style = plot.style_area)
 
 plot(0, title = "Zero Line", color = color.new(WHITE_COLOR, 50), display = display.pane)
 
-plot(ta.crossover(leadingWt, laggingWt) ? laggingWt : na, title = "Buy Signal", color = AQUA_COLOR, linewidth = 2, style = plot.style_circles, display = display.pane)
+plot(ta.crossover(leadingWt, laggingWt) ? laggingWt : na, title = "Buy Signal", color = GREEN_COLOR, linewidth = 2, style = plot.style_circles, display = display.pane)
 plot(ta.crossunder(leadingWt, laggingWt) ? laggingWt : na, title = "Sell Signal", color = RED_COLOR, linewidth = 2, style = plot.style_circles, display = display.pane)
 
 color wtLongBearishDivColor = wtDivShowed and isWtLongBearishDiv ? RED_COLOR : na
-color wtLongBullishDivColor = wtDivShowed and isWtLongBullishDiv ? AQUA_COLOR : na
+color wtLongBullishDivColor = wtDivShowed and isWtLongBullishDiv ? GREEN_COLOR : na
 color wtShortBearishDivColor = wtDivShowed and isWtShortBearishDiv ? color.new(RED_COLOR, 50) : na
-color wtShortBullishDivColor = wtDivShowed and isWtShortBullishDiv ? color.new(AQUA_COLOR, 50) : na
+color wtShortBullishDivColor = wtDivShowed and isWtShortBullishDiv ? color.new(GREEN_COLOR, 50) : na
 plot(series = wtLongTopFractal ? laggingWt[2] : na, title = "Wave Trend Long Bearish Divergence", color = wtLongBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wtLongBotFractal ? laggingWt[2] : na, title = "Wave Trend Long Bullish Divergence", color = wtLongBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wtShortTopFractal ? laggingWt[2] : na, title = "Wave Trend Short Bearish Divergence", color = wtShortBearishDivColor, linewidth = 2, offset = -2, display = display.pane)
 plot(series = wtShortBotFractal ? laggingWt[2] : na, title = "Wave Trend Short Bullish Divergence", color = wtShortBullishDivColor, linewidth = 2, offset = -2, display = display.pane)
 
-plot(rsiShowed ? rsi : na, title = "RSI", color = PURPLE_COLOR, linewidth = 2)
+plot(rsiShowed ? rsi : na, title = "RSI", color = PINK_COLOR, linewidth = 2)
 
-plot(stochRsiShowed ? stochRsi : na, title = "Stochastic RSI", color = rsi > stochRsi ? AQUA_COLOR : RED_COLOR, linewidth = 2)
+plot(stochRsiShowed ? stochRsi : na, title = "Stochastic RSI", color = rsi > stochRsi ? AQUA_COLOR : PURPLE_COLOR, linewidth = 2)
+
+//-----------------------------------------------------------------------------
