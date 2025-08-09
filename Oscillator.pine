@@ -50,7 +50,7 @@ int wtChlPrd = input.int(9, title="Channel Period", group=wtGrp)
 int wtAvgPrd = input.int(12, title="Average Period", group=wtGrp)
 float wtMaSrc = input.source(hlc3, title="MA Source", group=wtGrp)
 int wtMaLen = input.int(3, title="MA Length", group=wtGrp)
-bool wtDivShowed = input.bool(true, title="Show Divergence", group=wtGrp)
+bool wtDivShowed = input.bool(false, title="Show Divergence", group=wtGrp)
 
 string mfoGrp = "MFO"
 bool mfoShowed = input.bool(true, title="Show", group=mfoGrp)
@@ -130,8 +130,8 @@ float mfo = getMfo()
 //-----------------------------------------------------------------------------
 plot(thresholdShowed ? overboughtThreshold : na, title="Overbought Threshold", color=DARK_GRAY_COLOR, display=display.pane, linewidth=1, style=plot.style_cross)
 plot(thresholdShowed ? oversoldThreshold : na, title="Oversold Threshold", color=DARK_GRAY_COLOR, display=display.pane, linewidth=1, style=plot.style_cross)
-plot(vwapShowed ? vwap : na, title="VWAP", color=color.new(LIGHT_GRAY_COLOR, 10), style=plot.style_area)
-plot(mfoShowed ? mfo : na, title="MFO", color=mfo > 0 ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80), linewidth=2, style=plot.style_area)
+plot(vwapShowed ? vwap : na, title="VWAP", color=color.new(LIGHT_GRAY_COLOR, 10), style=plot.style_area, display=display.pane)
+plot(mfoShowed ? mfo : na, title="MFO", color=mfo > 0 ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80), linewidth=2, style=plot.style_area, display=display.pane)
 
 color leadingWtColor = leadingWt >= laggingWt ? color.new(WHITE_COLOR, 20) : color.new(BLUE_COLOR, 20)
 var leadingWtPlot = plot(wtShowed ? leadingWt : na, title="Leading Wave Trend", color=leadingWtColor, linewidth=2, style=plot.style_line, display=display.pane)
@@ -161,13 +161,9 @@ const string sb  = 'Buy Signal'
 
 dfb = input.bool(true, "", inline='1', group=gd)
 dfl = input.int(30, "Length", 7, 50, 1, inline='1', group=gd)
-dfh = input.bool(false, "Trend Bias", group=gd)
 smb = input.bool(true, "", inline='1', group=go)
 len = input.int(20, "Length", 7, 50, 1, inline='1', group=go)
 sig = input.int(3, "Signal", 2, 7, 1, inline='2', group=go)
-cpf = input.color(WHITE_COLOR, "", inline='4', group=go)
-cdf = input.color(AQUA_COLOR, "", inline='4', group=go)
-gds = input.string('Both', "Showcase", ['Both', 'Bull', 'Bear', 'None'], inline='4', group=gg)
 cgp = input.color(GREEN_COLOR, "", inline='2', group=gg)
 cgn = input.color(RED_COLOR, "", inline='2', group=gg)
 
@@ -215,12 +211,6 @@ method src(bar b, simple string src) =>
             'hlcc4' => math.avg(b.h, b.l, b.c, b.c)
         x
 
-method calcHa(bar b, simple bool p = true) =>
-    bar x = bar.new()
-    x.c := barstate.isfirst or na(b) ? close : b.src('ohlc4')
-    x := barstate.isfirst or na(b) or na(b.h) or na(x) or na(x[1]) ? na : bar.new(na((x[1]).o) ? b.src('oc2') : nz(x.src('oc2')[1]), math.max(b.h, math.max(x.o, x.c)), math.min(b.l, math.min(x.o, x.c)), x.c)
-    p ? x : b
-
 method calcAtr(bar b, simple int len = 1) =>
     float tr = barstate.isfirst or na(b) or na(b.h) or na(b.l) or na(b.c) or na((b[1]).h) or na((b[1]).c) ? na : math.max(math.max(b.h - b.l, math.abs(b.h - (b[1]).c)), math.abs(b.l - (b[1]).c))
     len == 1 ? tr : ta.rma(tr, len)
@@ -263,9 +253,9 @@ method calcSqz(bar b, simple int len) =>
 bar     b = bar.new(open, high, low, close)
 squeeze s = b.calcSqz(len)
 osc     o = b.calcOsc(sig, len)
-osc     v = b.calcHa(dfh).calcDfo(dfl)
-u = gauge.new(+75, +70, v.o > 0 and o.o > 0 ? cgp : v.o > 0 or o.o > 0 ? color.new(cgp, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bull')
-d = gauge.new(-75, -70, v.o < 0 and o.o < 0 ? cgn : v.o < 0 or o.o < 0 ? color.new(cgn, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bear')
+osc     v = b.calcDfo(dfl)
+u = gauge.new(+75, +70, v.o > 0 and o.o > 0 ? cgp : v.o > 0 or o.o > 0 ? color.new(cgp, 40) : DARK_GRAY_COLOR)
+d = gauge.new(-75, -70, v.o < 0 and o.o < 0 ? cgn : v.o < 0 or o.o < 0 ? color.new(cgn, 40) : DARK_GRAY_COLOR)
 
 //-----------------------------------------------------------------------------
 // Render
