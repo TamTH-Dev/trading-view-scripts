@@ -35,15 +35,15 @@ color TEXT_COLOR        = #ced4da
 string rnGrp = "Round Numbers"
 
 var rnInline1 = "Round 00 Numbers"
-linecolor1 = input(title=rnInline1, defval = color.new(PURPLE_COLOR, 50), inline = rnInline1, group = rnGrp)
+linecolor1 = input(title=rnInline1, defval = color.new(LIGHT_GRAY_COLOR, 50), inline = rnInline1, group = rnGrp)
 linestyle1 = input.string(title="", defval = line.style_solid, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline1, group = rnGrp)
 
 var rnInline2 = "Round 50 Numbers"
-linecolor2 = input(title=rnInline2, defval = LIGHT_GRAY_COLOR, inline = rnInline2, group = rnGrp)
-linestyle2 = input.string(title="", defval = line.style_solid, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline2, group = rnGrp)
+linecolor2 = input(title=rnInline2, defval = color.new(LIGHT_GRAY_COLOR, 50), inline = rnInline2, group = rnGrp)
+linestyle2 = input.string(title="", defval = line.style_dashed, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline2, group = rnGrp)
 
 var rnInline3 = "Quarter Numbers"
-linecolor3 = input(title=rnInline3, defval = LIGHT_GRAY_COLOR, inline = rnInline3, group = rnGrp)
+linecolor3 = input(title=rnInline3, defval = color.new(LIGHT_GRAY_COLOR, 100), inline = rnInline3, group = rnGrp)
 linestyle3 = input.string(title="", defval = line.style_dashed, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline3, group = rnGrp)
 
 
@@ -52,7 +52,7 @@ var number_of_lines = input.int(10, title="Number of lines above/below", group =
 //-----------------------------------------------------------------------------
 // Calculate & Render
 //-----------------------------------------------------------------------------
-var step = syminfo.mintick*250
+var step = syminfo.mintick * 250
 if barstate.islast 
     for counter = 0 to number_of_lines - 1
         stepUp = math.ceil(close / step) * step + (counter * step)
@@ -61,21 +61,71 @@ if barstate.islast
         line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor3, width=1, style=linestyle3)
         
 
-var step2 = syminfo.mintick*500
+var step2 = syminfo.mintick * 500
 if barstate.islast 
-    for counter = 0 to (number_of_lines /2) - 1
+    for counter = 0 to (number_of_lines / 2) - 1
         stepUp = math.ceil(close / step2) * step2 + (counter * step2)
         line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc=xloc.bar_index, extend=extend.both, color=linecolor2, width=1, style=linestyle2)
         stepDown = math.floor(close / step2) * step2 - (counter * step2)
         line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor2, width=1, style=linestyle2)
         
 
-var step3 = syminfo.mintick*1000
+var step3 = syminfo.mintick * 1000
 if barstate.islast 
-    for counter = 0 to (number_of_lines /4) - 1
+    for counter = 0 to (number_of_lines / 4) - 1
         stepUp = math.ceil(close / step3) * step3 + (counter * step3)
         line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc=xloc.bar_index, extend=extend.both, color=linecolor1, width=1, style=linestyle1)
         stepDown = math.floor(close / step3) * step3 - (counter * step3)
         line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor1, width=1, style=linestyle1)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// DSMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+dsmaGrp    = "DSMAs"
+dsmaShowed = input.bool(true, title="Show", group=dsmaGrp)
+dsmaSrc    = input.source(close, title="Source", group=dsmaGrp)
+dsma1Len   = input.int(40, title="DSMA 1 Length", group=dsmaGrp)
+dsma2Len   = input.int(100, title="DSMA 2 Length", group=dsmaGrp)
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+// Calculate DSMA
+calcDsma(src, len) =>
+    filt = 0.0
+    dsma = 0.0
+
+    PI = 3.1415926
+    a1 = math.exp( -1.414 * PI / (0.5 * len))
+    b1 = 2 * a1 * math.cos( 1.414 * PI / ( 0.5 * len))
+    c2 = b1
+    c3 = -a1 * a1
+    c1 = 1 - c2 - c3
+
+    zeros = src - src[2]
+    filt := c1 * (zeros + zeros[1]) / 2 + c2 * nz(filt[1]) + c3 * nz(filt[2])
+    rm = math.sum(filt * filt, len) 
+    rms = math.sqrt(rm / len) 
+    scaledFilt = rms != 0 ? filt / rms : 0
+    alpha1 = math.abs(scaledFilt) * 5 / len
+    dsma := alpha1 * close + (1 - alpha1) * nz(dsma[1])
+    dsma
+
+//-----------------------------------------------------------------------------
+// Values
+//-----------------------------------------------------------------------------
+dsma1 = calcDsma(dsmaSrc, dsma1Len)
+dsma2 = calcDsma(dsmaSrc, dsma2Len)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(dsmaShowed ? dsma1 : na, color=AQUA_COLOR, linewidth=1, display = display.pane, force_overlay = true)
+plot(dsmaShowed ? dsma2 : na, color=PURPLE_COLOR, linewidth=1, display = display.pane, force_overlay = true)
 
 //-----------------------------------------------------------------------------
