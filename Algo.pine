@@ -28,293 +28,54 @@ color TEXT_COLOR        = #ced4da
 
 
 //-----------------------------------------------------------------------------
-// Key Levels
+// Round Numbers
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-left   = input.int(20, "Look Left", group="Zones")
-right  = input.int(15, "Look Right", group="Zones")
-nPiv   = input.int(4, "Number of Pivots", group="Zones")
-atrLen = input.int(30, "ATR Length", group="Zones")
-mult   = input.float(0.5, "Zone Width (ATR)", group="Zones", step=0.1)
-per    = input.float(5, "Max Zone Percent", group="Zones")
-max    = input.float(10, "Max Boxes for Patterns", group="Zones")
-src    = input.string("HA", "Source For Pivots", group="Zones", options=["HA", "High/Low", "High/Low Body"])
-alignZones = input.bool(true, "Align Zones", group="Zones")
-extend     = input.bool(false, "Extend Right", group="Zones")
-lLab       = input.bool(false, "Show Level Labels", group="Zones")
+string rnGrp = "Round Numbers"
 
-dhighs = input.bool(true, "Detect Pivot Highs", group="Detection")
-dlows  = input.bool(true, "Detect Pivot Lows", group="Detection")
+var rnInline1 = "Round 00 Numbers"
+linecolor1 = input(title=rnInline1, defval = color.new(PURPLE_COLOR, 50), inline = rnInline1, group = rnGrp)
+linestyle1 = input.string(title="", defval = line.style_solid, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline1, group = rnGrp)
 
-lookback = input.int(2, "Lookback For Breaks", group="Lookback")
-swing    = input.int(5, "swing High/Low", group="Lookback")
-reflect  = input.int(10, "Significant High/Low", group="Lookback")
-offset   = input.int(1, "Consider Bar From High/Low", group="Lookback")
+var rnInline2 = "Round 50 Numbers"
+linecolor2 = input(title=rnInline2, defval = LIGHT_GRAY_COLOR, inline = rnInline2, group = rnGrp)
+linestyle2 = input.string(title="", defval = line.style_solid, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline2, group = rnGrp)
 
-bullBorder = input.color(color.new(AQUA_COLOR, 60), "", inline="0", group="Pivot Color")
-bullBgCol  = input.color(color.new(AQUA_COLOR, 95), "", inline="0", group="Pivot Color")
-bearBorder = input.color(color.new(PINK_COLOR, 60), "", inline="1", group="Pivot Color")
-bearBgCol  = input.color(color.new(PINK_COLOR, 95), "", inline="1", group="Pivot Color")
+var rnInline3 = "Quarter Numbers"
+linecolor3 = input(title=rnInline3, defval = LIGHT_GRAY_COLOR, inline = rnInline3, group = rnGrp)
+linestyle3 = input.string(title="", defval = line.style_dashed, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline3, group = rnGrp)
+
+
+var number_of_lines = input.int(10, title="Number of lines above/below", group = rnGrp)
 
 //-----------------------------------------------------------------------------
-// Constants
+// Calculate & Render
 //-----------------------------------------------------------------------------
-sync       = bar_index
-labUp      = label.style_label_up
-labDn      = label.style_label_down
-confirmed  = barstate.isconfirmed
-extrap     = extend ? extend.right : extend.none
+var step = syminfo.mintick*250
+if barstate.islast 
+    for counter = 0 to number_of_lines - 1
+        stepUp = math.ceil(close / step) * step + (counter * step)
+        line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc=xloc.bar_index, extend=extend.both, color=linecolor3, width=1, style=linestyle3)
+        stepDown = math.floor(close / step) * step - (counter * step)
+        line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor3, width=1, style=linestyle3)
+        
 
-var pivotHigh = array.new_box(nPiv)
-var pivotLows = array.new_box(nPiv)
-var highBull  = array.new_bool(nPiv)
-var lowsBull  = array.new_bool(nPiv)
-var boxes     = array.new_box()
+var step2 = syminfo.mintick*500
+if barstate.islast 
+    for counter = 0 to (number_of_lines /2) - 1
+        stepUp = math.ceil(close / step2) * step2 + (counter * step2)
+        line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc=xloc.bar_index, extend=extend.both, color=linecolor2, width=1, style=linestyle2)
+        stepDown = math.floor(close / step2) * step2 - (counter * step2)
+        line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor2, width=1, style=linestyle2)
+        
 
-haSrc     = src == "HA"
-hiLoSrc   = src == "High/Low"
-
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-atr    = ta.atr(atrLen)
-perMax = close * 0.02
-min    = math.min(perMax, atr * 0.3)
-
-_haBody() =>
-    haClose = (open + high + low + close) / 4
-    haOpen  = float(na)
-    haOpen := na(haOpen[1]) ? (open + close) / 2 : (nz(haOpen[1]) + nz(haClose[1])) / 2
-    [haOpen, haClose]
-
-_extend(_x) =>
-    for i = 0 to array.size(_x) - 1
-        box.set_right(array.get(_x, i), sync)
-
-_arrayLoad(_x, _max, _val) =>
-    array.unshift(_x, _val)
-    if array.size(_x) > _max
-        array.pop(_x)
-
-_arrayBox(_x, _max, _val) =>
-    array.unshift(_x, _val)
-    if array.size(_x) > _max
-        _b = array.pop(_x)
-        if extend
-            box.set_extend(_b, extend.none)
-
-_arrayWrap(_x, _max, _val) =>
-    array.unshift(_x, _val)
-    if array.size(_x) > _max
-        box.delete(array.pop(_x))
-
-_delLab(_x) =>
-    if array.size(_x) > 0
-        label.delete(array.pop(_x))
-
-_delLine(_x) =>
-    if array.size(_x) > 0
-        line.delete(array.pop(_x))
-
-_delLevels(_x, _y) =>
-    for i = 0 to array.size(_x) - 1
-        _delLab(_x)
-        _delLine(_y)
-
-_box(_x1, _t, _r, _b, _boCol, _bgCol, _e) =>
-    box.new(_x1, _t, _r, _b, xloc=xloc.bar_index, extend=_e, border_color=_boCol, bgcolor=_bgCol)
-
-_wrap(_cond, _x, _bb, _bc, _bgc) =>
-    _t = ta.highest(high, _bb) + min
-    _b = ta.lowest(low, _bb) - min
-    _l = bar_index - _bb
-    _r = bar_index + 1
-    if _cond
-        _arrayWrap(_x, max, _box(_l, _t, _r, _b, _bc, _bgc, extend.none))
-
-_getBox(_x, _i) =>
-    _box = array.get(_x, _i)
-    _t   = box.get_top(_box)
-    _b   = box.get_bottom(_box)
-    [_t, _b]
-
-_align(_x, _y) =>
-    for i = 0 to array.size(_x) - 1
-        [_T, _B] = _getBox(_y, 0)
-        [_t, _b] = _getBox(_x, i)
-        if _T > _b and _T < _t or _B < _t and _B > _b or _T > _t and _B < _b or _B > _b and _T < _t
-            box.set_top(array.get(_y, 0), _t)
-            box.set_bottom(array.get(_y, 0), _b)
-
-_color(_x, _y) =>
-    var int _track = nPiv
-    for i = 0 to array.size(_x) - 1
-        [t_, b_] = _getBox(_x, i)
-        _isBull  = array.get(_y, i)
-        if close > t_ and not _isBull
-            box.set_extend(array.get(_x, i), extend.none)
-            array.set(_x, i, _box(sync, t_, sync, b_, bullBorder, bullBgCol, extrap))
-            array.set(_y, i, true)
-            _track += 1
-        if close < b_ and _isBull
-            box.set_extend(array.get(_x, i), extend.none)
-            array.set(_x, i, _box(sync, t_, sync, b_, bearBorder, bearBgCol, extrap))
-            array.set(_y, i, false)
-            _track -= 1
-    _track
-
-_check(_src, _l) =>
-    bool _check = false
-    for i = 0 to _l
-        if _src[i]
-            _check := true
-    _check
-
-_count(_src, _l) =>
-    int _result = 0
-    for i = 0 to _l
-        if _src > _src[i]
-            _result += 1
-    _result
-
-_level(_x, _y) =>
-    var label[] lab = array.new_label(nPiv)
-    var line[] lines = array.new_line(nPiv)
-    if barstate.islast and lLab
-        _delLevels(lab, lines)
-        for i = 0 to array.size(_x) - 1
-            [_t, _b] = _getBox(_x, i)
-            _isBull  = array.get(_y, i)
-            _col1    = _isBull ? bullBgCol : bearBgCol
-            _col2    = _isBull ? bullBorder : bearBorder
-
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-highest = close == ta.highest(close, right)
-lowest  = close == ta.lowest(close, right)
-
-closeLows  = ta.lowest(close, swing)
-closeHigh  = ta.highest(close, swing)
-
-numLows = _count(low, reflect)
-numHigh = _count(high, reflect)
-
-[open_, close_] = _haBody()
-
-hiHaBod = math.max(close_, open_)
-loHaBod = math.min(close_, open_)
-
-hiBod = math.max(close, open)
-loBod = math.min(close, open)
-
-srcHigh = haSrc ? hiHaBod : hiLoSrc ? high : hiBod
-srcLow  = haSrc ? loHaBod : hiLoSrc ? low : loBod
-
-pivot_high = ta.pivothigh(srcHigh, left, right)
-pivot_low  = ta.pivotlow(srcLow, left, right)
-
-perc = close * (per / 100)
-
-band = math.min(atr * mult, perc)[right] / 2
-
-HH = pivot_high + band
-HL = pivot_high - band
-
-LH = pivot_low + band
-LL = pivot_low - band
-
-coDiff = close - open
-
-if not na(pivot_high) and dhighs and confirmed
-    _arrayLoad(highBull, nPiv, false)
-    _arrayBox(pivotHigh, nPiv, _box(sync[right], HH, sync, HL, bearBorder, bearBgCol, extrap))
-
-if not na(pivot_low) and dlows and confirmed
-    _arrayLoad(lowsBull, nPiv, true)
-    _arrayBox(pivotLows, nPiv, _box(sync[right], LH, sync, LL, bullBorder, bullBgCol, extrap))
-
-if alignZones
-    _align(pivotHigh, pivotHigh)
-    _align(pivotHigh, pivotLows)
-    _align(pivotLows, pivotLows)
-    _align(pivotLows, pivotHigh)
-
-_extend(pivotHigh)
-_extend(pivotLows)
-
-trackHigh = _color(pivotHigh, highBull)
-trackLows = _color(pivotLows, lowsBull)
-
-//-----------------------------------------------------------------------------
-// Conditions
-//-----------------------------------------------------------------------------
-isLows  = closeLows == close
-isHigh  = closeHigh == close
-
-wasLows = _check(isLows, lookback)
-wasHigh = _check(isHigh, lookback)
-
-moveAbove = trackHigh > trackHigh[1]
-moveBelow = trackLows < trackLows[1]
-
-resBreak = (trackLows > trackLows[1] or moveAbove)
-supBreak = (trackHigh < trackHigh[1] or moveBelow)
-
-highrange = reflect - offset
-lowsrange = offset
-
-sigLows = numLows <= lowsrange
-sigHigh = numHigh >= highrange
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-_level(pivotHigh, highBull)
-_level(pivotLows, lowsBull)
-
-//-----------------------------------------------------------------------------
-// Alerts
-//-----------------------------------------------------------------------------
-alertcondition(resBreak, 'Resistance break', 'Resistance broke on {{interval}} chart. Price is {{close}}')
-alertcondition(supBreak, 'Support break', 'Support broke on {{interval}} chart. Price is {{close}}')
-
-//-----------------------------------------------------------------------------
-
-
-//-----------------------------------------------------------------------------
-// Reversal Signals
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-long = input.int(25, title="Long Length", group="Reversal Signals")
-short = input.int(5, title="Short Length", group="Reversal Signals")
-signal = input.int(14, title="Signal Length", group="Reversal Signals")
-
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-double_smooth(src, long, short) =>
-	fist_smooth = ta.ema(src, long)
-	ta.ema(fist_smooth, short)
-
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-pc = ta.change(close)
-double_smoothed_pc = double_smooth(pc, long, short)
-double_smoothed_abs_pc = double_smooth(math.abs(pc), long, short)
-tsi_value = 100 * (double_smoothed_pc / double_smoothed_abs_pc)
-
-tsi_ema = ta.ema(tsi_value, signal)
-data = tsi_value > tsi_value[1] and tsi_value < tsi_ema
-dtat = tsi_value < tsi_value[1] and tsi_value > tsi_ema
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-plotshape(data, style=shape.triangleup, location=location.belowbar, color=WHITE_COLOR)
-plotshape(dtat, style=shape.triangledown, location=location.abovebar, color=BLUE_COLOR)
+var step3 = syminfo.mintick*1000
+if barstate.islast 
+    for counter = 0 to (number_of_lines /4) - 1
+        stepUp = math.ceil(close / step3) * step3 + (counter * step3)
+        line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc=xloc.bar_index, extend=extend.both, color=linecolor1, width=1, style=linestyle1)
+        stepDown = math.floor(close / step3) * step3 - (counter * step3)
+        line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc=xloc.bar_index, extend=extend.both, color=linecolor1, width=1, style=linestyle1)
 
 //-----------------------------------------------------------------------------
