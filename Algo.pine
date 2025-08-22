@@ -40,14 +40,14 @@ linestyle1 = input.string(title="", defval = line.style_solid, options=[line.sty
 
 var rnInline2 = "Round 50 Numbers"
 linecolor2 = input(title=rnInline2, defval = DARK_GRAY_COLOR, inline = rnInline2, group = rnGrp)
-linestyle2 = input.string(title="", defval = line.style_solid, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline2, group = rnGrp)
+linestyle2 = input.string(title="", defval = line.style_dashed, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline2, group = rnGrp)
 
 var rnInline3 = "Quarter Numbers"
-linecolor3 = input(title=rnInline3, defval = DARK_GRAY_COLOR, inline = rnInline3, group = rnGrp)
+linecolor3 = input(title=rnInline3, defval = TRANSPARENT_COLOR, inline = rnInline3, group = rnGrp)
 linestyle3 = input.string(title="", defval = line.style_dashed, options=[line.style_solid, line.style_dotted, line.style_dashed], inline = rnInline3, group = rnGrp)
 
 
-var number_of_lines = input.int(10, title="Number of lines above/below", group = rnGrp)
+var number_of_lines = input.int(20, title="Number of lines above/below", group = rnGrp)
 
 //-----------------------------------------------------------------------------
 // Calculate & Render
