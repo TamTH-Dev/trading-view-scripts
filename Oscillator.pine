@@ -23,262 +23,251 @@ color DARK_GRAY_COLOR   = #212d40
 color TEXT_COLOR        = #ced4da
 
 //-----------------------------------------------------------------------------
-// Common Variables
+// Tooltip
 //-----------------------------------------------------------------------------
-series int barIdx = bar_index
-series bool confirmed = barstate.isconfirmed
+string tt_stoch = "The first value is the lookback length for your traditional Stochastic Oscillator. The second is the smoothing length."
+string tt_disp = "The dropdown is a selection of methods of calculating dispersion. The box that follows is the lookback length to measure."
+string tt_straddle = "This value defines the size of the 'straddle box' where price is within consolidation and the limits where it breaks out."
+string tt_barcolor = "Check this box if you want to color candles/bars similar to the color of the Price Action Index."
 
 //-----------------------------------------------------------------------------
-// Common Functions
+// HTF Framework
 //-----------------------------------------------------------------------------
-debug(simple string txt) =>
-    var label = label.new(barIdx, na, txt, xloc.bar_index, yloc.price, color(na), label.style_none, WHITE_COLOR, size.large, text.align_left)
-    label.set_xy(label, barIdx, ta.highest(10)[1])
-    label.set_text(label, txt)
+TF0 = "None"
+TF1 = "Auto-Steps (15min, 60min, 4H, 1D, 3D, 1W, 1M, 12M)"
+TF2 = "Multiple Of Current TF"
+TF3 = "Fixed TF"
+i_htfRepaints = input.bool(false, "Repaint HTF", group="⌚ Time Frame ⌚")
+i_htfType = input.string(TF0, "Higher Timeframe Selection", options=[TF0, TF1, TF2, TF3], group="⌚ Time Frame ⌚")
+i_htfType2 = input.float(3., "Multiple of Current TF", minval=1, group="⌚ Time Frame ⌚")
+i_htfType3 = input.timeframe("D", "Fixed TF", group="⌚ Time Frame ⌚")
+
+var htfOn = i_htfType != TF0
+
+//-----------------------------------------------------------------------------
+// HTF Functions
+//-----------------------------------------------------------------------------
+// ————— Converts current "timeframe.multiplier" plus the TF into minutes of type float.
+f_resInMinutes() =>
+    _resInMinutes = timeframe.multiplier * (timeframe.isseconds ? 1. / 60. : timeframe.isminutes ? 1. : timeframe.isdaily ? 1440. : timeframe.isweekly ? 10080. : timeframe.ismonthly ? 43800. : na)
+
+// ————— Returns resolution of _resolution period in minutes.
+f_tfResInMinutes(_resolution) =>
+    request.security(syminfo.tickerid, _resolution, f_resInMinutes())
+
+// ————— Given current resolution, returns next step of HTF.
+f_resNextStep(_res) =>
+    _res <= 1 ? "15" : _res <= 5 ? "60" : _res <= 30 ? "240" : _res <= 60 ? "1D" : _res <= 360 ? "3D" : _res <= 1440 ? "1W" : _res <= 10080 ? "1M" : "12M"
+
+// ————— Returns a multiple of current resolution as a string in "timeframe.period" format usable with "security()".
+f_multipleOfRes(_res, _mult) =>
+    _targetResInMin = _res * math.max(_mult, 1)
+    _targetResInMin <= 0.083 ? "5S" : _targetResInMin <= 0.251 ? "15S" : _targetResInMin <= 0.501 ? "30S" : _targetResInMin <= 1440 ? str.tostring(math.round(_targetResInMin)) : _targetResInMin <= 43800 ? str.tostring(math.round(math.min(_targetResInMin / 1440, 365))) + "D" : str.tostring(math.round(math.min(_targetResInMin / 43800, 12))) + "M"
+
+//-----------------------------------------------------------------------------
+// HTF Calc
+//-----------------------------------------------------------------------------
+// Get current resolution in float minutes.
+var resInMinutes = f_resInMinutes()
+// Get HTF from user-defined mode.
+var htf = i_htfType == TF0 ? timeframe.period : i_htfType == TF1 ? f_resNextStep(resInMinutes) : i_htfType == TF2 ? f_multipleOfRes(resInMinutes, i_htfType2) : i_htfType3
+
+//-----------------------------------------------------------------------------
+// Dispersion Functions
+//-----------------------------------------------------------------------------
+string dis0 = "Standard Deviation"
+f_dis0(src, len) => ta.stdev(src, len)
+string dis1 = "Variance"
+f_dis1(src, len) => ta.variance(src, len)
+string dis2 = "Coefficient of Variation"
+f_dis2(src, len) => ta.stdev(src, len) / ta.sma(src, len)
+string dis3 = "Signal-to-Noise"
+f_dis3(src, len) => ta.sma(src, len) / ta.stdev(src, len)
+string dis4 = "Signal-to-Noise²"
+f_dis4(src, len) => math.pow(ta.sma(src, len), 2) / math.pow(ta.stdev(src, len), 2)
+string dis5 = "Index of Dispersion"
+f_dis5(src, len) => math.pow(ta.variance(src, len), 2) / ta.sma(src, len)
+string dis6 = "Efficiency"
+f_dis6(src, len) => math.pow(ta.stdev(src, len), 2) / math.pow(ta.sma(src, len), 2)
+string dis7 = "High-Low Range"
+f_dis7(src, len) => ta.highest(len) - ta.lowest(len)
 
 //-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-string thresholdGrp = "Threshold"
-bool thresholdShowed = input.bool(true, title="Show", group=thresholdGrp)
-int overboughtThreshold = input.int(60, title="Overbought Threshold", group=thresholdGrp)
-int oversoldThreshold = input.int(-60, title="Oversold Threshold", group=thresholdGrp)
+src = input.source(defval=close, title="Source", group="⌨️ Inputs 🖱")
+len = input.int(defval=20, title="Stochastic", group="⌨️ Inputs 🖱", inline="Stoch")
+smooth = input.int(defval=3, title="", group="⌨️ Inputs 🖱", inline="Stoch", tooltip=tt_stoch)
+dis_method = input.string(dis0, options=[dis0, dis1, dis2, dis3, dis4, dis5, dis6, dis7], title="Dispersion", group="⌨️ Inputs 🖱", inline="Dispersion")
+dis_len = input.int(defval=20, title="", group="⌨️ Inputs 🖱", inline="Dispersion", tooltip=tt_disp)
 
-string wtGrp = "Waves Trend"
-bool wtShowed = input.bool(true, title="Show", group=wtGrp)
-int wtChlPrd = input.int(9, title="Channel Period", group=wtGrp)
-int wtAvgPrd = input.int(12, title="Average Period", group=wtGrp)
-float wtMaSrc = input.source(hlc3, title="MA Source", group=wtGrp)
-int wtMaLen = input.int(3, title="MA Length", group=wtGrp)
-bool wtDivShowed = input.bool(false, title="Show Divergence", group=wtGrp)
-
-string mfoGrp = "MFO"
-bool mfoShowed = input.bool(true, title="Show", group=mfoGrp)
-int mfoPrd = input.int(60, title="Period", group=mfoGrp)
-int mfoMult = input.int(150, title="Area Multiplier", group=mfoGrp)
-
-string vwapGrp = "VWAP"
-bool vwapShowed = input.bool(true, title="Show", group=vwapGrp)
+straddle_area = input.float(defval=5.0, title="🧲 Straddle Area ⛔", group="Outputs & Alerts", tooltip=tt_straddle)
+use_bar_colors = input.bool(defval=false, title="🎨 Use Bar Colors 🎨", group="Outputs & Alerts", tooltip=tt_barcolor)
+use_alerts = input.bool(defval=false, title="🔇 Use Alerts 🔊", group="Outputs & Alerts")
+alerts_breakouts = input.bool(defval=false, title="📈 Breakouts 📉", group="Outputs & Alerts", inline="Alerts")
+alerts_extremes = input.bool(defval=false, title="⚠️ Tops/Bottoms ⚠️", group="Outputs & Alerts", inline="Alerts")
 
 //-----------------------------------------------------------------------------
-// Methods
+// Divergence Settings
 //-----------------------------------------------------------------------------
-getTopFractal(series float src) =>
-    src[4] < src[2] and src[3] < src[2] and src[2] > src[1] and src[2] > src[0]
-
-getBotFractal(series float src) =>
-    src[4] > src[2] and src[3] > src[2] and src[2] < src[1] and src[2] < src[0]
-
-fractalize(series float src) =>
-    series bool isBotFractal = getBotFractal(src)
-    series bool isTopFractal = getTopFractal(src)
-    isTopFractal ? 1 : isBotFractal ? -1 : 0
-
-getDivPoints(series float src, int topLimit, int botLimit) =>
-    series bool isTopFractal = not na(fractalize(src) > 0 and src[2] >= topLimit ? src[2] : na)
-    series bool isBotFractal = not na(fractalize(src) < 0 and src[2] <= botLimit ? src[2] : na)
-    float highPrev = ta.valuewhen(isTopFractal, src[2], 0)[2]
-    float highPrice = ta.valuewhen(isTopFractal, high[2], 0)[2]
-    float lowPrev = ta.valuewhen(isBotFractal, src[2], 0)[2]
-    float lowPrice = ta.valuewhen(isBotFractal, low[2], 0)[2]
-    bool isBearish = isTopFractal and high[2] > highPrice and src[2] < highPrev
-    bool isBullish = isBotFractal and low[2] < lowPrice and src[2] > lowPrev
-    [isTopFractal, isBotFractal, lowPrev, isBearish, isBullish]
-
-getWtAndVwap() =>
-    float src = request.security(syminfo.tickerid, timeframe.period, wtMaSrc)
-    float esa = ta.ema(src, wtChlPrd)
-    float d = ta.ema(math.abs(src - esa), wtChlPrd)
-    float ci = (src - esa) / (0.015 * d)
-    float leadingWt = ta.ema(ci, wtAvgPrd)
-    float laggingWt = ta.sma(leadingWt, wtMaLen)
-    bool isOversold = laggingWt <= oversoldThreshold
-    bool isOverbought = laggingWt >= overboughtThreshold
-    bool wtCross = ta.cross(leadingWt, laggingWt)
-    bool wtCrossUp = laggingWt - leadingWt <= 0
-    bool wtCrossDn = laggingWt - leadingWt >= 0
-    float vwap = leadingWt - laggingWt
-    [leadingWt, laggingWt, isOversold, isOverbought, wtCross, wtCrossUp, wtCrossDn, vwap]
-
-getHaVal(series float src) =>
-    request.security(ticker.heikinashi(syminfo.tickerid), timeframe.period, src)
-
-getMfo() =>
-    series float haOpen = getHaVal(open)
-    series float haClose = getHaVal(close)
-    series float haHigh = getHaVal(high)
-    series float haLow = getHaVal(low)
-    mfo = ta.sma((haClose - haOpen) / (haHigh - haLow) * mfoMult, mfoPrd)
+lbR = input(title="Pivot Lookback Right", defval=2, group="Divergence Indicator")
+lbL = input(title="Pivot Lookback Left", defval=2, group="Divergence Indicator")
+rangeUpper = input(title="Max of Lookback Range", defval=10, group="Divergence Indicator")
+rangeLower = input(title="Min of Lookback Range", defval=2, group="Divergence Indicator")
+plotBull = input(title="Plot Bullish", defval=true, group="Divergence Indicator")
+plotHiddenBull = input(title="Plot Hidden Bullish", defval=false, group="Divergence Indicator")
+plotBear = input(title="Plot Bearish", defval=true, group="Divergence Indicator")
+plotHiddenBear = input(title="Plot Hidden Bearish", defval=false, group="Divergence Indicator")
+bearColor = RED_COLOR
+bullColor = GREEN_COLOR
+hiddenBullColor = color.new(GREEN_COLOR, 80)
+hiddenBearColor = color.new(RED_COLOR, 80)
+textColor = TEXT_COLOR
+noneColor = TRANSPARENT_COLOR
 
 //-----------------------------------------------------------------------------
 // Calculate
 //-----------------------------------------------------------------------------
-int WT_LONG_BEARISH_DIV_LEVEL = 45
-int WT_LONG_BULLISH_DIV_LEVEL = -65
-int WT_SHORT_BEARISH_DIV_LEVEL = 15
-int WT_SHORT_BULLISH_DIV_LEVEL = -40
-series float _close = request.security(syminfo.tickerid, timeframe.period, close)
-series float _high = request.security(syminfo.tickerid, timeframe.period, high)
-series float _low = request.security(syminfo.tickerid, timeframe.period, low)
-float mfo = getMfo()
-[leadingWt, laggingWt, isOversold, isOverbought, cross, crossUp, crossDn, vwap] = getWtAndVwap()
-[wtLongTopFractal, wtLongBotFractal, wtLongLowPrev, isWtLongBearishDiv, isWtLongBullishDiv] = getDivPoints(laggingWt, WT_LONG_BEARISH_DIV_LEVEL, WT_LONG_BULLISH_DIV_LEVEL)
-[wtShortTopFractal, wtShortBotFractal, wtShortLowPrev, isWtShortBearishDiv, isWtShortBullishDiv] = getDivPoints(laggingWt, WT_SHORT_BEARISH_DIV_LEVEL, WT_SHORT_BULLISH_DIV_LEVEL)
-
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-plot(thresholdShowed ? overboughtThreshold : na, title="Overbought Threshold", color=DARK_GRAY_COLOR, display=display.pane, linewidth=1, style=plot.style_cross)
-plot(thresholdShowed ? oversoldThreshold : na, title="Oversold Threshold", color=DARK_GRAY_COLOR, display=display.pane, linewidth=1, style=plot.style_cross)
-plot(vwapShowed ? vwap : na, title="VWAP", color=color.new(LIGHT_GRAY_COLOR, 10), style=plot.style_area)
-plot(mfoShowed ? mfo : na, title="MFO", color=mfo > 0 ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80), linewidth=2, style=plot.style_area)
-
-color leadingWtColor = leadingWt >= laggingWt ? color.new(BLUE_COLOR, 20) : color.new(WHITE_COLOR, 20)
-var leadingWtPlot = plot(wtShowed ? leadingWt : na, title="Leading Wave Trend", color=leadingWtColor, linewidth=2, style=plot.style_line, display=display.pane)
-var laggingWtPlot = plot(wtShowed ? laggingWt : na, title="Lagging Wave Trend", color=TRANSPARENT_COLOR, linewidth=1, style=plot.style_line, display=display.pane)
-color wtFillColor = leadingWt >= laggingWt ? color.new(BLUE_COLOR, 75) : color.new(WHITE_COLOR, 75)
-fill(leadingWtPlot, laggingWtPlot, title='Wave Trend', color=wtFillColor)
-
-color wtLongBearishDivColor = wtDivShowed and isWtLongBearishDiv ? WHITE_COLOR : na
-color wtLongBullishDivColor = wtDivShowed and isWtLongBullishDiv ? BLUE_COLOR : na
-color wtShortBearishDivColor = wtDivShowed and isWtShortBearishDiv ? color.new(WHITE_COLOR, 50) : na
-color wtShortBullishDivColor = wtDivShowed and isWtShortBullishDiv ? color.new(BLUE_COLOR, 50) : na
-plot(series=wtLongTopFractal ? laggingWt[2] : na, title="Wave Trend Long Bearish Divergence", color=wtLongBearishDivColor, linewidth=2, offset=-2, display=display.pane)
-plot(series=wtLongBotFractal ? laggingWt[2] : na, title="Wave Trend Long Bullish Divergence", color=wtLongBullishDivColor, linewidth=2, offset=-2, display=display.pane)
-plot(series=wtShortTopFractal ? laggingWt[2] : na, title="Wave Trend Short Bearish Divergence", color=wtShortBearishDivColor, linewidth=2, offset=-2, display=display.pane)
-plot(series=wtShortBotFractal ? laggingWt[2] : na, title="Wave Trend Short Bullish Divergence", color=wtShortBullishDivColor, linewidth=2, offset=-2, display=display.pane)
-
-//-----------------------------------------------------------------------------
-// Squeeze Momentum
-//-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-const string go  = 'Squeeze Momentum'
-const string gd  = 'Directional Flux'
-const string gg  = 'Gauges'
-const string ss  = 'Sell Signal'
-const string sb  = 'Buy Signal'
-
-dfb = input.bool(true, "", inline='1', group=gd)
-dfl = input.int(30, "Length", 7, 50, 1, inline='1', group=gd)
-dfh = input.bool(false, "Trend Bias", group=gd)
-smb = input.bool(true, "", inline='1', group=go)
-len = input.int(20, "Length", 7, 50, 1, inline='1', group=go)
-sig = input.int(3, "Signal", 2, 7, 1, inline='2', group=go)
-cpf = input.color(WHITE_COLOR, "", inline='4', group=go)
-cdf = input.color(AQUA_COLOR, "", inline='4', group=go)
-gds = input.string('Both', "Showcase", ['Both', 'Bull', 'Bear', 'None'], inline='4', group=gg)
-cgp = input.color(GREEN_COLOR, "", inline='2', group=gg)
-cgn = input.color(RED_COLOR, "", inline='2', group=gg)
-
-//-----------------------------------------------------------------------------
-// UDTs
-//-----------------------------------------------------------------------------
-// Bar data type
-type bar
-    float o = open
-    float h = high
-    float l = low
-    float c = close
-    int   i = bar_index
-
-// Oscillator data type
-type osc
-    float o = na
-    float s = na
-
-// Squeeze status type
-type squeeze
-    bool h = false
-    bool m = false
-    bool l = false
-
-// Gauge display type
-type gauge
-    float u = na
-    float l = na
-    color c = chart.fg_color
-    bool  p = true
-
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-method src(bar b, simple string src) =>
-    if na(b)
-        na
+pai(src, disp, len) =>
+    _disp = f_dis0(src, dis_len)
+    if dis_method == dis1
+        _disp := f_dis1(src, dis_len)
     else
-        float x = switch src
-            'oc2' => math.avg(b.o, b.c)
-            'hl2' => math.avg(b.h, b.l)
-            'hlc3' => math.avg(b.h, b.l, b.c)
-            'ohlc4' => math.avg(b.o, b.h, b.l, b.c)
-            'hlcc4' => math.avg(b.h, b.l, b.c, b.c)
-        x
+        if dis_method == dis2
+            _disp := f_dis2(src, dis_len)
+        else
+            if dis_method == dis3
+                _disp := -f_dis3(src, dis_len)
+            else
+                if dis_method == dis4
+                    _disp := -f_dis4(src, dis_len)
+                else
+                    if dis_method == dis5
+                        _disp := f_dis5(src, dis_len)
+                    else
+                        if dis_method == dis6
+                            _disp := f_dis6(src, dis_len)
+                        else
+                            if dis_method == dis7
+                                _disp := f_dis7(src, dis_len)
+    
+    P = src == close ? ((ta.sma(ta.stoch(close, high, low, len), smooth) - 50) / 50) : ((ta.sma(ta.stoch(src, src, src, len), smooth) - 50) / 50)
+    V = ta.stoch(_disp, _disp, _disp, len)
+    P * V
 
-method calcHa(bar b, simple bool p = true) =>
-    bar x = bar.new()
-    x.c := barstate.isfirst or na(b) ? close : b.src('ohlc4')
-    x := barstate.isfirst or na(b) or na(b.h) or na(x) or na(x[1]) ? na : bar.new(na((x[1]).o) ? b.src('oc2') : nz(x.src('oc2')[1]), math.max(b.h, math.max(x.o, x.c)), math.min(b.l, math.min(x.o, x.c)), x.c)
-    p ? x : b
-
-method calcAtr(bar b, simple int len = 1) =>
-    float tr = barstate.isfirst or na(b) or na(b.h) or na(b.l) or na(b.c) or na((b[1]).h) or na((b[1]).c) ? na : math.max(math.max(b.h - b.l, math.abs(b.h - (b[1]).c)), math.abs(b.l - (b[1]).c))
-    len == 1 ? tr : ta.rma(tr, len)
-
-method stdev(float src, simple int len) =>
-    float sq = 0.
-    float psq = 0.
-    float sum = 0.
-    for k = 0 to len - 1
-        val = nz(src[k])
-        psq := sq
-        sq += (val - sq) / (1 + k)
-        sum += (val - sq) * (val - psq)
-    math.sqrt(sum / (len - 1))
-
-method calcOsc(bar b, simple int sig, simple int len) =>
-    float av = ta.sma(b.src('hl2'), len)
-    bar z = bar.new(b.o, ta.highest(len), ta.lowest(len), b.c)
-    float x = ta.linreg((z.c - math.avg(z.src('hl2'), av)) / z.calcAtr() * 100, len, 0)
-    osc.new(x, ta.sma(x, sig))
-
-method calcDfo(bar b, simple int len) =>
-    float tr = b.calcAtr(len)
-    float up = ta.rma(math.max(ta.change(b.h), 0), len) / tr
-    float dn = ta.rma(math.max(ta.change(b.l) * -1, 0), len) / tr
-    float x = ta.rma((up - dn) / (up + dn), len / 2) * 100
-    osc.new(x, x > 25 ? x - 25 : x < -25 ? x + 25 : na)
-
-method calcSqz(bar b, simple int len) =>
-    array<bool> sqz = array.new<bool>()
-    float dev = b.c.stdev(len)
-    float atr = b.calcAtr(len)
-    for i = 2 to 4
-        sqz.unshift(dev < atr * 0.25 * i)
-    squeeze.new(sqz.pop(), sqz.pop(), sqz.pop())
+f_security(_sym, _res, _src, _rep) => request.security(_sym, _res, _src[not _rep and barstate.isrealtime ? 1 : 0])[_rep or barstate.isrealtime ? 0 : 1]
+Z = not htfOn ? pai(src, dis_len, len) : f_security(syminfo.tickerid, htf, pai(src, dis_len, len), i_htfRepaints)
 
 //-----------------------------------------------------------------------------
-// Calculate
+// Output
 //-----------------------------------------------------------------------------
-bar     b = bar.new(open, high, low, close)
-squeeze s = b.calcSqz(len)
-osc     o = b.calcOsc(sig, len)
-osc     v = b.calcHa(dfh).calcDfo(dfl)
-u = gauge.new(+75, +70, v.o > 0 and o.o > 0 ? cgp : v.o > 0 or o.o > 0 ? color.new(cgp, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bull')
-d = gauge.new(-75, -70, v.o < 0 and o.o < 0 ? cgn : v.o < 0 or o.o < 0 ? color.new(cgn, 40) : DARK_GRAY_COLOR, gds == 'Both' or gds == 'Bear')
+straddle = Z < straddle_area and Z > -straddle_area
+rally = Z > 40
+draw = Z < -40
+
+color col = color.black
+if straddle
+    col := PINK_COLOR
+if Z > straddle_area
+    col := AQUA_COLOR
+if Z < -straddle_area
+    col := PURPLE_COLOR
 
 //-----------------------------------------------------------------------------
-// Render
+// Plots
 //-----------------------------------------------------------------------------
-plot(dfb ? v.o : na, "Flux", v.o > 0 ? color.new(GREEN_COLOR, 85) : color.new(RED_COLOR, 85), 1, plot.style_area, display=display.pane)
-plot(dfb ? v.s : na, "OverFlux", v.s > 0 ? color.new(GREEN_COLOR, 85) : color.new(RED_COLOR, 85), 1, plot.style_areabr, display=display.pane)
-plot(2, "Squeeze", color=s.l ? s.h ? #023e8a : s.m ? #0096c7 : #48cae4 : LIGHT_GRAY_COLOR, linewidth=1, style=plot.style_columns, trackprice=false, histbase=-2, display=display.pane)
+plot(Z, color=col, title="Price Action Index", display = display.pane)
 
-var vaTopLineSt = plot(105, title="Top Trend Bar", color=TRANSPARENT_COLOR, editable=false, display=display.pane)
-var vaTopLineNd = plot(100, title="Top Trend Bar", color=TRANSPARENT_COLOR, editable=false, display=display.pane)
-var vaBotLineSt = plot(-100, title="Bottom Trend Bar", color=TRANSPARENT_COLOR, editable=false, display=display.pane)
-var veBotLineNd = plot(-105, title="Bottom Trend Bar", color=TRANSPARENT_COLOR, editable=false, display=display.pane)
-fill(vaTopLineSt, vaTopLineNd, title="Top Trend Bar Color", color=u.c)
-fill(vaBotLineSt, veBotLineNd, title="Bottom Trend Bar Color", color=d.c)
+st_ = hline(straddle_area, color=color.new(PINK_COLOR, 50), title="Straddle Area")
+sb_ = hline(-straddle_area, color=color.new(PINK_COLOR, 50), title="Straddle Area")
+fill(st_, sb_, color=straddle ? color.new(PINK_COLOR, 80) : na, title="Straddle Area")
+
+p_ob1 = hline(80, color=color.new(LIGHT_GRAY_COLOR, 30), title="Overbought Area")
+p_ob2 = hline(100, color=color.new(LIGHT_GRAY_COLOR, 20), title="Overbought Area")
+fill(p_ob1, p_ob2, color=rally ? color.new(RED_COLOR, 80) : na, title="Overbought Area")
+
+p_os1 = hline(-80, color=color.new(LIGHT_GRAY_COLOR, 30), title="Oversold Area")
+p_os2 = hline(-100, color=color.new(LIGHT_GRAY_COLOR, 20), title="Oversold Area")
+fill(p_os1, p_os2, color=draw ? color.new(GREEN_COLOR, 80) : na, title="Oversold Area")
+
+barcolor(use_bar_colors ? col : na, editable=false, title="Bar Colors")
+
+//-----------------------------------------------------------------------------
+// Divergence Plots
+osc = Z
+plFound = na(ta.pivotlow(osc, lbL, lbR)) ? false : true
+phFound = na(ta.pivothigh(osc, lbL, lbR)) ? false : true
+_inRange(cond) =>
+    bars = ta.barssince(cond == true)
+    rangeLower <= bars and bars <= rangeUpper
+
+// Regular Bullish
+// Osc: Higher Low
+oscHL = osc[lbR] > ta.valuewhen(plFound, osc[lbR], 1) and _inRange(plFound[1])
+// Price: Lower Low
+priceLL = low[lbR] < ta.valuewhen(plFound, low[lbR], 1)
+bullCond = plotBull and priceLL and oscHL and plFound
+
+plot(plFound ? osc[lbR] : na, offset=-lbR, title="Regular Bullish", linewidth=2, color=(bullCond ? bullColor : noneColor), display = display.pane)
+
+plotshape(bullCond ? osc[lbR] : na, offset=-lbR, title="Regular Bullish Label", text=" Bull ", style=shape.labelup, location=location.absolute, color=bullColor, textcolor=textColor, display = display.pane)
+
+// Hidden Bullish
+// Osc: Lower Low
+oscLL = osc[lbR] < ta.valuewhen(plFound, osc[lbR], 1) and _inRange(plFound[1])
+// Price: Higher Low
+priceHL = low[lbR] > ta.valuewhen(plFound, low[lbR], 1)
+hiddenBullCond = plotHiddenBull and priceHL and oscLL and plFound
+
+plot(plFound ? osc[lbR] : na, offset=-lbR, title="Hidden Bullish", linewidth=2, color=(hiddenBullCond ? hiddenBullColor : noneColor), display = display.pane)
+
+plotshape(hiddenBullCond ? osc[lbR] : na, offset=-lbR, title="Hidden Bullish Label", text=" H Bull ", style=shape.labelup, location=location.absolute, color=bullColor, textcolor=textColor, display = display.pane)
+
+// Regular Bearish
+// Osc: Lower High
+oscLH = osc[lbR] < ta.valuewhen(phFound, osc[lbR], 1) and _inRange(phFound[1])
+// Price: Higher High
+priceHH = high[lbR] > ta.valuewhen(phFound, high[lbR], 1)
+bearCond = plotBear and priceHH and oscLH and phFound
+
+plot(phFound ? osc[lbR] : na, offset=-lbR, title="Regular Bearish", linewidth=2, color=(bearCond ? bearColor : noneColor), display = display.pane)
+
+plotshape(bearCond ? osc[lbR] : na, offset=-lbR, title="Regular Bearish Label", text=" Bear ", style=shape.labeldown, location=location.absolute, color=bearColor, textcolor=textColor, display = display.pane)
+
+// Hidden Bearish
+// Osc: Higher High
+oscHH = osc[lbR] > ta.valuewhen(phFound, osc[lbR], 1) and _inRange(phFound[1])
+// Price: Lower High
+priceLH = high[lbR] < ta.valuewhen(phFound, high[lbR], 1)
+hiddenBearCond = plotHiddenBear and priceLH and oscHH and phFound
+
+plot(phFound ? osc[lbR] : na, offset=-lbR, title="Hidden Bearish", linewidth=2, color=(hiddenBearCond ? hiddenBearColor : noneColor), display = display.pane)
+
+plotshape(hiddenBearCond ? osc[lbR] : na, offset=-lbR, title="Hidden Bearish Label", text=" H Bear ", style=shape.labeldown, location=location.absolute, color=bearColor, textcolor=textColor, display = display.pane)
+
+//-----------------------------------------------------------------------------
+// Conditions
+cond_bull_breakout = ta.crossover(Z, straddle_area)
+cond_bull_top = ta.crossunder(Z, 80)
+cond_bear_breakout = ta.crossunder(Z, -straddle_area)
+cond_bear_bottom = ta.crossover(Z, -80)
+
+//-----------------------------------------------------------------------------
+// Alerts
+alertcondition(straddle, title="Straddle Area", message="Inside Straddle Area")
+alertcondition(cond_bull_breakout, title="Bullish Breakout", message="Bullish Breakout")
+alertcondition(cond_bull_top, title="Bull Top", message="Bull Top")
+alertcondition(cond_bear_breakout, title="Bearish Breakout", message="Bearish Breakout")
+alertcondition(cond_bear_bottom, title="Bear Bottom", message="Bear Bottom")
+
+if use_alerts
+    if cond_bull_breakout
+        alert(syminfo.tickerid + "Bullish Breakout")
+    if cond_bull_top
+        alert(syminfo.tickerid + "Bull Top")
+    if cond_bear_breakout
+        alert(syminfo.tickerid + "Bearish Breakout")
+    if cond_bear_bottom
+        alert(syminfo.tickerid + "Bear Bottom")
 
 //-----------------------------------------------------------------------------
