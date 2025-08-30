@@ -114,9 +114,9 @@ lbR = input(title="Pivot Lookback Right", defval=2, group="Divergence Indicator"
 lbL = input(title="Pivot Lookback Left", defval=2, group="Divergence Indicator")
 rangeUpper = input(title="Max of Lookback Range", defval=10, group="Divergence Indicator")
 rangeLower = input(title="Min of Lookback Range", defval=2, group="Divergence Indicator")
-plotBull = input(title="Plot Bullish", defval=true, group="Divergence Indicator")
+plotBull = input(title="Plot Bullish", defval=false, group="Divergence Indicator")
 plotHiddenBull = input(title="Plot Hidden Bullish", defval=false, group="Divergence Indicator")
-plotBear = input(title="Plot Bearish", defval=true, group="Divergence Indicator")
+plotBear = input(title="Plot Bearish", defval=false, group="Divergence Indicator")
 plotHiddenBear = input(title="Plot Hidden Bearish", defval=false, group="Divergence Indicator")
 bearColor = RED_COLOR
 bullColor = GREEN_COLOR
@@ -178,17 +178,17 @@ if Z < -straddle_area
 //-----------------------------------------------------------------------------
 plot(Z, color=col, title="Price Action Index", display = display.pane)
 
-st_ = hline(straddle_area, color=color.new(PINK_COLOR, 50), title="Straddle Area")
-sb_ = hline(-straddle_area, color=color.new(PINK_COLOR, 50), title="Straddle Area")
-fill(st_, sb_, color=straddle ? color.new(PINK_COLOR, 80) : na, title="Straddle Area")
+st_ = hline(straddle_area, color=color.new(PINK_COLOR, 50), linestyle = hline.style_solid, title="Straddle Area")
+sb_ = hline(-straddle_area, color=color.new(PINK_COLOR, 50), linestyle = hline.style_solid, title="Straddle Area")
+// fill(st_, sb_, color=straddle ? color.new(PINK_COLOR, 80) : na, title="Straddle Area")
 
-p_ob1 = hline(80, color=color.new(LIGHT_GRAY_COLOR, 30), title="Overbought Area")
-p_ob2 = hline(100, color=color.new(LIGHT_GRAY_COLOR, 20), title="Overbought Area")
-fill(p_ob1, p_ob2, color=rally ? color.new(RED_COLOR, 80) : na, title="Overbought Area")
+p_ob1 = hline(80, color=color.new(LIGHT_GRAY_COLOR, 30), linestyle = hline.style_dotted, title="Overbought Area")
+p_ob2 = hline(100, color=TRANSPARENT_COLOR, title="Overbought Area")
+fill(p_ob1, p_ob2, color=rally ? color.new(RED_COLOR, 85) : na, title="Overbought Area")
 
-p_os1 = hline(-80, color=color.new(LIGHT_GRAY_COLOR, 30), title="Oversold Area")
-p_os2 = hline(-100, color=color.new(LIGHT_GRAY_COLOR, 20), title="Oversold Area")
-fill(p_os1, p_os2, color=draw ? color.new(GREEN_COLOR, 80) : na, title="Oversold Area")
+p_os1 = hline(-80, color=color.new(LIGHT_GRAY_COLOR, 30), linestyle = hline.style_dotted, title="Oversold Area")
+p_os2 = hline(-100, color=TRANSPARENT_COLOR, title="Oversold Area")
+fill(p_os1, p_os2, color=draw ? color.new(GREEN_COLOR, 85) : na, title="Oversold Area")
 
 barcolor(use_bar_colors ? col : na, editable=false, title="Bar Colors")
 
