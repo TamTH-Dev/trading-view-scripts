@@ -1,0 +1,76 @@
+// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © tamth_
+
+//@version=6
+indicator("Trend Filter", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500, max_bars_back=5000)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+tf = input.timeframe("", title = "Timeframe")
+len = input.int(14, title = 'Length')
+mult = input.float(1, title = 'Multiplier', step = 0.1)
+src = input.source(close, title = "Source")
+
+//-----------------------------------------------------------------------------
+// Methods
+//-----------------------------------------------------------------------------
+getAlPhaTrend(upT, downT) =>
+    rs = 0.0
+    rs := ta.mfi(hlc3, len) >= 50 ? upT < nz(rs[1]) ? nz(rs[1]) : upT : downT > nz(rs[1]) ? nz(rs[1]) : downT
+    rs
+
+//-----------------------------------------------------------------------------
+// Calculate
+//-----------------------------------------------------------------------------
+atr = ta.sma(ta.tr, len)
+upT = low - atr * mult
+downT = high + atr * mult
+
+trend = request.security(syminfo.tickerid, tf, getAlPhaTrend(upT, downT))
+
+buySignal = ta.crossover(trend, trend[2])
+sellSignal = ta.crossunder(trend, trend[2])
+
+fillColor = trend > trend[2] ? color.new(GREEN_COLOR, 80) : trend < trend[2] ? color.new(RED_COLOR, 80) : trend[1] > trend[3] ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+k1 = plot(trend, color = AQUA_COLOR, linewidth = 1, display = display.pane)
+k2 = plot(trend[2], color = PURPLE_COLOR, linewidth = 1, display = display.pane)
+
+fill(k1, k2, color = fillColor)
+
+K1 = ta.barssince(buySignal)
+K2 = ta.barssince(sellSignal)
+O1 = ta.barssince(buySignal[1])
+O2 = ta.barssince(sellSignal[1])
+
+plotshape(buySignal and O1 > K2 ? trend[2] * 0.9999 : na, title = 'Bullish', location = location.absolute, style = shape.triangleup, size = size.small, color = GREEN_COLOR)
+plotshape(sellSignal and O2 > K1 ? trend[2] * 1.0001 : na, title = 'Bearish', location = location.absolute, style = shape.triangledown, size = size.small, color = RED_COLOR)
+
+//-----------------------------------------------------------------------------
