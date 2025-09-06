@@ -30,10 +30,12 @@ color TEXT_COLOR        = #ced4da
 //-----------------------------------------------------------------------------
 // Trend Detectors
 //-----------------------------------------------------------------------------
-[_vwap, _, _] = ta.vwap(hlc3, timeframe.change("D"), 1)
-plot(_vwap, color = PINK_COLOR, linewidth = 1, display = display.pane)
+// [_vwap, _, _] = ta.vwap(hlc3, timeframe.change("D"), 1)
+// plot(_vwap, color = PINK_COLOR, linewidth = 1, display = display.pane)
 plot(ta.ema(close, 9), color = AQUA_COLOR, linewidth = 1, display = display.pane)
 plot(ta.ema(close, 21), color = PURPLE_COLOR, linewidth = 1, display = display.pane)
+// plot(ta.ema(close, 100), color = PINK_COLOR, linewidth = 1, display = display.pane)
+// plot(ta.ema(close, 200), color = ORANGE_COLOR, linewidth = 1, display = display.pane)
 
 //-----------------------------------------------------------------------------
 
@@ -149,9 +151,9 @@ plot(dsmaShowed ? dsma2 : na, color=ORANGE_COLOR, linewidth=1, display = display
 // Settings
 //-----------------------------------------------------------------------------
 // Historical Display
-showHist = input.bool(true, title = "Show Historical Data", group = "Historical Display", tooltip = "Displays All Data from Previous Sessions")
+showHist = input.bool(false, title = "Show Historical Data", group = "Historical Display", tooltip = "Displays All Data from Previous Sessions")
 // Opening Range
-orTF = input.timeframe("15", title = "Time Period", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range.") 
+orTF = input.timeframe("30", title = "Time Period", group = "Opening Range", tooltip = "Sets the Length of Time used for determining Opening Range.") 
 // Custom Range
 crTog = input.bool(false, title = "", inline = "Custom", group = "Custom Range")
 crSesh = input.session("0930-0945", title = "", inline = "Custom", group = "Custom Range")
@@ -193,7 +195,6 @@ get_1up(_val) => (_val - math.floor(_val)) > 0 ? int(math.floor(_val) + 1) : int
 //-----------------------------------------------------------------------------
 type target
     line ln
-    label lab
 
 var up_targs = array.new<target>(na)
 var down_targs = array.new<target>(na)
@@ -219,8 +220,8 @@ var up_check = false
 down_signal = false
 up_signal = false
 
-var target h_ln = target.new(na,na)
-var target l_ln = target.new(na,na)
+var target h_ln = target.new(na)
+var target l_ln = target.new(na)
 var line m_ln = na
 
 //-----------------------------------------------------------------------------
@@ -251,12 +252,10 @@ if or_start
     for targ in up_targs
         if showHist == false
             targ.ln.delete()
-        targ.lab.delete()
 
     for targ in down_targs
         if showHist == false
             targ.ln.delete()
-        targ.lab.delete()
 
     for lab in signals
         if showHist == false
@@ -268,8 +267,6 @@ if or_start
         l_ln.ln.delete()
         m_ln.delete()
 
-    h_ln.lab.delete()
-    l_ln.lab.delete()
     up_targs.clear()
     down_targs.clear()
 
@@ -297,8 +294,8 @@ if or_sesh
 // On End of OR Session
 if or_end and or_token
     orb_color = day_dir == 1 ? greenFill : day_dir == -1 ? redFill : TRANSPARENT_COLOR
-    h_ln := target.new(line.new(bar_index, orh, bar_index, orh, color = color.new(orb_color, 50)), label.new(bar_index, orh,text = "ORH", tooltip = str.tostring(orh, format.mintick), style = label.style_label_left, color = TRANSPARENT_COLOR, textcolor = color.new(orColor,0), size = txtSize))
-    l_ln := target.new(line.new(bar_index, orl, bar_index, orl, color = color.new(orb_color, 50)), label.new(bar_index, orl,text = "ORL", tooltip = str.tostring(orl, format.mintick), style = label.style_label_left, color = TRANSPARENT_COLOR, textcolor = color.new(orColor,0), size = txtSize))
+    h_ln := target.new(line.new(bar_index, orh, bar_index, orh, color = color.new(orb_color, 50)))
+    l_ln := target.new(line.new(bar_index, orl, bar_index, orl, color = color.new(orb_color, 50)))
     hst := orh + (orw * tPer)
     lst := orl - (orw * tPer)
     day_dir := orm > prev_orm ? 1 : orm < prev_orm ? -1 : 0
@@ -309,8 +306,6 @@ if or_end and or_token
 if not or_sesh and or_token
     h_ln.ln.set_x2(bar_index)
     l_ln.ln.set_x2(bar_index)
-    h_ln.lab.set_x(bar_index)
-    l_ln.lab.set_x(bar_index)
     m_ln.set_x2(bar_index)
 
 // Target Calculations
