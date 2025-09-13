@@ -28,12 +28,61 @@ color TEXT_COLOR        = #ced4da
 
 
 //-----------------------------------------------------------------------------
+// CTF EMAs
+//-----------------------------------------------------------------------------
 // Settings
 //-----------------------------------------------------------------------------
-tf = input.timeframe("", title = "Timeframe")
-len = input.int(14, title = 'Length')
-mult = input.float(1, title = 'Multiplier', step = 0.1)
-src = input.source(close, title = "Source")
+ctfEmasGrp = "EMAs"
+ctfEmaLen1 = input.int(5, title = 'EMA 1', group = ctfEmasGrp)
+ctfEmaLen2 = input.int(10, title = 'EMA 2', group = ctfEmasGrp)
+ctfEmaLen3 = input.int(20, title = 'EMA 3', group = ctfEmasGrp)
+ctfEmaLen4 = input.int(50, title = 'EMA 4', group = ctfEmasGrp)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(ta.ema(close, ctfEmaLen1), title = "EMA 1", color = AQUA_COLOR, display = display.pane)
+plot(ta.ema(close, ctfEmaLen2), title = "EMA 2", color = PURPLE_COLOR, display = display.pane)
+plot(ta.ema(close, ctfEmaLen3), title = "EMA 3", color = PINK_COLOR, display = display.pane)
+plot(ta.ema(close, ctfEmaLen4), title = "EMA 4", color = ORANGE_COLOR, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// HTF EMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+htfEmasGrp = "HTF EMAs"
+htfEmasShowed = input.bool(true, title = "Show", group = htfEmasGrp)
+htfEmasTf = input.timeframe("", title = "Timeframe", group = htfEmasGrp)
+htfEmaLen1 = input.int(5, title = 'EMA 1', group = htfEmasGrp)
+htfEmaLen2 = input.int(10, title = 'EMA 2', group = htfEmasGrp)
+htfEmaLen3 = input.int(20, title = 'EMA 3', group = htfEmasGrp)
+htfEmaLen4 = input.int(50, title = 'EMA 4', group = htfEmasGrp)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+// plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen1)) : na, title = "HTF EMA 1", color = LIGHT_GRAY_COLOR, display = display.pane)
+// plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen2)) : na, title = "HTF EMA 2", color = LIGHT_GRAY_COLOR, display = display.pane)
+plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen3)) : na, title = "HTF EMA 3", color = LIGHT_GRAY_COLOR, display = display.pane)
+plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen4)) : na, title = "HTF EMA 4", color = LIGHT_GRAY_COLOR, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Alpha Trend
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+atGrp = "Alpha Trend"
+tf = input.timeframe("", title = "Timeframe", group = atGrp)
+len = input.int(14, title = 'Length', group = atGrp)
+mult = input.float(1, title = 'Multiplier', step = 0.1, group = atGrp)
+src = input.source(close, title = "Source", group = atGrp)
 
 //-----------------------------------------------------------------------------
 // Methods
@@ -70,7 +119,7 @@ K2 = ta.barssince(sellSignal)
 O1 = ta.barssince(buySignal[1])
 O2 = ta.barssince(sellSignal[1])
 
-plotshape(buySignal and O1 > K2 ? trend[2] * 0.9999 : na, title = 'Bullish', location = location.absolute, style = shape.triangleup, size = size.small, color = GREEN_COLOR)
-plotshape(sellSignal and O2 > K1 ? trend[2] * 1.0001 : na, title = 'Bearish', location = location.absolute, style = shape.triangledown, size = size.small, color = RED_COLOR)
+plotshape(buySignal and O1 > K2 ? trend[2] * 0.9999 : na, title = 'Bullish', location = location.absolute, style = shape.circle, size = size.tiny, color = GREEN_COLOR)
+plotshape(sellSignal and O2 > K1 ? trend[2] * 1.0001 : na, title = 'Bearish', location = location.absolute, style = shape.circle, size = size.tiny, color = RED_COLOR)
 
 //-----------------------------------------------------------------------------
