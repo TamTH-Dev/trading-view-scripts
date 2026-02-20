@@ -1,0 +1,101 @@
+//@version=6
+indicator(title = "PA Helpers", overlay = true)
+
+
+//-----------------------------------------------------------------------------
+// Constants
+//-----------------------------------------------------------------------------
+// Colors
+color TRANSPARENT_COLOR = #ffffff00
+color WHITE_COLOR       = #dee2e6
+color BLACK_COLOR       = #000000
+color RED_COLOR         = #F72585
+color ORANGE_COLOR      = #fb5607
+color YELLOW_COLOR      = #ffbe0b
+color GREEN_COLOR       = #2a9d8f
+color AQUA_COLOR        = #4CC9F0
+color BLUE_COLOR        = #4361ee
+color PURPLE_COLOR      = #3F37C9
+color PINK_COLOR        = #B5179E
+color VIOLET_COLOR      = #9242ed
+color LIGHT_GRAY_COLOR  = #364156
+color DARK_GRAY_COLOR   = #212d40
+color TEXT_COLOR        = #ced4da
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// EMAs
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+string emasGrp  = "EMAs"
+string ema1Inl  = "EMA 1"
+bool ema1Act    = input.bool(true, "EMA 1", inline = ema1Inl, group = emasGrp)
+string ema1Tf   = input.timeframe("", title = "", inline = ema1Inl, group = emasGrp)
+int ema1Len     = input.int(20, minval = 1, title = "", inline = ema1Inl, group = emasGrp)
+color ema1Col   = input.color(color.new(AQUA_COLOR, 35), title = "", inline = ema1Inl, group = emasGrp)
+
+string ema2Inl  = "EMA 2"
+bool ema2Act    = input.bool(true, "EMA 2", inline = ema2Inl, group = emasGrp)
+string ema2Tf   = input.timeframe("", title = "", inline = ema2Inl, group = emasGrp)
+int ema2Len     = input.int(50, minval = 1, title = "", inline = ema2Inl, group = emasGrp)
+color ema2Col   = input.color(color.new(PURPLE_COLOR, 35), title = "", inline = ema2Inl, group = emasGrp)
+
+string ema3Inl  = "EMA 3"
+bool ema3Act    = input.bool(true, "EMA 3", inline = ema3Inl, group = emasGrp)
+string ema3Tf   = input.timeframe("", title = "", inline = ema3Inl, group = emasGrp)
+int ema3Len     = input.int(200, minval = 1, title = "", inline = ema3Inl, group = emasGrp)
+color ema3Col   = input.color(color.new(VIOLET_COLOR, 35), title = "", inline = ema3Inl, group = emasGrp)
+
+//-----------------------------------------------------------------------------
+// Calculations
+//-----------------------------------------------------------------------------
+series float src = close
+
+method getEma(bool active, string tf, series float src, int len) =>
+    series float rs = na
+    series float ema = ta.ema(src, len)
+    if timeframe.period == "" and active
+        rs := ema
+    else if timeframe.period != "" and active
+        rs := request.security(syminfo.tickerid, tf, ema)
+    rs
+
+
+series float ema1 = getEma(ema1Act, ema1Tf, src, ema1Len)
+series float ema2 = getEma(ema2Act, ema2Tf, src, ema2Len)
+series float ema3 = getEma(ema3Act, ema3Tf, src, ema3Len)
+
+//-----------------------------------------------------------------------------
+// Render
+//-----------------------------------------------------------------------------
+plot(ema1, "EMA 1", color = ema1Col, display = display.pane)
+plot(ema2, "EMA 2", color = ema2Col, display = display.pane)
+plot(ema3, "EMA 3", color = ema3Col, display = display.pane)
+
+//-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Round Numbers
+//-----------------------------------------------------------------------------
+// Settings
+//-----------------------------------------------------------------------------
+string rnGrp    = "Round Numbers"
+bool rnShowed   = input.bool(true, "Show", group = rnGrp)
+int rnLines     = input.int(20, "Number Of Lines", minval = 4, group = rnGrp)
+
+//-----------------------------------------------------------------------------
+// Calculations / Render
+//-----------------------------------------------------------------------------
+var roundNumStep = syminfo.mintick * 1000
+if barstate.islast and rnShowed
+    for counter = 0 to (rnLines / 4) - 1
+        stepUp = math.ceil(close / roundNumStep) * roundNumStep + (counter * roundNumStep)
+        line.new(bar_index, stepUp, bar_index - 1, stepUp, xloc = xloc.bar_index, extend = extend.both, color = DARK_GRAY_COLOR, width = 1, style = line.style_dotted)
+        stepDown = math.floor(close / roundNumStep) * roundNumStep - (counter * roundNumStep)
+        line.new(bar_index, stepDown, bar_index - 1, stepDown, xloc = xloc.bar_index, extend = extend.both, color = DARK_GRAY_COLOR, width = 1, style = line.style_dotted)
+
+//-----------------------------------------------------------------------------
