@@ -206,3 +206,10 @@ hline(70, color = color.new(LIGHT_GRAY_COLOR, 50), linestyle = hline.style_dashe
 plot(db,   "Low Band",  color = PURPLE_COLOR, display = display.pane)
 plot(ub,   "High Band", color = PURPLE_COLOR, display = display.pane)
 plot(crsi, "RSI",       color = AQUA_COLOR,   display = display.pane)
+
+// -----------------------------------------------------------------------------
+// Alert Conditions
+// -----------------------------------------------------------------------------
+alertcondition(ta.cross(crsi, db),  title="CRSI Crosses Low Band",  message="CRSI crossed the Low Band")
+alertcondition(ta.cross(crsi, ub),  title="CRSI Crosses High Band", message="CRSI crossed the High Band")
+alertcondition(ta.cross(crsi, 50),  title="CRSI Crosses 50",       message="CRSI crossed 50")
