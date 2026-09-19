@@ -1,13 +1,11 @@
-// This Pine Script® code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © tamth_
-
 //@version=6
-indicator("Trend Filter", overlay=true, max_boxes_count=500, max_lines_count=500, max_labels_count=500, max_bars_back=5000)
 
+indicator(title = "PA Helpers", overlay = true)
 
 //-----------------------------------------------------------------------------
 // Constants
 //-----------------------------------------------------------------------------
+
 // Colors
 color TRANSPARENT_COLOR = #ffffff00
 color WHITE_COLOR       = #dee2e6
@@ -20,106 +18,202 @@ color AQUA_COLOR        = #4CC9F0
 color BLUE_COLOR        = #4361ee
 color PURPLE_COLOR      = #3F37C9
 color PINK_COLOR        = #B5179E
+color VIOLET_COLOR      = #9242ed
 color LIGHT_GRAY_COLOR  = #364156
 color DARK_GRAY_COLOR   = #212d40
 color TEXT_COLOR        = #ced4da
 
 //-----------------------------------------------------------------------------
-
-
+// EMAs
 //-----------------------------------------------------------------------------
-// CTF EMAs
-//-----------------------------------------------------------------------------
+
 // Settings
 //-----------------------------------------------------------------------------
-ctfEmasGrp = "EMAs"
-ctfEmaLen1 = input.int(5, title = 'EMA 1', group = ctfEmasGrp)
-ctfEmaLen2 = input.int(10, title = 'EMA 2', group = ctfEmasGrp)
-ctfEmaLen3 = input.int(20, title = 'EMA 3', group = ctfEmasGrp)
-ctfEmaLen4 = input.int(50, title = 'EMA 4', group = ctfEmasGrp)
+
+string emaGroup = "EMAs"
+
+string ema1Inline = "EMA 1"
+bool ema1Show = input.bool(true, "EMA 1", inline = ema1Inline, group = emaGroup)
+string ema1Timeframe = input.timeframe("", title = "", inline = ema1Inline, group = emaGroup)
+int ema1Length = input.int(20, minval = 1, title = "", inline = ema1Inline, group = emaGroup)
+color ema1Color = input.color(color.new(AQUA_COLOR, 35), title = "", inline = ema1Inline, group = emaGroup)
+
+string ema2Inline = "EMA 2"
+bool ema2Show = input.bool(true, "EMA 2", inline = ema2Inline, group = emaGroup)
+string ema2Timeframe = input.timeframe("", title = "", inline = ema2Inline, group = emaGroup)
+int ema2Length = input.int(50, minval = 1, title = "", inline = ema2Inline, group = emaGroup)
+color ema2Color = input.color(color.new(PURPLE_COLOR, 35), title = "", inline = ema2Inline, group = emaGroup)
+
+string ema3Inline = "EMA 3"
+bool ema3Show = input.bool(false, "EMA 3", inline = ema3Inline, group = emaGroup)
+string ema3Timeframe = input.timeframe("", title = "", inline = ema3Inline, group = emaGroup)
+int ema3Length = input.int(200, minval = 1, title = "", inline = ema3Inline, group = emaGroup)
+color ema3Color = input.color(color.new(VIOLET_COLOR, 35), title = "", inline = ema3Inline, group = emaGroup)
+
+//-----------------------------------------------------------------------------
+// Calculations
+//-----------------------------------------------------------------------------
+
+series float source = close
+
+method getEma(bool showEma, string emaTimeframe, series float sourceInput, int emaLength) =>
+    series float emaResult = na
+    series float emaValue = ta.ema(sourceInput, emaLength)
+
+    if timeframe.period == "" and showEma
+        emaResult := emaValue
+    else if timeframe.period != "" and showEma
+        emaResult := request.security(syminfo.tickerid, emaTimeframe, emaValue)
+
+    emaResult
+
+series float ema1 = getEma(ema1Show, ema1Timeframe, source, ema1Length)
+series float ema2 = getEma(ema2Show, ema2Timeframe, source, ema2Length)
+series float ema3 = getEma(ema3Show, ema3Timeframe, source, ema3Length)
 
 //-----------------------------------------------------------------------------
 // Render
 //-----------------------------------------------------------------------------
-plot(ta.ema(close, ctfEmaLen1), title = "EMA 1", color = AQUA_COLOR, display = display.pane)
-plot(ta.ema(close, ctfEmaLen2), title = "EMA 2", color = PURPLE_COLOR, display = display.pane)
-plot(ta.ema(close, ctfEmaLen3), title = "EMA 3", color = PINK_COLOR, display = display.pane)
-plot(ta.ema(close, ctfEmaLen4), title = "EMA 4", color = ORANGE_COLOR, display = display.pane)
+
+plot(ema1, "EMA 1", color = ema1Color, display = display.pane)
+plot(ema2, "EMA 2", color = ema2Color, display = display.pane)
+plot(ema3, "EMA 3", color = ema3Color, display = display.pane)
 
 //-----------------------------------------------------------------------------
-
-
+// Round Numbers
 //-----------------------------------------------------------------------------
-// HTF EMAs
-//-----------------------------------------------------------------------------
+
 // Settings
 //-----------------------------------------------------------------------------
-htfEmasGrp = "HTF EMAs"
-htfEmasShowed = input.bool(true, title = "Show", group = htfEmasGrp)
-htfEmasTf = input.timeframe("", title = "Timeframe", group = htfEmasGrp)
-htfEmaLen1 = input.int(5, title = 'EMA 1', group = htfEmasGrp)
-htfEmaLen2 = input.int(10, title = 'EMA 2', group = htfEmasGrp)
-htfEmaLen3 = input.int(20, title = 'EMA 3', group = htfEmasGrp)
-htfEmaLen4 = input.int(50, title = 'EMA 4', group = htfEmasGrp)
+
+string roundNumberGroup = "Round Numbers"
+
+bool roundNumberShow = input.bool(true, "Show", group = roundNumberGroup)
+string roundNumberMode = input.string("Auto", "Mode", options = ["Auto", "Manual"], group = roundNumberGroup)
+int roundNumberLines = input.int(20, "Number Of Lines", minval = 4, group = roundNumberGroup)
+float manualMajorStep = input.float(10.0, "Major Step", minval = 0.00000001, step = 0.00000001, group = roundNumberGroup)
+float manualMinorStep = input.float(5.0, "Minor Step", minval = 0.00000001, step = 0.00000001, group = roundNumberGroup)
 
 //-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-// plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen1)) : na, title = "HTF EMA 1", color = LIGHT_GRAY_COLOR, display = display.pane)
-// plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen2)) : na, title = "HTF EMA 2", color = LIGHT_GRAY_COLOR, display = display.pane)
-plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen3)) : na, title = "HTF EMA 3", color = LIGHT_GRAY_COLOR, display = display.pane)
-plot(htfEmasShowed ? request.security(syminfo.tickerid, htfEmasTf, ta.ema(close, htfEmaLen4)) : na, title = "HTF EMA 4", color = LIGHT_GRAY_COLOR, display = display.pane)
-
+// Calculations
 //-----------------------------------------------------------------------------
 
+string symbolName = str.upper(syminfo.tickerid)
+
+bool isForex = syminfo.type == "forex"
+bool isJPY = str.contains(symbolName, "JPY")
+bool isGold = str.contains(symbolName, "XAU") or str.contains(symbolName, "GOLD")
+bool isSpx = str.contains(symbolName, "SPX") or str.contains(symbolName, "SP500") or str.contains(symbolName, "US500")
+bool isNasdaq = str.contains(symbolName, "NAS100") or str.contains(symbolName, "USTEC") or str.contains(symbolName, "NASDAQ") or str.contains(symbolName, "NDX") or str.contains(symbolName, "NQ1!")
+bool isDow = str.contains(symbolName, "US30") or str.contains(symbolName, "DJ30") or str.contains(symbolName, "DOW") or str.contains(symbolName, "YM1!")
+
+float autoMajorStep = switch
+    isForex and not isJPY => 0.01
+    isForex and isJPY => 1
+    isGold => 100.0
+    isSpx => 50.0
+    isNasdaq => 100.0
+    isDow => 100.0
+    => manualMajorStep
+
+float autoMinorStep = switch
+    isForex and not isJPY => 0.005
+    isForex and isJPY => 0.5
+    isGold => 50.0
+    isSpx => 25.0
+    isNasdaq => 50.0
+    isDow => 50.0
+    => manualMinorStep
+
+float majorStep = roundNumberMode == "Auto" ? autoMajorStep : manualMajorStep
+float minorStep = roundNumberMode == "Auto" ? autoMinorStep : manualMinorStep
 
 //-----------------------------------------------------------------------------
-// Alpha Trend
+// Line Management
 //-----------------------------------------------------------------------------
-// Settings
-//-----------------------------------------------------------------------------
-atGrp = "Alpha Trend"
-tf = input.timeframe("", title = "Timeframe", group = atGrp)
-len = input.int(14, title = 'Length', group = atGrp)
-mult = input.float(1, title = 'Multiplier', step = 0.1, group = atGrp)
-src = input.source(close, title = "Source", group = atGrp)
 
-//-----------------------------------------------------------------------------
-// Methods
-//-----------------------------------------------------------------------------
-getAlPhaTrend(upT, downT) =>
-    rs = 0.0
-    rs := ta.mfi(hlc3, len) >= 50 ? upT < nz(rs[1]) ? nz(rs[1]) : upT : downT > nz(rs[1]) ? nz(rs[1]) : downT
-    rs
+var line[] roundNumberLineArray = array.new_line()
 
-//-----------------------------------------------------------------------------
-// Calculate
-//-----------------------------------------------------------------------------
-atr = ta.sma(ta.tr, len)
-upT = low - atr * mult
-downT = high + atr * mult
+if barstate.islast
+    if array.size(roundNumberLineArray) > 0
+        for lineIndex = 0 to array.size(roundNumberLineArray) - 1
+            line.delete(array.get(roundNumberLineArray, lineIndex))
 
-trend = request.security(syminfo.tickerid, tf, getAlPhaTrend(upT, downT))
+        array.clear(roundNumberLineArray)
 
-buySignal = ta.crossover(trend, trend[2])
-sellSignal = ta.crossunder(trend, trend[2])
+    if roundNumberShow
+        //------------------------------------------------------------------------
+        // Major Round Numbers
+        //------------------------------------------------------------------------
 
-fillColor = trend > trend[2] ? color.new(GREEN_COLOR, 80) : trend < trend[2] ? color.new(RED_COLOR, 80) : trend[1] > trend[3] ? color.new(GREEN_COLOR, 80) : color.new(RED_COLOR, 80)
+        int majorLineCount = roundNumberLines / 4
+        float majorBasePrice = math.floor(close / majorStep) * majorStep
 
-//-----------------------------------------------------------------------------
-// Render
-//-----------------------------------------------------------------------------
-k1 = plot(trend, color = AQUA_COLOR, linewidth = 1, display = display.pane)
-k2 = plot(trend[2], color = PURPLE_COLOR, linewidth = 1, display = display.pane)
+        for lineIndex = 0 to majorLineCount - 1
+            float upperMajorLevel = majorBasePrice + ((lineIndex + 1) * majorStep)
+            float lowerMajorLevel = majorBasePrice - (lineIndex * majorStep)
 
-fill(k1, k2, color = fillColor)
+            line upperMajorLine = line.new(
+                bar_index,
+                upperMajorLevel,
+                bar_index - 1,
+                upperMajorLevel,
+                xloc = xloc.bar_index,
+                extend = extend.both,
+                color = LIGHT_GRAY_COLOR,
+                width = 1,
+                style = line.style_dotted
+            )
 
-K1 = ta.barssince(buySignal)
-K2 = ta.barssince(sellSignal)
-O1 = ta.barssince(buySignal[1])
-O2 = ta.barssince(sellSignal[1])
+            line lowerMajorLine = line.new(
+                bar_index,
+                lowerMajorLevel,
+                bar_index - 1,
+                lowerMajorLevel,
+                xloc = xloc.bar_index,
+                extend = extend.both,
+                color = LIGHT_GRAY_COLOR,
+                width = 1,
+                style = line.style_dotted
+            )
 
-plotshape(buySignal and O1 > K2 ? trend[2] * 0.9999 : na, title = 'Bullish', location = location.absolute, style = shape.circle, size = size.tiny, color = GREEN_COLOR)
-plotshape(sellSignal and O2 > K1 ? trend[2] * 1.0001 : na, title = 'Bearish', location = location.absolute, style = shape.circle, size = size.tiny, color = RED_COLOR)
+            array.push(roundNumberLineArray, upperMajorLine)
+            array.push(roundNumberLineArray, lowerMajorLine)
 
-//-----------------------------------------------------------------------------
+        //------------------------------------------------------------------------
+        // Minor Round Numbers
+        //------------------------------------------------------------------------
+
+        int minorLineCount = roundNumberLines / 2
+        float minorBasePrice = math.floor(close / minorStep) * minorStep
+
+        for lineIndex = 0 to minorLineCount - 1
+            float upperMinorLevel = minorBasePrice + ((lineIndex + 1) * minorStep)
+            float lowerMinorLevel = minorBasePrice - (lineIndex * minorStep)
+
+            line upperMinorLine = line.new(
+                bar_index,
+                upperMinorLevel,
+                bar_index - 1,
+                upperMinorLevel,
+                xloc = xloc.bar_index,
+                extend = extend.both,
+                color = DARK_GRAY_COLOR,
+                width = 1,
+                style = line.style_dotted
+            )
+
+            line lowerMinorLine = line.new(
+                bar_index,
+                lowerMinorLevel,
+                bar_index - 1,
+                lowerMinorLevel,
+                xloc = xloc.bar_index,
+                extend = extend.both,
+                color = DARK_GRAY_COLOR,
+                width = 1,
+                style = line.style_dotted
+            )
+
+            array.push(roundNumberLineArray, upperMinorLine)
+            array.push(roundNumberLineArray, lowerMinorLine)
